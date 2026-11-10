@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POEMS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --serif:'Noto Serif TC',serif;
+  --mono:'Space Mono',monospace;
+  --cover:#e8e1cf;
+  --paper:#efe8d6;
+  --bw:190px; --bh:270px; --bt:28px;
+  --noise:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --paper-noise:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .13 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#050505;color:#d9d6d0;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+.view{position:fixed;inset:0;opacity:0;pointer-events:none;transition:opacity .8s ease;z-index:1}
+.view.active{opacity:1;pointer-events:auto}
+
+/* ───────────── INTRO ───────────── */
+#intro{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 60% 55% at 50% 42%,#2a2219 0%,#141110 55%,#0b0a09 100%);cursor:pointer;overflow:hidden}
+#intro::after{content:"";position:absolute;inset:0;background-image:var(--noise);opacity:.18;mix-blend-mode:overlay;pointer-events:none}
+#stage{position:relative;width:var(--bw);height:var(--bh);perspective:1400px}
+#floater{position:absolute;inset:0;transform-style:preserve-3d;animation:float 5s ease-in-out infinite alternate}
+@keyframes float{from{transform:translateY(4px)}to{transform:translateY(-8px)}}
+#book{position:absolute;inset:0;transform-style:preserve-3d;
+  transform:rotateX(var(--rx,18deg)) rotateY(var(--ry,-26deg));
+  transition:transform .9s cubic-bezier(.25,1,.5,1)}
+#book>div{position:absolute;transform-style:preserve-3d}
+.b-back{inset:0;transform:translateZ(calc(var(--bt)/-2)) rotateY(180deg);background:#cfc7b3;background-image:var(--paper-noise);border-radius:6px 3px 3px 6px}
+.b-spine{width:var(--bt);height:100%;left:calc(var(--bt)/-2);transform:rotateY(-90deg);
+  background-image:var(--paper-noise),linear-gradient(90deg,#b9b19d,#d6ceba 50%,#b9b19d)}
+.b-edge-r{width:calc(var(--bt) - 4px);height:calc(100% - 10px);top:5px;left:calc(var(--bw) - var(--bt)/2 - 3px);transform:rotateY(90deg);
+  background:repeating-linear-gradient(90deg,#cfc6ad 0 1px,#f4eede 1px 3px,#c2b697 3px 4px)}
+.b-edge-t,.b-edge-b{width:calc(var(--bw) - 8px);height:calc(var(--bt) - 4px);left:3px;
+  background:repeating-linear-gradient(180deg,#cfc6ad 0 1px,#f4eede 1px 3px,#c2b697 3px 4px)}
+.b-edge-t{top:calc(5px - (var(--bt) - 4px)/2);transform:rotateX(90deg)}
+.b-edge-b{top:calc(var(--bh) - 5px - (var(--bt) - 4px)/2);transform:rotateX(-90deg)}
+.page{width:calc(var(--bw) - 6px);height:calc(var(--bh) - 10px);top:5px;left:0;
+  background:var(--paper);background-image:var(--paper-noise),linear-gradient(90deg,rgba(0,0,0,.12),transparent 14%);
+  border-radius:0 3px 3px 0}
+.p-base{transform:translateZ(calc(var(--bt)/2 - 2px))}
+.leaf{transform-origin:left center;transition:transform .9s cubic-bezier(.45,.05,.3,1)}
+.leaf .f,.leaf .bk{position:absolute;inset:0;backface-visibility:hidden;background:inherit;border-radius:0 3px 3px 0}
+.leaf .bk{transform:rotateY(180deg);background-image:var(--paper-noise),linear-gradient(270deg,rgba(0,0,0,.14),transparent 14%)}
+.l1{transform:translateZ(calc(var(--bt)/2 - 1px))}
+.l2{transform:translateZ(calc(var(--bt)/2 - 1.5px))}
+.cover{inset:0;transform-origin:left center;transform:translateZ(calc(var(--bt)/2));transition:transform 1s cubic-bezier(.45,.05,.3,1)}
+.c-out,.c-in{position:absolute;inset:0;backface-visibility:hidden;border-radius:3px 7px 7px 3px}
+.c-out{background:var(--cover);
+  background-image:var(--paper-noise),repeating-linear-gradient(0deg,rgba(255,255,255,.10) 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,rgba(90,70,40,.07) 0 1px,transparent 1px 3px);
+  box-shadow:inset 6px 0 9px rgba(70,55,30,.28),inset -1px 0 0 rgba(255,255,255,.35)}
+.c-out .shine{position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(circle at var(--sx,30%) var(--sy,20%),rgba(255,255,255,.34),transparent 55%)}
+.c-title{position:absolute;top:15%;left:15%;font-family:var(--mono);font-size:13px;letter-spacing:.35em;color:#3a352e;
+  text-shadow:0 1px 0 rgba(255,255,255,.55)}
+.c-line{position:absolute;top:24%;left:15%;width:32%;height:1px;background:rgba(58,53,46,.4)}
+.c-sub{position:absolute;top:28%;left:15%;font-family:var(--mono);font-size:8px;letter-spacing:.25em;color:#8d8472}
+.c-pixel{position:absolute;bottom:13%;right:13%;width:24px;height:24px;box-shadow:2px 2px 0 rgba(70,55,30,.3);
+  background:#2a2622 url(photos/mark.jpg) center/cover}
+.c-in{transform:rotateY(180deg);background:#e6dcc2;background-image:var(--paper-noise);border-radius:7px 3px 3px 7px;box-shadow:inset -6px 0 10px rgba(0,0,0,.15)}
+.ribbon{width:9px;height:86px;left:62%;top:calc(var(--bh) - 14px);transform:translateZ(calc(var(--bt)/2 - 3px));transform-origin:top center}
+.ribbon i{position:absolute;inset:0;background:linear-gradient(90deg,#8e3220,#c4532f 50%,#8e3220);
+  clip-path:polygon(0 0,100% 0,100% 100%,50% 86%,0 100%);transform-origin:top center;animation:swing 3.4s ease-in-out infinite alternate}
+@keyframes swing{from{transform:rotate(-5deg)}to{transform:rotate(6deg)}}
+.b-shadow{position:absolute;left:-10%;right:-25%;bottom:-48px;height:36px;border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.65),transparent 70%);filter:blur(6px);animation:shadow 5s ease-in-out infinite alternate}
+@keyframes shadow{from{transform:scale(1);opacity:.9}to{transform:scale(.9);opacity:.6}}
+.intro-text{position:absolute;bottom:13vh;left:16px;right:16px;text-align:center;font-family:var(--serif);font-size:.85rem;letter-spacing:.12em;color:#7a7268;
+  opacity:0;animation:fadeUp 1.6s ease forwards .6s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#intro.opening{cursor:default}
+#intro.opening .intro-text{transition:opacity .4s;opacity:0!important;animation:none}
+#intro.opening #floater{animation-play-state:paused}
+#intro.opening #book{transform:rotateX(6deg) rotateY(0deg) translateX(calc(var(--bw)/2))}
+#intro.opening .cover{transform:translateZ(calc(var(--bt)/2)) rotateY(-176deg)}
+#intro.opening .l1{transform:translateZ(calc(var(--bt)/2 - 1px)) rotateY(-174deg);transition-delay:.45s}
+#intro.opening .l2{transform:translateZ(calc(var(--bt)/2 - 1.5px)) rotateY(-172deg);transition-delay:.65s}
+#intro.opening .b-shadow{opacity:0;transition:opacity .6s}
+#intro.zoom #book{transform:rotateX(0deg) rotateY(0deg) translateX(0) translateZ(1100px);transition:transform 1.1s cubic-bezier(.7,0,.3,1)}
+#intro.zoom{transition:opacity 1.1s ease}
+
+/* ───────────── MATERIAL ───────────── */
+#scene{position:fixed;inset:0;z-index:0;opacity:0;transition:opacity 1.1s ease;pointer-events:none;background:#050505}
+#scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* ───────────── INDEX ───────────── */
+#index{overflow-y:auto;background:transparent}
+.list{padding:18vh 8vw 30vh;max-width:46rem}
+.yr{display:grid;grid-template-columns:5.5rem 1fr;margin-bottom:4.2rem}
+.yr .y{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#55524d;line-height:2.5rem}
+.yr ol{list-style:none}
+.it{display:block;font-family:var(--serif);font-weight:300;font-size:.98rem;letter-spacing:.1em;line-height:2.5rem;color:#a8a49d;
+  cursor:pointer;transition:color .35s;-webkit-tap-highlight-color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it:hover,.it:focus-visible{color:#fff;outline:none}
+.it.locked{color:#55524d}
+.it.locked:hover{color:#8a8680}
+
+/* ───────────── DETAIL ───────────── */
+#detail{background:transparent}
+#d-scroll{height:100%;overflow-y:auto;padding:0 8vw 45vh}
+#back{position:sticky;top:0;z-index:2;display:block;padding:2.2rem 0 2rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963;transition:color .3s}
+#back:hover{color:#fff}
+.d-body{max-width:34rem;padding-top:6vh}
+#d-title{font-family:var(--serif);font-weight:300;font-size:clamp(1.35rem,3vw,1.8rem);letter-spacing:.14em;color:#f2efe9}
+#d-year{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963;margin:1rem 0 4.5rem}
+#d-content{font-family:var(--serif);font-weight:300;font-size:1rem;line-height:2.2;letter-spacing:.08em;color:#e4e0d9;
+  text-shadow:0 0 14px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.8)}
+#d-content .gap{height:1.1em}
+#d-content .sec{padding-bottom:7rem}
+#d-content .sec-no{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963;margin-bottom:1.6rem}
+
+/* ───────────── LOCK ───────────── */
+#lock{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem;background:rgba(5,5,5,.94);
+  opacity:0;pointer-events:none;transition:opacity .4s}
+#lock.on{opacity:1;pointer-events:auto}
+#lock h3{font-family:var(--serif);font-weight:300;font-size:1rem;letter-spacing:.3em;color:#a8a49d}
+.lock-in{display:flex;gap:14px}
+.lock-in input{width:30px;height:40px;text-align:center;font-family:var(--mono);font-size:1rem;color:#e4e0d9;background:transparent;
+  border:none;border-bottom:1px solid #55524d;outline:none;border-radius:0;transition:border-color .2s}
+.lock-in input:focus{border-bottom-color:#e4e0d9}
+#lock.err .lock-in input{border-bottom-color:#7a2a30}
+#lock-x{position:absolute;top:2.2rem;left:8vw;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963}
+#lock-x:hover{color:#fff}
+
+@media (max-width:600px){
+  :root{--bw:160px;--bh:228px;--bt:24px}
+  .list{padding:14vh 9vw 30vh}
+  .yr{grid-template-columns:1fr;margin-bottom:3.4rem}
+  .yr .y{line-height:2rem;margin-bottom:.4rem}
+  #d-scroll{padding:0 9vw 45vh}
+  #lock-x{left:9vw}
+}
+@media (prefers-reduced-motion:reduce){
+  #floater,.ribbon i,.b-shadow{animation:none}
+}
+</style>
+</head>
+<body>
+
+<div id="scene"><canvas id="mat"></canvas></div>
+
+<section class="view active" id="intro" aria-label="封面">
+  <div id="stage">
+    <div class="b-shadow"></div>
+    <div id="floater">
+      <div id="book">
+        <div class="b-back"></div>
+        <div class="b-spine"></div>
+        <div class="b-edge-r"></div>
+        <div class="b-edge-t"></div>
+        <div class="b-edge-b"></div>
+        <div class="page p-base"></div>
+        <div class="page leaf l2"><div class="f"></div><div class="bk"></div></div>
+        <div class="page leaf l1"><div class="f"></div><div class="bk"></div></div>
+        <div class="ribbon"><i></i></div>
+        <div class="cover">
+          <div class="c-out"><div class="c-title">POEMS</div><div class="c-line"></div><div class="c-sub">VOL.3 · 2018—2026</div><div class="c-pixel"></div><div class="shine"></div></div>
+          <div class="c-in"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="intro-text">本網頁紀錄Yvette 自2018至今的現代詩創作。</p>
+</section>
+
+<section class="view" id="index" aria-label="目錄">
+  <div class="list" id="list"></div>
+</section>
+
+<section class="view" id="detail" aria-label="詩">
+  <div id="d-scroll">
+    <button id="back">← back</button>
+    <article class="d-body">
+      <h2 id="d-title"></h2>
+      <div id="d-year"></div>
+      <div id="d-content"></div>
+    </article>
+  </div>
+</section>
+
+<div id="lock" role="dialog" aria-label="未公開">
+  <button id="lock-x">✕ close</button>
+  <h3>未公開。</h3>
+  <div class="lock-in">
+    <input type="password" inputmode="numeric" maxlength="1" aria-label="密碼第一位"><input type="password" inputmode="numeric" maxlength="1" aria-label="密碼第二位">
+    <input type="password" inputmode="numeric" maxlength="1" aria-label="密碼第三位"><input type="password" inputmode="numeric" maxlength="1" aria-label="密碼第四位">
+  </div>
+</div>
+
+<script src="poems.js"></script>
+<script>
+(() => {
+'use strict';
+const P = window.POEMS;
+const $ = s => document.querySelector(s);
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// 〈都是一種狀態〉每一段的狀態，依段落順序
+const STATE_SECTIONS = ['鏡','煙','光','肉','雨','鏡','肉','煙','光','肉','光','煙'];
+
+/* ── views ── */
+const views = {intro:$('#intro'), index:$('#index'), detail:$('#detail')};
+const sceneEl = $('#scene');
+let view = 'intro';
+function show(name){
+  view = name;
+  for (const k in views) views[k].classList.toggle('active', k===name);
+  sceneEl.style.opacity = name==='detail' ? 1 : 0;
+}
+
+/* ── INTRO ── */
+const intro = $('#intro'), book = $('#book'), cover = $('.c-out');
+let opened = false;
+intro.addEventListener('pointermove', e => {
+  if (opened) return;
+  const nx = e.clientX/innerWidth - .5, ny = e.clientY/innerHeight - .5;
+  book.style.setProperty('--ry', (-26 + nx*30).toFixed(2)+'deg');
+  book.style.setProperty('--rx', (18 - ny*22).toFixed(2)+'deg');
+  cover.style.setProperty('--sx', (50 + nx*90).toFixed(1)+'%');
+  cover.style.setProperty('--sy', (40 + ny*90).toFixed(1)+'%');
+});
+intro.addEventListener('pointerleave', () => { if(!opened){ book.style.removeProperty('--rx'); book.style.removeProperty('--ry'); }});
+function openBook(){
+  if (opened) return; opened = true;
+  book.style.removeProperty('--rx'); book.style.removeProperty('--ry');
+  const go = () => { show('index'); history.replaceState({v:'index'}, ''); startLoop(); };
+  if (REDUCED){ go(); return; }
+  intro.classList.add('opening');
+  setTimeout(()=>intro.classList.add('zoom'), 1500);
+  setTimeout(go, 2000);
+}
+intro.addEventListener('click', openBook);
+addEventListener('keydown', e => { if (!opened && (e.key==='Enter'||e.key===' ')) openBook(); });
+
+/* ── INDEX ── */
+(function buildIndex(){
+  const list = $('#list');
+  for (const y of [...new Set(P.map(p=>p.year))]){
+    const sec = document.createElement('section'); sec.className='yr';
+    sec.innerHTML = `<div class="y">${y}</div><ol></ol>`;
+    const ol = sec.querySelector('ol');
+    P.forEach((p,i) => {
+      if (p.year!==y) return;
+      const li = document.createElement('li');
+      li.className = 'it' + (p.locked?' locked':''); li.tabIndex = 0; li.textContent = p.title;
+      li.addEventListener('click', ()=>openPoem(i));
+      li.addEventListener('keydown', e=>{ if(e.key==='Enter') openPoem(i); });
+      li.addEventListener('pointerenter', e=>{ if (e.pointerType!=='mouse' || view!=='index') return;
+        setState(p.el==='態' ? STATE_SECTIONS[0] : p.el, p, +sceneEl.style.opacity<.05); sceneEl.style.opacity=.55; });
+      ol.appendChild(li);
+    });
+    list.appendChild(sec);
+  }
+  list.addEventListener('pointerleave', ()=>{ if (view==='index') sceneEl.style.opacity=0; });
+})();
+
+/* ── LOCK ── */
+const lock = $('#lock'), lockIns = [...lock.querySelectorAll('input')];
+let pending = null; const unlocked = new Set();
+function showLock(i){ pending=i; lock.classList.add('on'); lockIns.forEach(x=>x.value=''); setTimeout(()=>lockIns[0].focus(), 60); }
+function hideLock(){ lock.classList.remove('on','err'); pending=null; }
+$('#lock-x').addEventListener('click', hideLock);
+lockIns.forEach((inp,k)=>{
+  inp.addEventListener('input', ()=>{
+    lock.classList.remove('err');
+    inp.value = inp.value.replace(/\D/g,'');
+    if (inp.value && k<3) lockIns[k+1].focus();
+    const code = lockIns.map(x=>x.value).join('');
+    if (code.length===4){
+      if (code==='0802'){ const i=pending; unlocked.add(i); setTimeout(()=>{ hideLock(); openPoem(i); },200); }
+      else { lock.classList.add('err'); lockIns.forEach(x=>x.value=''); lockIns[0].focus(); }
+    }
+  });
+  inp.addEventListener('keydown', e=>{ if(e.key==='Backspace' && !inp.value && k>0) lockIns[k-1].focus(); });
+});
+
+/* ── DETAIL ── */
+let secObs = null;
+const esc = s => s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const renderLines = lines => lines.map(l => l.trim()==='' ? '<div class="gap"></div>' : `<div>${esc(l)}</div>`).join('');
+function trimLines(a){ let s=0,e=a.length; while(s<e && !a[s].trim()) s++; while(e>s && !a[e-1].trim()) e--; return a.slice(s,e); }
+function openPoem(i, push=true){
+  const p = P[i];
+  if (p.locked && !unlocked.has(i)){ showLock(i); return; }
+  $('#d-title').textContent = p.title;
+  $('#d-year').textContent = p.year;
+  const c = $('#d-content');
+  if (secObs){ secObs.disconnect(); secObs=null; }
+  if (p.el==='態'){
+    const parts = []; let cur = null;
+    for (const l of p.content.split('\n')){
+      if (/^\d+$/.test(l.trim())){ cur = {n:+l.trim(), lines:[]}; parts.push(cur); }
+      else if (cur) cur.lines.push(l);
+    }
+    c.innerHTML = parts.map(s=>`<section class="sec" data-n="${s.n}"><span class="sec-no">${s.n}</span>${renderLines(trimLines(s.lines))}</section>`).join('');
+    setState(STATE_SECTIONS[0], p, view!=='index' || +sceneEl.style.opacity<.05 || state!==STATE_SECTIONS[0]);
+    secObs = new IntersectionObserver(es=>{
+      for (const e of es) if (e.isIntersecting) setState(STATE_SECTIONS[(+e.target.dataset.n-1)%STATE_SECTIONS.length], p);
+    }, {root: $('#d-scroll'), rootMargin:'-40% 0px -50% 0px'});
+    c.querySelectorAll('.sec').forEach(s=>secObs.observe(s));
+  } else {
+    c.innerHTML = renderLines(p.content.split('\n'));
+    setState(p.el, p, view!=='index' || +sceneEl.style.opacity<.05 || state!==p.el);
+  }
+  $('#d-scroll').scrollTop = 0;
+  show('detail');
+  if (push) history.pushState({v:'detail', i}, '');
+}
+$('#back').addEventListener('click', ()=>{ if (history.state && history.state.v==='detail') history.back(); else show('index'); });
+addEventListener('popstate', e=>{
+  if (!opened) return;
+  if (e.state && e.state.v==='detail') openPoem(e.state.i, false); else show('index');
+});
+addEventListener('keydown', e=>{
+  if (e.key==='Escape'){ if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); }
+});
+
+/* ───────────── MATERIAL 01 ─────────────
+   One substance. Soft bodies that merge and part, drawn in coarse pixels.
+   The five states only change its parameters; switching state morphs it. */
+const PX = 4;                       // size of one coarse pixel, in CSS px
+const N = 36;                       // bodies
+const cv = $('#mat');
+let W = innerWidth, H = innerHeight, LW = 1, LH = 1, sc = 1;
+let mx = W/2, my = H/2, lastPointer = -1e9;
+addEventListener('pointermove', e=>{ mx=e.clientX; my=e.clientY; lastPointer=performance.now(); }, {passive:true});
+addEventListener('pointerdown', e=>{ mx=e.clientX; my=e.clientY; lastPointer=performance.now(); }, {passive:true});
+const pointerActive = () => performance.now() - lastPointer < 3500;
+
+const R = (a,b)=>a+Math.random()*(b-a), lerp=(a,b,t)=>a+(b-a)*t, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const sstep=(a,b,x)=>{ const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
+const perm = (()=>{const p=[...Array(256).keys()];for(let i=255;i>0;i--){const j=Math.random()*(i+1)|0;[p[i],p[j]]=[p[j],p[i]];}return p.concat(p);})();
+const fade=t=>t*t*t*(t*(t*6-15)+10);
+function grad(h,x,y){const v=h&3,u=v<2?x:y,w=v<2?y:x;return((h&1)?-u:u)+((h&2)?-w:w);}
+function noise(x,y){const X=Math.floor(x)&255,Y=Math.floor(y)&255;x-=Math.floor(x);y-=Math.floor(y);const u=fade(x),v=fade(y),a=perm[X]+Y,b=perm[X+1]+Y;
+  return lerp(lerp(grad(perm[a],x,y),grad(perm[b],x-1,y),u),lerp(grad(perm[a+1],x,y-1),grad(perm[b+1],x-1,y-1),u),v);}
+
+/* look: colours are final values. rim is added on the contour line. */
+const LOOK = {
+  肉:{bg:[.008,0,.004], edge:[.082,.010,.031], core:[.300,.050,.090], rim:[.143,.061,.061], halo:[.061,.031,.031], rimW:.06, lo:.999, hi:1.001, cov:1,   warp:1,   gloss:0, refl:0},
+  雨:{bg:[.010,.016,.022], edge:[.030,.048,.062], core:[.058,.086,.104], rim:[.200,.275,.315], halo:[.018,.030,.040], rimW:.09, lo:.999, hi:1.001, cov:1,   warp:.35, gloss:0, refl:0},
+  煙:{bg:[.016,.016,.016], edge:[.075,.075,.073], core:[.215,.215,.208], rim:[0,0,0],          halo:[0,0,0],          rimW:0,   lo:.30,  hi:2.6,   cov:.74, warp:1.6, gloss:0, refl:0},
+  光:{bg:[0,0,0],          edge:[.620,.620,.585], core:[.930,.930,.890], rim:[0,0,0],          halo:[.085,.085,.078], rimW:0,   lo:.999, hi:1.001, cov:1,   warp:.25, gloss:0, refl:0},
+  鏡:{bg:[.012,.014,.016], edge:[.026,.030,.034], core:[.010,.012,.014], rim:[.300,.335,.370], halo:[.026,.031,.036], rimW:.07, lo:.999, hi:1.001, cov:1,   warp:.1,  gloss:1, refl:1},
+};
+const KEYS = Object.keys(LOOK.肉);
+const look = JSON.parse(JSON.stringify(LOOK.肉));   // the look being drawn, eased toward the target
+let state = '肉', mirrorTitle = '', t = 0;
+const bodies = [];
+const you = {x:0,y:0,r:0};
+
+function seedBodies(){
+  bodies.length = 0;
+  for (let i=0;i<N;i++) bodies.push({x:R(0,W),y:R(0,H),vx:0,vy:0,r:0,seed:Math.random(),side:i%2?1:-1,life:Math.random(),
+    fb:i<4?R(95,165):i<7?R(50,85):0, mb:i<2?R(100,140):i<5?R(52,80):i<10?R(18,36):0, rb:R(12,38), sb:R(70,150)});
+  you.x=light.x=W/2; you.y=light.y=H/2;
+}
+let poem = null, photoOn = 0;
+const light = {x:0,y:0};
+function setState(s, p, snap){
+  if (p && p!==poem){ poem=p; mirrorTitle=p.title; loadPhoto(p.photo); if (s==='鏡' && s===state) drawReflection(); }
+  if (s!==state){ state=s; if (s==='鏡') drawReflection(); }
+  if (snap){                                   // arrive already settled: no half-formed first frames
+    const T=LOOK[state]; for (const key of KEYS) look[key]=Array.isArray(T[key])?T[key].slice():T[key];
+    for (let i=0;i<300;i++){ t+=1/30; step(1/30); }
+  }
+}
+
+/* ── physics: every state is the same bodies under different forces ── */
+function rainRespawn(b){ b.y=-50-R(0,80); b.x=R(0,W); b.rb=R(12,38); b.r=Math.min(b.r,4); b.vy=0; }
+function step(dt){
+  const act = pointerActive();
+  const blobby = state==='肉' || state==='鏡';
+  const nAct = state==='肉'?7 : state==='鏡'?10 : state==='雨'?22 : state==='煙'?28 : N;
+  const lightX = W>700 ? W*.76 : W*.86, spacing = (H+80)/N;
+  for (let i=0;i<N;i++){
+    const b = bodies[i]; let tr = 0, damp = 1.2, ax = 0, ay = 0, grow = 1.3;
+    if (i<nAct){
+      if (blobby){
+        tr = (state==='肉'?b.fb:b.mb)*sc; if (state==='肉') tr *= .86+.14*Math.sin(t*.4+b.seed*6.28);
+        const a = noise(b.x*.0015+b.seed*10, b.y*.0015+t*.04)*12.6, wv = state==='肉'?16:20;
+        ax += Math.cos(a)*wv; ay += Math.sin(a)*wv;
+        for (let j=0;j<nAct;j++){ if (j===i) continue; const o=bodies[j];
+          const dx=o.x-b.x, dy=o.y-b.y, d=Math.hypot(dx,dy)||1, R0=b.r+o.r;
+          if (d<R0*.55){ const k=(R0*.55-d)/R0*40; ax-=dx/d*k; ay-=dy/d*k; }      // too close: ease apart
+          else if (d<R0*2.6){ const k=noise((i+j)*3.7+i*j*.61, t*.035)*11; ax+=dx/d*k; ay+=dy/d*k; }  // drawn together, then apart
+        }
+        { const cx=(b.x-W/2)/(W*.46), cy=(b.y-H/2)/(H*.46), e=Math.hypot(cx,cy);  // stay loosely in view
+          if (e>1){ ax-=cx/e*(e-1)*40; ay-=cy/e*(e-1)*40; } }
+        if (act){ const dx=mx-b.x, dy=my-b.y, d=Math.hypot(dx,dy)||1, rg=520*sc;
+          if (d<rg){ const f=(state==='肉'?34:16)*(1-d/rg); ax+=dx/d*f; ay+=dy/d*f; } }
+        damp = state==='肉'?.9:1.3;
+      } else if (state==='雨'){
+        tr = b.rb*sc;
+        const go = sstep(-.15,.35, noise(b.seed*50, t*.22+b.seed*9));              // drops stick, then slide
+        b.vy = lerp(b.vy, (36+b.rb*4.2)*go, Math.min(1,dt*2.5));
+        let vx = noise(b.seed*30, t*.3)*5;
+        if (act){ const dx=b.x-mx, dy=b.y-my, d=Math.hypot(dx,dy)||1; if (d<130) vx += dx/d*(130-d)*.9; }
+        b.vx = lerp(b.vx, vx, Math.min(1,dt*3)); damp = 0;
+        for (let j=0;j<nAct;j++){ if (j===i) continue; const o=bodies[j];
+          if (o.y<b.y && Math.hypot(o.x-b.x,o.y-b.y) < (b.r+o.r)*.42 && o.r>3){ b.rb=Math.min(56,Math.hypot(b.rb,o.rb*.75)); rainRespawn(o); } }
+        if (b.y>H+b.r+20) rainRespawn(b);
+      } else if (state==='煙'){                                                   // one plume: tight at the source, torn open as it rises
+        b.life += dt*(1/15)*(.85+b.seed*.3);
+        const srcX = W>700 ? W*.66 : W*.7;
+        if (b.life>=1){ b.life=0; b.x=srcX; b.y=H+30; b.vx=b.vy=0; b.r=4; }
+        const h=b.life, ty=H+30-h*(H+170);
+        const tx=srcX + noise(h*2.4-t*.13, 3.1)*W*.22*Math.pow(h,1.3) + (b.seed-.5)*W*.2*Math.pow(h,1.7);
+        tr = lerp(11, b.sb*sc*.85, Math.pow(h,1.15)) * (1-sstep(.8,1,h)*.7); grow = 3;
+        ax += (tx-b.x)*2.6; ay += (ty-b.y)*2.6; damp = 2.8;
+        if (act){ const dx=b.x-mx, dy=b.y-my, d=Math.hypot(dx,dy)||1; if (d<200){ const f=(200-d)/200*420; ax+=dx/d*f; ay+=dy/d*f; } }
+      } else {                                                                    // 光: one thread, rising
+        tr = spacing*.52;
+        const slot = H+40 - ((i*spacing + t*20) % (H+80));
+        if (Math.abs(slot-b.y) > H*.7 && (b.y<0 || b.y>H)) { b.y = slot; b.vy = 0; }
+        const fork = b.side * W*.03 * sstep(.18,.5, noise(slot*.0035, t*.05+4));    // parts, and rejoins
+        let tx = lightX + fork + noise(slot*.012, t*.15)*5;
+        if (act){ const dy=Math.abs(b.y-my), dx=mx-lightX; if (dy<160 && Math.abs(dx)<W*.3) tx += dx*.22*(1-dy/160); }
+        ax += (tx-b.x)*7; ay += (slot-b.y)*7; damp = 4.5;
+      }
+    }
+    b.vx += ax*dt; b.vy += ay*dt;
+    if (damp){ const k=Math.exp(-dt*damp); b.vx*=k; b.vy*=k; }
+    if (blobby && i<nAct){ const sp=Math.hypot(b.vx,b.vy), mxs=state==='肉'?(act?60:26):(act?46:24); if (sp>mxs){ b.vx*=mxs/sp; b.vy*=mxs/sp; } }
+    b.x += b.vx*dt; b.y += b.vy*dt;
+    b.r = lerp(b.r, tr, Math.min(1,dt*grow));
+  }
+  you.x = lerp(you.x, mx, Math.min(1,dt*5)); you.y = lerp(you.y, my, Math.min(1,dt*5));
+  you.r = lerp(you.r, act ? (photoOn ? 82*sc : state==='肉' ? 58*sc : 0) : 0, Math.min(1,dt*(act?3:1.5)));
+  const lt = act ? {x:mx,y:my} : {x:W/2+Math.sin(t*.21)*W*.3, y:H/2+Math.cos(t*.17)*H*.2};
+  light.x = lerp(light.x, lt.x, Math.min(1,dt*2)); light.y = lerp(light.y, lt.y, Math.min(1,dt*2));   // the light glides; it never jumps
+  const k = 1-Math.exp(-dt*1.7), T = LOOK[state];                                  // ease the look: one state becomes another
+  for (const key of KEYS){ const a=look[key], b=T[key];
+    if (Array.isArray(a)) for (let c=0;c<3;c++) a[c]=lerp(a[c],b[c],k); else look[key]=lerp(a,b,k); }
+}
+
+/* ── drawing ── */
+let gl=null, U={}, tex=null, texPh=null, failed=false, photoImg=null, photoSrc='';
+const refl = document.createElement('canvas'), rctx = refl.getContext('2d');
+const VS = `attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
+const FS = `precision highp float;
+uniform vec2 uRes;uniform vec3 uB[37];uniform float uT;
+uniform vec3 cBg,cCore,cEdge,cRim,cHalo;
+uniform float uRimW,uLo,uHi,uCov,uWarp,uGloss,uRefl;
+uniform vec3 uCur;uniform sampler2D uTex,uPh;uniform float uPhOn;
+float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+float b2(vec2 a){a=floor(a);return fract(a.x/2.+a.y*a.y*.75);}
+float b4(vec2 a){return b2(.5*a)*.25+b2(a);}
+float field(vec2 q){float f=0.;for(int i=0;i<37;i++){vec3 b=uB[i];vec2 d=q-b.xy;f+=b.z*b.z/(dot(d,d)+1.);}return f;}
+void main(){
+  vec2 p=gl_FragCoord.xy;
+  vec2 q=p+uWarp*(vec2(vn(p*.022+uT*.03)-.5,vn(p*.022+7.3-uT*.025)-.5)*17.+vec2(vn(p*.09+3.1)-.5,vn(p*.09+9.7)-.5)*3.);
+  float f=field(q);
+  float cov=smoothstep(uLo,uHi,f)*uCov;
+  float inside=step(b4(p)*.94+.03,cov);
+  vec3 col=cBg+cHalo*clamp((f-.8)*5.,0.,1.);
+  if(inside>.5){
+    vec3 c=mix(cEdge,cCore,clamp((f-1.)*1.5,0.,1.));
+    if(uCov<.999)c=mix(cEdge,cCore,cov);
+    vec3 yb=uB[36];vec2 yd=q-yb.xy;float fy=yb.z*yb.z/(dot(yd,yd)+1.);
+    if(uPhOn>.5&&fy>.62)c=texture2D(uPh,p/uRes).rgb*.82;
+    if(f<1.+uRimW)c+=cRim;
+    if(uGloss>.01){
+      vec2 g=vec2(field(q+vec2(1.,0.))-f,field(q+vec2(0.,1.))-f);
+      vec2 n=-normalize(g+1e-6);vec2 L=normalize(uCur.xy-p+1e-3);
+      float s=pow(max(dot(n,L),0.),3.)*smoothstep(1.05,1.6,f)*(1.-smoothstep(1.6,4.,f));
+      c+=vec3(.42,.46,.50)*floor(s*3.+.4)/3.*uGloss;
+      vec2 dc=(uCur.xy-p)/uRes.y;
+      c+=vec3(.40,.44,.48)*texture2D(uTex,p/uRes).r*uRefl*(.10+.90/(1.+dot(dc,dc)*14.))*smoothstep(1.,1.35,f);
+    }
+    col=c;
+  }
+  col=mix(col,vec3(dot(col,vec3(.4,.4,.2))),.12);
+  gl_FragColor=vec4(col,1.);
+}`;
+function setupGL(){
+  gl = cv.getContext('webgl', {antialias:false, premultipliedAlpha:false, alpha:false});
+  if (!gl){ failed=true; return; }
+  const sh=(type,src)=>{const o=gl.createShader(type);gl.shaderSource(o,src);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o;};
+  let prog;
+  try{ prog=gl.createProgram(); gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS)); gl.linkProgram(prog);
+    if(!gl.getProgramParameter(prog,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog)); gl.useProgram(prog);
+  }catch(e){ console.warn(e); failed=true; return; }
+  const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(prog,'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  for (const n of ['uRes','uB','uT','cBg','cCore','cEdge','cRim','cHalo','uRimW','uLo','uHi','uCov','uWarp','uGloss','uRefl','uCur','uTex','uPh','uPhOn']) U[n]=gl.getUniformLocation(prog,n);
+  tex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true); gl.uniform1i(U.uTex,0);
+  texPh=gl.createTexture(); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,texPh);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
+  gl.uniform1i(U.uPh,1); gl.activeTexture(gl.TEXTURE0);
+}
+function drawReflection(){                                  // the title, reversed, as the mirror would hold it
+  if (!gl || failed) return;
+  refl.width=LW; refl.height=LH;
+  rctx.fillStyle='#000'; rctx.fillRect(0,0,LW,LH);
+  let fs=Math.min(LW,LH)*.3; rctx.font=`400 ${fs}px "Noto Serif TC", serif`;
+  const tw=rctx.measureText(mirrorTitle).width; if (tw>LW*.86){ fs*=LW*.86/tw; rctx.font=`400 ${fs}px "Noto Serif TC", serif`; }
+  rctx.save(); rctx.translate(LW/2,LH*.5); rctx.scale(-1,1);
+  rctx.fillStyle='#fff'; rctx.textAlign='center'; rctx.textBaseline='middle'; rctx.fillText(mirrorTitle,0,0); rctx.restore();
+  gl.bindTexture(gl.TEXTURE_2D,tex); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,refl);
+}
+const phc = document.createElement('canvas'), pctx = phc.getContext('2d');
+function loadPhoto(src){                                    // the photo a poem keeps; only seen through the body that follows you
+  photoOn=0; photoSrc=src||'';
+  if (!src || !gl || failed) return;
+  const im=new Image(); im.onload=()=>{ if (photoSrc!==src) return; photoImg=im; try{ uploadPhoto(); photoOn=1; }catch(e){ photoOn=0; } }; im.src=src;
+}
+function uploadPhoto(){
+  if (!photoImg) return;
+  phc.width=LW; phc.height=LH;
+  const k=Math.max(LW/photoImg.width, LH/photoImg.height), w=photoImg.width*k, h=photoImg.height*k;
+  pctx.drawImage(photoImg,(LW-w)/2,(LH-h)/2,w,h);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,texPh); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,phc); gl.activeTexture(gl.TEXTURE0);
+}
+const arr = new Float32Array(37*3);
+function draw(){
+  if (failed) return;
+  for (let i=0;i<N;i++){ const b=bodies[i]; arr[i*3]=b.x/PX; arr[i*3+1]=(H-b.y)/PX; arr[i*3+2]=b.r/PX; }
+  arr[N*3]=you.x/PX; arr[N*3+1]=(H-you.y)/PX; arr[N*3+2]=you.r/PX;
+  gl.viewport(0,0,LW,LH);
+  gl.uniform2f(U.uRes,LW,LH); gl.uniform3fv(U.uB,arr); gl.uniform1f(U.uT,t);
+  gl.uniform3fv(U.cBg,look.bg); gl.uniform3fv(U.cCore,look.core); gl.uniform3fv(U.cEdge,look.edge); gl.uniform3fv(U.cRim,look.rim); gl.uniform3fv(U.cHalo,look.halo);
+  gl.uniform1f(U.uRimW,look.rimW); gl.uniform1f(U.uLo,look.lo); gl.uniform1f(U.uHi,look.hi); gl.uniform1f(U.uCov,look.cov);
+  gl.uniform1f(U.uWarp,look.warp); gl.uniform1f(U.uGloss,look.gloss); gl.uniform1f(U.uRefl,look.refl);
+  gl.uniform3f(U.uCur,light.x/PX,(H-light.y)/PX,1); gl.uniform1f(U.uPhOn,photoOn);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+}
+function resize(){
+  W=innerWidth; H=innerHeight; LW=Math.ceil(W/PX); LH=Math.ceil(H/PX);
+  sc=clamp(Math.min(W,H)/800,.62,1.4);
+  cv.width=LW; cv.height=LH;
+  if (!bodies.length) seedBodies();
+  if (state==='鏡') drawReflection();
+  if (photoOn) uploadPhoto();
+}
+let raf=null, last=0;
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000)*(REDUCED?.35:1); last=now; t+=dt;
+  step(dt); draw();
+  raf=requestAnimationFrame(frame);
+}
+function startLoop(){ if (raf||failed) return; last=performance.now(); raf=requestAnimationFrame(frame); }
+function stopLoop(){ if (raf) cancelAnimationFrame(raf); raf=null; }
+document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stopLoop(); else if (opened) startLoop(); });
+addEventListener('resize', resize);
+setupGL(); resize();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if (state==='鏡') drawReflection(); });
+})();
+</script>
+</body>
+</html>
