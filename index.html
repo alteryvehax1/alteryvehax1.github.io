@@ -808,6 +808,7 @@ const FS2 = `precision highp float;
 uniform vec2 uRes;uniform vec4 uS[48];uniform float uT;uniform vec2 uL;uniform vec3 uBg;
 uniform vec3 kE[6],kC[6],kR[6],kH[6];
 uniform sampler2D uVid;uniform vec3 uVC;uniform float uVA,uVOn;
+uniform vec2 uCam;uniform vec4 uRip[6];
 float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
   return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
@@ -833,7 +834,22 @@ void main(){
   float solid=smoothstep(.97,1.03,f), smk=smoothstep(.3,2.6,f)*.74;
   float cov=mix(solid,smk,w3);
   float inside=step(b4(p)*.94+.03,cov);
-  vec3 col=uBg+Hh*clamp((f-.8)*5.,0.,1.)*(1.-w3);
+  /* the lake: fixed to the world, so moving across it feels like moving. depth in a few dithered steps,
+     slow lines of light under the surface, a few glints, and the rings you leave behind. */
+  vec2 w=p-uRes*.5+uCam;
+  float dep=vn(w*.010+vec2(uT*.012,-uT*.008))*.65+vn(w*.033+vec2(-uT*.02,uT*.015))*.35;
+  float lv=floor(dep*4.+b4(p)*.999)/4.;
+  vec3 lake=mix(vec3(.035,.215,.170),vec3(.090,.335,.268),lv);
+  lake=mix(lake,uBg,.35);
+  float ln=abs(vn(w*.03+vec2(uT*.05,-uT*.035)+vn(w*.012)*2.)-.5);
+  lake+=vec3(.040,.070,.058)*step(b4(p+3.)*.9,1.-smoothstep(.0,.028,ln))*.45;
+  vec2 cell=floor(w/5.); float hh=h(cell+.37);
+  if(hh>.988){ float tw=pow(max(0.,sin(uT*(.8+hh*1.6)+hh*90.)),10.); if(distance(fract(w/5.),vec2(.5))<.35) lake+=vec3(.70,.74,.52)*tw*.55; }
+  for(int i=0;i<6;i++){ vec4 r=uRip[i]; if(r.w<=0.) continue;
+    float rad=r.z*11.+1.; float dd=abs(length(p-r.xy)-rad);
+    lake+=vec3(.06,.10,.085)*r.w*(1.-smoothstep(0.,1.1,dd)); }
+  vec2 vq=p/uRes-.5; lake*=1.-dot(vq,vq)*.45;
+  vec3 col=lake+Hh*clamp((f-.8)*5.,0.,1.)*(1.-w3);
   if(inside>.5){
     vec3 c=mix(mix(E,C,clamp((f-1.)*1.5,0.,1.)),mix(E,C,smk),w3);
     float rimW=w1*.09+w2*.06+w4*.07+w5*.05+(w7+w8+w9)*.05;
@@ -862,7 +878,7 @@ function setupSpaceGL(){
     if(!gl.getProgramParameter(prog2,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog2)); }
   catch(e){ console.warn(e); prog2=null; return; }
   gl.useProgram(prog2);
-  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH','uVid','uVC','uVA','uVOn']) U2[n]=gl.getUniformLocation(prog2,n);
+  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH','uVid','uVC','uVA','uVOn','uCam','uRip']) U2[n]=gl.getUniformLocation(prog2,n);
   texVid=gl.createTexture(); gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,texVid);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
@@ -959,6 +975,14 @@ function muteSounds(){
   for (const S of [...SOUNDS, EDGE, ...VIDEOS]) if (S.voice) S.voice.g.gain.setTargetAtTime(0, actx.currentTime, .12);
 }
 document.addEventListener('visibilitychange',()=>{ if (!actx) return; if (document.hidden) actx.suspend(); else if (opened) actx.resume(); });
+const ripples = [], rarr = new Float32Array(24); let ripT = 0;
+function stepRipples(dt){
+  for (const r of ripples) r.age += dt;
+  while (ripples.length && ripples[0].age > 2.6) ripples.shift();
+  const sp = Math.hypot(me.vx, me.vy);
+  ripT -= dt;
+  if (sp > 70 && ripT <= 0){ ripples.push({x:me.x, y:me.y, age:0, s:Math.min(1, sp/360)}); if (ripples.length>6) ripples.shift(); ripT = .42; }
+}
 const sarr = new Float32Array(48*4), near = [];
 function drawSpace(){
   if (failed || !prog2) return;
@@ -977,6 +1001,9 @@ function drawSpace(){
   gl.viewport(0,0,LW,LH);
   gl.uniform2f(U2.uRes,LW,LH); gl.uniform4fv(U2.uS,sarr); gl.uniform1f(U2.uT,t);
   gl.uniform2f(U2.uL,sx(me.x),sy(me.y));
+  gl.uniform2f(U2.uCam,cam.x/PX,-cam.y/PX);
+  rarr.fill(0); ripples.forEach((r,i)=>{ rarr[i*4]=sx(r.x); rarr[i*4+1]=sy(r.y); rarr[i*4+2]=r.age*Math.max(sc,.8); rarr[i*4+3]=r.s*(1-r.age/2.6); });
+  gl.uniform4fv(U2.uRip,rarr);
   if (film && film.el.readyState>=2){
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,texVid);
     try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,film.el); gl.uniform1f(U2.uVOn,1); }catch(e){ gl.uniform1f(U2.uVOn,0); }
@@ -1067,7 +1094,7 @@ let raf=null, last=0;
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000)*(REDUCED?.35:1); last=now; t+=dt;
   updateSound();
-  if (mode==='space'){ stepSpace(dt); drawSpace(); placeUI(); }
+  if (mode==='space'){ stepSpace(dt); stepRipples(dt); drawSpace(); placeUI(); }
   else { step(dt); draw(); drawPhoto(dt); }
   raf=requestAnimationFrame(frame);
 }
