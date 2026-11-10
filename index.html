@@ -292,6 +292,12 @@ lockIns.forEach((inp,k)=>{
 let secObs = null;
 const esc = s => s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const renderLines = lines => lines.map(l => l.trim()==='' ? '<div class="gap"></div>' : `<div>${esc(l)}</div>`).join('');
+function enterScene(el, p){                 // a poem always opens on its material already settled, faded in from black
+  sceneEl.style.transition='none'; sceneEl.style.opacity=0;
+  lastPointer=-1e9;                          // the tap that opened the poem is not a touch on the material
+  setState(el, p, true);
+  void sceneEl.offsetWidth; sceneEl.style.transition='';
+}
 function trimLines(a){ let s=0,e=a.length; while(s<e && !a[s].trim()) s++; while(e>s && !a[e-1].trim()) e--; return a.slice(s,e); }
 function openPoem(i, push=true){
   const p = P[i];
@@ -307,14 +313,14 @@ function openPoem(i, push=true){
       else if (cur) cur.lines.push(l);
     }
     c.innerHTML = parts.map(s=>`<section class="sec" data-n="${s.n}"><span class="sec-no">${s.n}</span>${renderLines(trimLines(s.lines))}</section>`).join('');
-    setState(STATE_SECTIONS[0], p, view!=='index' || +sceneEl.style.opacity<.05 || state!==STATE_SECTIONS[0]);
+    enterScene(STATE_SECTIONS[0], p);
     secObs = new IntersectionObserver(es=>{
       for (const e of es) if (e.isIntersecting) setState(STATE_SECTIONS[(+e.target.dataset.n-1)%STATE_SECTIONS.length], p);
     }, {root: $('#d-scroll'), rootMargin:'-40% 0px -50% 0px'});
     c.querySelectorAll('.sec').forEach(s=>secObs.observe(s));
   } else {
     c.innerHTML = renderLines(p.content.split('\n'));
-    setState(p.el, p, view!=='index' || +sceneEl.style.opacity<.05 || state!==p.el);
+    enterScene(p.el, p);
   }
   $('#d-scroll').scrollTop = 0;
   show('detail');
