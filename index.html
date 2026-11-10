@@ -560,9 +560,9 @@ function drawPhoto(dt){
     lens.px=lens.x; lens.py=lens.y; maskLive=true;
   } else lens.px=lens.py=null;
   if (!maskLive) return;
-  const f=Math.exp(-dt/5.5), px=mkImg.data; let any=false;
+  const fall=dt*.27, px=mkImg.data; let any=false;        // linear: a full stroke is gone in ~5 s
   for (let j=0;j<MH;j++) for (let i=0;i<MW;i++){
-    const o=j*MW+i, v=mask[o]*f; mask[o]=v<.004?0:v; if (v>.004) any=true;
+    const o=j*MW+i, v=mask[o]-fall; mask[o]=v>0?v:0; if (v>0) any=true;
     px[o*4+3] = v>BAYER[(j&3)*4+(i&3)]*.92 ? 255 : 0;
   }
   maskLive=any;
