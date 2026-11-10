@@ -802,7 +802,7 @@ feedback世界的泛音
 被冷落到你也才想起
 自己`},
 
-  {title:"親 上鎖", year:2023, el:'雨', locked:true, content:`離開 忽視 再次
+  {title:"親", year:2023, el:'雨', locked:true, content:`離開 忽視 再次
 他掠奪靈魂
 只留下淫
 雨
@@ -818,7 +818,7 @@ feedback世界的泛音
 讓它悲傷
 陪它哭泣`},
 
-  {title:"泥土 上鎖", year:2023, el:'雨', content:`碾碎了夢中的舞蹈
+  {title:"泥土", year:2023, el:'雨', locked:true, content:`碾碎了夢中的舞蹈
 行為著自己也不行為的事
 空氣瀰漫著你的霧
 你眼眸的黑吸收我的乾涸
@@ -903,7 +903,7 @@ feedback世界的泛音
 
 直到午夜消亡`},
 
-  {title:"無題 上鎖", year:2022, el:'雨', content:`雨水浸濕之欲望
+  {title:"無題", year:2022, el:'雨', locked:true, content:`雨水浸濕之欲望
 鞋承載浮之重量
 鞋在沉入水之前
 雨從時間渗透我
@@ -938,7 +938,7 @@ feedback世界的泛音
 可至多是樓上住戶拆下保麗龍
 堆成的花盆`},
 
-  {title:"離心力 上鎖", year:2021, el:'煙', content:`你緊緊握住的只是一陣風
+  {title:"離心力", year:2021, el:'煙', locked:true, content:`你緊緊握住的只是一陣風
 那虛無飄渺的 溫婉和煦的輕風
 指引了你跳動的節奏
 
