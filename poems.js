@@ -222,7 +222,7 @@ feedback世界的泛音
 讓火焰燒穿陰影
 因為快樂是一次骨折的現象`},
 
-  {title:"#4", year:2026, el:'光', content:`我在時間裡失去
+  {title:"#4", year:2026, el:'光', photo:'photos/p/04.jpg', content:`我在時間裡失去
 在速度中獲得
 以失速的姿態
 感知身體
@@ -273,7 +273,7 @@ feedback世界的泛音
 橘色的發財車要開過來了
 你要被我丟掉了`},
 
-  {title:"#1", year:2026, el:'鏡', content:`我在鏡子外面
+  {title:"#1", year:2026, el:'鏡', photo:'photos/p/08.jpg', content:`我在鏡子外面
 看到自己
 坐在小小的司令台
 望穿雲霧 稻田 櫻花樹
@@ -290,7 +290,7 @@ feedback世界的泛音
 用人性的一切消滅自然
 讓一切的人性自然消滅`},
 
-  {title:"因為我", year:2026, el:'鏡', content:`從前我也厭倦貪嗔癡
+  {title:"因為我", year:2026, el:'鏡', photo:'photos/p/09.jpg', content:`從前我也厭倦貪嗔癡
 因為饕餮總是代表我自己的模樣
 從前我也厭倦歇斯底里
 因為情緒化總是代表我自己的模樣
@@ -456,7 +456,7 @@ feedback世界的泛音
 看穿自己骨髓裡的新造
 仍舊來自你`},
 
-  {title:"我是不信鬼的", year:2025, el:'煙', content:`我是不信鬼的
+  {title:"我是不信鬼的", year:2025, el:'煙', photo:'photos/p/17.jpg', content:`我是不信鬼的
 只是這個夜晚，兩點五十
 推開門，有兩個撐傘的人
 不為彼此擋雨
@@ -577,7 +577,30 @@ feedback世界的泛音
 世界末日來了
 我愛你`},
 
-  {title:"旺", year:2024, el:'光', content:`當我，閉上眼的時候
+  {title:"帽", year:2024, el:'煙', content:`我只是想你
+我只是想到你。
+
+腦袋有些回音 畫面閃爍
+低血糖
+食道也湧出一些
+懊惱和說不出口的話
+苦澀是酸的
+
+形困在我的房門
+你恣意進來了坐下
+這裡沒有窗戶你擋在門口
+紫色的帽子
+看著
+我
+什麼也不說
+
+我想朝著你大吼
+想讓你從此消失在我的每一天每一幀每一眼
+忘記你的氣味我也不打算抱著自己的身體
+痛哭
+相思病會不會成為。`},
+
+  {title:"旺", year:2024, el:'肉', content:`當我，閉上眼的時候
 看見了紅色的
 熱烈的花
 那是我搖擺的燈盞
@@ -607,7 +630,7 @@ feedback世界的泛音
 
 不如新生 或是地獄。`},
 
-  {title:"解渴（組詩）", year:2024, el:'煙', photo:'photos/p/24.jpg', content:`我只要生命的河 我要解渴
+  {title:"解渴（組詩）", year:2024, el:'煙', photo:'photos/p/25.jpg', content:`我只要生命的河 我要解渴
 你一直走路一直走路一直走路
 這是自轉的計畫
 
@@ -637,7 +660,7 @@ feedback世界的泛音
 橫越了三個自己
 也成不了超人。`},
 
-  {title:"毛毛", year:2024, el:'煙', photo:'photos/p/25.jpg', content:`在這種時候我卻想到你
+  {title:"毛毛", year:2024, el:'煙', photo:'photos/p/26.jpg', content:`在這種時候我卻想到你
 連輪廓都是模糊的
 我們總是隔著毛玻璃說話
 
@@ -653,7 +676,7 @@ feedback世界的泛音
 其次是不再和人辯論
 因為說什麼也贏不了的`},
 
-  {title:"年輕的媽媽", year:2023, el:'肉', content:`沒事就不要說話了吧
+  {title:"年輕的媽媽", year:2023, el:'肉', photo:'photos/p/27.jpg', content:`沒事就不要說話了吧
 越發緊澀的喉嚨 撐不住縱的使用工作直到
 你想說那天
 
@@ -713,7 +736,7 @@ feedback世界的泛音
 我們用什麼自卑
 用什麼衡量生命`},
 
-  {title:"人", year:2023, el:'肉', photo:'photos/p/29.jpg', content:`你要是睡著我就不說了
+  {title:"人", year:2023, el:'肉', photo:'photos/p/30.jpg', content:`你要是睡著我就不說了
 把一些東西扯開
 一些自己和一些
 塞進我想要的生活
@@ -729,7 +752,7 @@ feedback世界的泛音
 死去之前還得算計
 喪禮能否擺上一桌席`},
 
-  {title:"因為暗", year:2023, el:'雨', photo:'photos/p/30.jpg', content:`好想要下大雨
+  {title:"因為暗", year:2023, el:'雨', photo:'photos/p/31.jpg', content:`好想要下大雨
 的聲音好想停電想要在
 所有沒有光的地方生活
 
@@ -779,7 +802,7 @@ feedback世界的泛音
 被冷落到你也才想起
 自己`},
 
-  {title:"親", year:2023, el:'雨', locked:true, content:`離開 忽視 再次
+  {title:"親 上鎖", year:2023, el:'雨', locked:true, content:`離開 忽視 再次
 他掠奪靈魂
 只留下淫
 雨
@@ -795,7 +818,7 @@ feedback世界的泛音
 讓它悲傷
 陪它哭泣`},
 
-  {title:"泥土", year:2023, el:'雨', content:`碾碎了夢中的舞蹈
+  {title:"泥土 上鎖", year:2023, el:'雨', content:`碾碎了夢中的舞蹈
 行為著自己也不行為的事
 空氣瀰漫著你的霧
 你眼眸的黑吸收我的乾涸
@@ -806,7 +829,7 @@ feedback世界的泛音
 滴答
 到整點。`},
 
-  {title:"金黃色", year:2023, el:'肉', locked:true, photo:'photos/p/34.jpg', content:`有人說傷是金黃色的
+  {title:"金黃色", year:2023, el:'肉', locked:true, photo:'photos/p/35.jpg', content:`有人說傷是金黃色的
 我畫著一次兩次三次四次五次六次七次八次九次十次十一次
 十二次十三次十四次十五次
 像用鉛筆細細描繪著
@@ -819,7 +842,7 @@ feedback世界的泛音
 對著同樣的地方
 卻仍只有一道新月`},
 
-  {title:"怎麼走到了這裡還是一樣", year:2022, el:'鏡', photo:'photos/p/35.jpg', content:`冬天的夜 我看不來明路的藤蔓站在門外
+  {title:"怎麼走到了這裡還是一樣", year:2022, el:'鏡', photo:'photos/p/36.jpg', content:`冬天的夜 我看不來明路的藤蔓站在門外
 不成熟的守衛搖晃著手撐頭
 語言都睏了
 至高無上的 你的神明在看
@@ -837,7 +860,7 @@ feedback世界的泛音
 但您沒有錯
 在乎的都睏了`},
 
-  {title:"優越感", year:2022, el:'鏡', content:`只要我還活著被說視界就是乳房的肛欲
+  {title:"優越感", year:2022, el:'鏡', photo:'photos/p/37.jpg', content:`只要我還活著被說視界就是乳房的肛欲
 在宇宙裡它們殘忍
 找到系統文字後一直盯著我
 
@@ -880,7 +903,7 @@ feedback世界的泛音
 
 直到午夜消亡`},
 
-  {title:"無題", year:2022, el:'雨', content:`雨水浸濕之欲望
+  {title:"無題 上鎖", year:2022, el:'雨', content:`雨水浸濕之欲望
 鞋承載浮之重量
 鞋在沉入水之前
 雨從時間渗透我
@@ -889,7 +912,7 @@ feedback世界的泛音
 雨成人群壅塞我
 震耳欲聾的幸福`},
 
-  {title:"白紙", year:2022, el:'鏡', photo:'photos/p/40.jpg', content:`自主的人
+  {title:"白紙", year:2022, el:'鏡', photo:'photos/p/41.jpg', content:`自主的人
 如果時間需要你們犧牲
 請用歲月贖罪
 以苦汗取代淚水
@@ -915,7 +938,7 @@ feedback世界的泛音
 可至多是樓上住戶拆下保麗龍
 堆成的花盆`},
 
-  {title:"離心力", year:2021, el:'煙', content:`你緊緊握住的只是一陣風
+  {title:"離心力 上鎖", year:2021, el:'煙', content:`你緊緊握住的只是一陣風
 那虛無飄渺的 溫婉和煦的輕風
 指引了你跳動的節奏
 
@@ -952,7 +975,7 @@ feedback世界的泛音
 
 那該有多好`},
 
-  {title:"一切都好極了", year:2021, el:'雨', photo:'photos/p/44.jpg', content:`一切都好極了
+  {title:"一切都好極了", year:2021, el:'雨', photo:'photos/p/45.jpg', content:`一切都好極了
 寧靜 湖泊還有誰的天空
 填滿我的午夜
 用最寒冷的水
@@ -995,7 +1018,7 @@ feedback世界的泛音
 我們降落在冬夜的苦難
 誰也聽不見`},
 
-  {title:"鐘", year:2021, el:'煙', content:`你看見放學
+  {title:"鐘", year:2021, el:'煙', photo:'photos/p/46.jpg', content:`你看見放學
 我聽見黃昏
 餘音將伴你離去
 只是一句道別
@@ -1012,7 +1035,7 @@ feedback世界的泛音
 你聽見鐘聲
 我看見你。`},
 
-  {title:"牆迫症", year:2021, el:'肉', photo:'photos/p/46.jpg', content:`嘿 我的愛人
+  {title:"牆迫症", year:2021, el:'肉', photo:'photos/p/47.jpg', content:`嘿 我的愛人
 我清楚你的緘默與冰冷
 你也許明白我的悲傷
 
@@ -1034,7 +1057,7 @@ feedback世界的泛音
 
 好快樂呀`},
 
-  {title:"排遺", year:2021, el:'煙', content:`你不理解自己
+  {title:"排遺", year:2021, el:'煙', photo:'photos/p/48.jpg', content:`你不理解自己
 存在是謬誤
 直到漩渦帶你墜入
 勝似孤寂的厭惡
@@ -1048,7 +1071,7 @@ feedback世界的泛音
 從未
 存在`},
 
-  {title:"明夜", year:2021, el:'雨', photo:'photos/p/48.jpg', content:`窗外是薰衣草田
+  {title:"明夜", year:2021, el:'雨', photo:'photos/p/49.jpg', content:`窗外是薰衣草田
 你在我的夢裡流浪
 渡過的日子是冬天的河
 空隙太少
