@@ -680,21 +680,21 @@ const LINKS = [
 ];
 /* sounds have no names. a faint light marks where one is; it grows as you come closer, and so does the sound. */
 const SOUNDS = [
-  {src:'audio/s1.m4a', x:-430,  y:-390},
-  {src:'audio/s2.m4a', x:330,   y:420},
-  {src:'audio/s3.m4a', x:-90,   y:900},
-  {src:'audio/s4.m4a', x:640,   y:-760},
-  {src:'audio/s5.m4a', x:-1700, y:140},
-  {src:'audio/s6.m4a', x:1500,  y:520},
+  {src:'audio/s1.m4a', x:-430,  y:-390, vol:.95},
+  {src:'audio/s2.m4a', x:330,   y:420,  vol:1.27},
+  {src:'audio/s3.m4a', x:-90,   y:900,  vol:1.05},
+  {src:'audio/s4.m4a', x:640,   y:-760, vol:.31},
+  {src:'audio/s5.m4a', x:-1700, y:140,  vol:2.26},
+  {src:'audio/s6.m4a', x:1500,  y:520,  vol:.71},
 ];
-const EDGE = {src:'audio/edge.m4a', edge:true};          // flown too far: 此路不通
+const EDGE = {src:'audio/edge.m4a', edge:true, vol:3};          // flown too far: 此路不通
 /* each pool keeps one film. come close and the body opens: the film plays inside its shape, with its sound. */
 const VIDEOS = [
-  {src:'video/v5.mp4', k:'光', x:-230,  y:-1020},
-  {src:'video/v1.mp4', k:'雨', x:760,   y:60},
-  {src:'video/v4.mp4', k:'肉', x:-1400, y:780},
-  {src:'video/v3.mp4', k:'煙', x:-1450, y:-560},
-  {src:'video/v2.mp4', k:'鏡', x:560,   y:1180},
+  {src:'video/v5.mp4', k:'光', x:-230,  y:-1020, vol:.17},   // light on is a live recording: much louder than the rest
+  {src:'video/v1.mp4', k:'雨', x:760,   y:60,    vol:1.36},
+  {src:'video/v4.mp4', k:'肉', x:-1400, y:780,   vol:1.24},
+  {src:'video/v3.mp4', k:'煙', x:-1450, y:-560,  vol:3},
+  {src:'video/v2.mp4', k:'鏡', x:560,   y:1180,  vol:.75},
 ];
 const me = {x:0, y:110, vx:0, vy:0, r:0};
 const cam = {x:0, y:70};
@@ -713,8 +713,8 @@ function seedSpace(){
   add('smoke','煙',14,(b)=>{ b.base=R(60,120); });
   add('light','光',30,(b,i)=>{ b.y=b.cy+650-i*(1300/30); b.x=b.cx; });
   for (const V of VIDEOS){ const b={type:'video', k:KIDX[V.k], k0:KIDX[V.k], cx:V.x, cy:V.y, x:V.x, y:V.y, vx:0, vy:0, r:0, seed:Math.random(), vid:V}; V.body=b; SB.push(b); }
-  for (const S of SOUNDS){ const b={type:'sound', k:5, cx:S.x, cy:S.y, x:S.x, y:S.y, vx:0, vy:0, r:0, seed:Math.random(), snd:S}; S.body=b; SB.push(b); }
-  for (const L of LINKS){ const b={type:'link', k:L.k, cx:L.x, cy:L.y, x:L.x, y:L.y, vx:0, vy:0, r:0, seed:Math.random(), link:L}; L.body=b; SB.push(b); }
+  for (const S of SOUNDS){ const b={type:'sound', k:8, cx:S.x, cy:S.y, x:S.x, y:S.y, vx:0, vy:0, r:0, seed:Math.random(), snd:S}; S.body=b; SB.push(b); }
+  for (const L of LINKS){ const b={type:'link', k:9, cx:L.x, cy:L.y, x:L.x, y:L.y, vx:0, vy:0, r:0, seed:Math.random(), link:L}; L.body=b; SB.push(b); }
 }
 
 function stepSpace(dt){
@@ -817,21 +817,26 @@ float field(vec2 q){float f=0.;for(int i=0;i<48;i++){vec4 b=uS[i];vec2 d=q-b.xy;
 void main(){
   vec2 p=gl_FragCoord.xy;
   vec2 q=p+.5*(vec2(vn(p*.022+uT*.03)-.5,vn(p*.022+7.3-uT*.025)-.5)*17.);
-  float f=0.,a0=0.,a1=0.,a2=0.,a3=0.,a4=0.,a5=0.,a6=0.;
+  float f=0.,a0=0.,a1=0.,a2=0.,a3=0.,a4=0.,a5=0.,a6=0.,a7=0.,a8=0.,a9=0.;
   for(int i=0;i<48;i++){vec4 b=uS[i];vec2 d=q-b.xy;float v=b.z*b.z/(dot(d,d)+1.);f+=v;float k=b.w;
-    if(k<.5)a0+=v;else if(k<1.5)a1+=v;else if(k<2.5)a2+=v;else if(k<3.5)a3+=v;else if(k<4.5)a4+=v;else if(k<5.5)a5+=v;else a6+=v;}
-  float s=max(f,1e-5);float w6=a6/s;float w0=a0/s,w1=a1/s,w2=a2/s,w3=a3/s,w4=a4/s,w5=(a5+a6)/s;
-  vec3 E=kE[0]*w0+kE[1]*w1+kE[2]*w2+kE[3]*w3+kE[4]*w4+kE[5]*w5;
-  vec3 C=kC[0]*w0+kC[1]*w1+kC[2]*w2+kC[3]*w3+kC[4]*w4+kC[5]*w5;
-  vec3 Rm=kR[0]*w0+kR[1]*w1+kR[2]*w2+kR[3]*w3+kR[4]*w4+kR[5]*w5;
-  vec3 Hh=kH[0]*w0+kH[1]*w1+kH[2]*w2+kH[3]*w3+kH[4]*w4+kH[5]*w5;
+    if(k<.5)a0+=v;else if(k<1.5)a1+=v;else if(k<2.5)a2+=v;else if(k<3.5)a3+=v;else if(k<4.5)a4+=v;else if(k<5.5)a5+=v;else if(k<6.5)a6+=v;else if(k<7.5)a7+=v;else if(k<8.5)a8+=v;else a9+=v;}
+  float s=max(f,1e-5);float w6=a6/s,w7=a7/s,w8=a8/s,w9=a9/s;float w0=a0/s,w1=a1/s,w2=a2/s,w3=a3/s,w4=a4/s,w5=(a5+a6)/s;
+  vec2 rd=p-uL; float hue=fract(uT*.06+atan(rd.y,rd.x)/6.2832);            /* you: a slowly turning rainbow */
+  vec3 rb=clamp(abs(mod(hue*6.+vec3(0.,4.,2.),6.)-3.)-1.,0.,1.);
+  vec3 rbC=mix(vec3(1.),rb,.62)*.92, rbE=rbC*.55;
+  vec3 sdC=vec3(.98,.84,.30), sdE=vec3(.55,.42,.10);                       /* sounds: yellow */
+  vec3 lkC=vec3(.74,.55,.98), lkE=vec3(.36,.22,.56);                       /* links: purple */
+  vec3 E=kE[0]*w0+kE[1]*w1+kE[2]*w2+kE[3]*w3+kE[4]*w4+kE[5]*w5+rbE*w7+sdE*w8+lkE*w9;
+  vec3 C=kC[0]*w0+kC[1]*w1+kC[2]*w2+kC[3]*w3+kC[4]*w4+kC[5]*w5+rbC*w7+sdC*w8+lkC*w9;
+  vec3 Rm=kR[0]*w0+kR[1]*w1+kR[2]*w2+kR[3]*w3+kR[4]*w4+kR[5]*w5+vec3(.10)*(w7+w8+w9);
+  vec3 Hh=kH[0]*w0+kH[1]*w1+kH[2]*w2+kH[3]*w3+kH[4]*w4+kH[5]*w5+(rbC*w7+sdC*w8+lkC*w9)*.10;
   float solid=smoothstep(.97,1.03,f), smk=smoothstep(.3,2.6,f)*.74;
   float cov=mix(solid,smk,w3);
   float inside=step(b4(p)*.94+.03,cov);
   vec3 col=uBg+Hh*clamp((f-.8)*5.,0.,1.)*(1.-w3);
   if(inside>.5){
     vec3 c=mix(mix(E,C,clamp((f-1.)*1.5,0.,1.)),mix(E,C,smk),w3);
-    float rimW=w1*.09+w2*.06+w4*.07+w5*.05;
+    float rimW=w1*.09+w2*.06+w4*.07+w5*.05+(w7+w8+w9)*.05;
     if(f<1.+rimW)c+=Rm;
     if(w4>.05){
       vec2 g=vec2(field(q+vec2(1.,0.))-f,field(q+vec2(0.,1.))-f);
@@ -846,9 +851,8 @@ void main(){
       c=mix(c,vc*.92,smoothstep(.35,.62,w6));
       if(f<1.05)c+=vec3(.10,.10,.09);
     }
-    col=c;
+    col=mix(c,vec3(dot(c,vec3(.4,.4,.2))),.12);
   }
-  col=mix(col,vec3(dot(col,vec3(.4,.4,.2))),.12);
   gl_FragColor=vec4(col,1.);
 }`;
 function setupSpaceGL(){
@@ -864,9 +868,11 @@ function setupSpaceGL(){
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
   gl.uniform1i(U2.uVid,2); gl.activeTexture(gl.TEXTURE0);
-  const pack = key => { const a=new Float32Array(18); ['光','雨','肉','煙','鏡'].forEach((s,i)=>a.set(LOOK[s][key],i*3)); a.set(NEUTRAL[key],15); return a; };
+  const GLASS = {edge:[.075,.325,.265], core:[.115,.385,.320], rim:[.20,.36,.33], halo:[.010,.030,.025]};   // rain on the green night: clear water, a little lighter than what's behind it
+  const HAZE  = {edge:[.25,.36,.32], core:[.60,.66,.62], rim:[0,0,0], halo:[0,0,0]};                          // smoke: a pale haze, never a stain
+  const pack = key => { const a=new Float32Array(18); ['光','雨','肉','煙','鏡'].forEach((s,i)=>a.set(s==='雨'?GLASS[key]:s==='煙'?HAZE[key]:LOOK[s][key],i*3)); a.set(NEUTRAL[key],15); return a; };
   gl.uniform3fv(U2.kE,pack('edge')); gl.uniform3fv(U2.kC,pack('core')); gl.uniform3fv(U2.kR,pack('rim')); gl.uniform3fv(U2.kH,pack('halo'));
-  gl.uniform3f(U2.uBg,.016,.016,.016);
+  gl.uniform3f(U2.uBg,14/255,73/255,57/255);   // #0E4939
   gl.useProgram(prog1);
   seedSpace();
   for (let i=0;i<240;i++){ t+=1/30; stepSpace(1/30); }   // the space is already alive when you arrive
@@ -876,11 +882,18 @@ function wakeAudio(){
   try{ if (!actx){ const AC = window.AudioContext||window.webkitAudioContext; if (AC) actx = new AC(); }
        if (actx && actx.state==='suspended') actx.resume(); }catch(e){ actx=null; }
 }
-function makeVoice(buf){
+let master=null;
+function out(){
+  if (!master){ master=actx.createDynamicsCompressor();
+    master.threshold.value=-8; master.knee.value=8; master.ratio.value=4; master.attack.value=.005; master.release.value=.25;
+    master.connect(actx.destination); }
+  return master;
+}
+function makeVoice(buf, vol){
   const g=actx.createGain(); g.gain.value=0;
   const pn=actx.createStereoPanner ? actx.createStereoPanner() : null;
-  if (pn){ g.connect(pn); pn.connect(actx.destination); } else g.connect(actx.destination);
-  return {buf, g, pn, src:null, at:0, off:0};
+  if (pn){ g.connect(pn); pn.connect(out()); } else g.connect(out());
+  return {buf, g, pn, src:null, at:0, off:0, vol:vol||1};
 }
 function voicePlay(v, offset){
   if (v.src){ try{ v.src.stop(); }catch(e){} }
@@ -889,13 +902,13 @@ function voicePlay(v, offset){
 }
 function voiceStop(v){ if (v.src){ try{ v.src.stop(); }catch(e){} v.src=null; } }
 function voiceAim(v, gain, pan){
-  v.g.gain.setTargetAtTime(gain, actx.currentTime, .18);
+  v.g.gain.setTargetAtTime(gain*v.vol, actx.currentTime, .18);
   if (v.pn) v.pn.pan.setTargetAtTime(pan, actx.currentTime, .12);
 }
 const decode = ab => new Promise((ok,no)=>actx.decodeAudioData(ab,ok,no));
 function loadSound(S){
   S.loading=true;
-  fetch(S.src).then(r=>r.arrayBuffer()).then(decode).then(buf=>{ S.voice=makeVoice(buf); voicePlay(S.voice,0); }).catch(()=>{ S.loading=false; });
+  fetch(S.src).then(r=>r.arrayBuffer()).then(decode).then(buf=>{ S.voice=makeVoice(buf, S.vol); voicePlay(S.voice,0); }).catch(()=>{ S.loading=false; });
 }
 function loadFilm(V){
   V.loading=true;
@@ -904,7 +917,7 @@ function loadFilm(V){
     el.className='sp-film'; el.src=URL.createObjectURL(new Blob([ab],{type:'video/mp4'}));
     el.addEventListener('loadeddata',()=>{ V.ready=true; },{once:true});
     document.body.appendChild(el); V.el=el;
-    if (actx) decode(ab.slice(0)).then(buf=>{ V.voice=makeVoice(buf); }).catch(()=>{});
+    if (actx) decode(ab.slice(0)).then(buf=>{ V.voice=makeVoice(buf, V.vol); }).catch(()=>{});
   }).catch(()=>{ V.loading=false; });
 }
 function updateSound(){
@@ -958,7 +971,7 @@ function drawSpace(){
   let film=null, fd=1e9;
   for (const V of VIDEOS){ const d=Math.hypot(V.x-me.x,V.y-me.y); if (V.el && V.ready && !V.el.paused && d<fd && d<560){ film=V; fd=d; } }
   near.forEach((b,i)=>{ sarr[i*4]=sx(b.x); sarr[i*4+1]=sy(b.y); sarr[i*4+2]=b.r/PX; sarr[i*4+3]=(film && b===film.body) ? 6 : b.k; });
-  sarr[47*4]=sx(me.x); sarr[47*4+1]=sy(me.y); sarr[47*4+2]=me.r/PX; sarr[47*4+3]=5;
+  sarr[47*4]=sx(me.x); sarr[47*4+1]=sy(me.y); sarr[47*4+2]=me.r/PX; sarr[47*4+3]=7;
   gl.useProgram(prog2);
   { const l=gl.getAttribLocation(prog2,'p'); gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0); }
   gl.viewport(0,0,LW,LH);
