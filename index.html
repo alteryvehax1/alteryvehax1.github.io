@@ -100,7 +100,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* ───────────── INDEX ───────────── */
 #index{overflow-y:auto;background:transparent}
-.list{padding:18vh 8vw 30vh;max-width:46rem}
+.list{padding:10vh 8vw 30vh;max-width:46rem}
 .yr{display:grid;grid-template-columns:5.5rem 1fr;margin-bottom:4.2rem}
 .yr .y{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#55524d;line-height:2.5rem}
 .yr ol{list-style:none}
@@ -123,6 +123,27 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #d-content .gap{height:1.1em}
 #d-content .sec{padding-bottom:7rem}
 #d-content .sec-no{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963;margin-bottom:1.6rem}
+
+/* ───────────── SPACE ───────────── */
+#space{background:transparent;touch-action:none;overflow:hidden;cursor:default;-webkit-user-select:none;user-select:none}
+#sp-ui{position:absolute;inset:0;pointer-events:none}
+#sp-ui>*{position:absolute;left:0;top:0;will-change:transform}
+.sp-book{width:46px;height:64px;margin:-32px 0 0 -23px;background-color:var(--cover);background-image:var(--paper-noise);border-radius:2px 4px 4px 2px;
+  box-shadow:inset 3px 0 4px rgba(70,55,30,.3),0 8px 22px rgba(0,0,0,.7);cursor:pointer;pointer-events:auto}
+.sp-book i{position:absolute;right:6px;bottom:7px;width:8px;height:8px;background:#2a2622 url(photos/mark.jpg) center/cover}
+.sp-book b{position:absolute;top:9px;left:7px;font:400 5px/1 var(--mono);letter-spacing:.3em;color:#3a352e}
+.sp-tag{font-family:var(--mono);font-size:.62rem;letter-spacing:.22em;color:#8d867c;white-space:nowrap;padding:8px 10px;margin:-17px 0 0 16px;
+  opacity:0;transition:opacity .5s ease,color .3s;pointer-events:none}
+.sp-tag.on{opacity:1;pointer-events:auto;cursor:pointer}
+.sp-tag:hover{color:#fff}
+.sp-list{list-style:none;width:12.5rem;opacity:0;transition:opacity .6s ease;pointer-events:none}
+.sp-list.on{opacity:1;pointer-events:auto}
+.sp-list .it{font-size:.86rem;line-height:2.05rem}
+.sp-dot{width:3px;height:3px;margin:-1.5px 0 0 -1.5px;background:#6d6963;opacity:0;transition:opacity .6s}
+.sp-dot.on{opacity:.8}
+#i-back{position:sticky;top:0;z-index:2;display:block;padding:2.2rem 8vw 1rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963;transition:color .3s}
+#i-back:hover{color:#fff}
+@media (max-width:600px){ #i-back{padding-left:9vw} }
 
 /* ───────────── LOCK ───────────── */
 #lock{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem;background:rgba(5,5,5,.94);
@@ -178,7 +199,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   <p class="intro-text">本網頁紀錄Yvette 自2018至今的現代詩創作。</p>
 </section>
 
+<section class="view" id="space" aria-label="空間"><div id="sp-ui"></div></section>
+
 <section class="view" id="index" aria-label="目錄">
+  <button id="i-back">← back</button>
   <div class="list" id="list"></div>
 </section>
 
@@ -213,13 +237,20 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const STATE_SECTIONS = ['鏡','煙','光','肉','雨','鏡','肉','煙','光','肉','光','煙'];
 
 /* ── views ── */
-const views = {intro:$('#intro'), index:$('#index'), detail:$('#detail')};
+const views = {intro:$('#intro'), space:$('#space'), index:$('#index'), detail:$('#detail')};
 const sceneEl = $('#scene');
 let view = 'intro';
+let mode = 'poem', modeTimer = null;          // which picture the material draws: the open space, or one poem's state
 function show(name){
-  view = name; if (name!=='index'){ sceneEl.style.transition=''; }
+  const was = view; view = name; if (name!=='index'){ sceneEl.style.transition=''; }
+  if (was==='detail' && name!=='detail') leavePoem();
+  if (typeof spIn!=='undefined'){ spIn.touch=false; spIn.mouse=false; spIn.paused=false; spIn.keys.clear(); }
   for (const k in views) views[k].classList.toggle('active', k===name);
-  sceneEl.style.opacity = name==='detail' ? 1 : 0;
+  sceneEl.style.opacity = (name==='detail' || name==='space') ? 1 : 0;
+  clearTimeout(modeTimer);
+  if (name==='space'){
+    if (mode!=='space'){ sceneEl.style.transition='none'; sceneEl.style.opacity=0; mode='space'; void sceneEl.offsetWidth; sceneEl.style.transition=''; sceneEl.style.opacity=1; }
+  } else if (was==='space') modeTimer=setTimeout(()=>{ if (view!=='space' && view!=='detail') mode='poem'; }, 1150);
 }
 
 /* ── INTRO ── */
@@ -237,7 +268,7 @@ intro.addEventListener('pointerleave', () => { if(!opened){ book.style.removePro
 function openBook(){
   if (opened) return; opened = true;
   book.style.removeProperty('--rx'); book.style.removeProperty('--ry');
-  const go = () => { show('index'); history.replaceState({v:'index'}, ''); startLoop(); };
+  const go = () => { show('space'); history.replaceState({v:'space'}, ''); startLoop(); };
   if (REDUCED){ go(); return; }
   intro.classList.add('opening');
   setTimeout(()=>intro.classList.add('zoom'), 1500);
@@ -272,10 +303,10 @@ let pvTimer=null;
 function preview(p){
   const el = p.el==='態' ? STATE_SECTIONS[0] : p.el;
   clearTimeout(pvTimer);
-  if (el===state && +sceneEl.style.opacity>.05){ setState(el,p,false); sceneEl.style.transition='opacity .5s ease'; sceneEl.style.opacity=.55; return; }
-  const dark = +sceneEl.style.opacity<=.05;
+  if (el===state && mode==='poem' && +sceneEl.style.opacity>.05){ setState(el,p,false); sceneEl.style.transition='opacity .5s ease'; sceneEl.style.opacity=.55; return; }
+  const dark = +sceneEl.style.opacity<=.05 && mode==='poem';
   sceneEl.style.transition='opacity .22s ease'; sceneEl.style.opacity=0;
-  pvTimer=setTimeout(()=>{ if (view!=='index') return; setState(el,p,true); sceneEl.style.transition='opacity .6s ease'; sceneEl.style.opacity=.55; }, dark?0:230);
+  pvTimer=setTimeout(()=>{ if (view!=='index') return; mode='poem'; setState(el,p,true); sceneEl.style.transition='opacity .6s ease'; sceneEl.style.opacity=.55; }, dark?0:230);
 }
 
 /* ── LOCK ── */
@@ -299,13 +330,14 @@ lockIns.forEach((inp,k)=>{
 });
 
 /* ── DETAIL ── */
-let secObs = null;
+let secObs = null, detailFrom = 'index';
 const esc = s => s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const renderLines = lines => lines.map(l => l.trim()==='' ? '<div class="gap"></div>' : `<div>${esc(l)}</div>`).join('');
 function enterScene(el, p){
   clearTimeout(pvTimer);                 // a poem always opens on its material already settled, faded in from black
   sceneEl.style.transition='none'; sceneEl.style.opacity=0;
   lastPointer=-1e9;                          // the tap that opened the poem is not a touch on the material
+  clearTimeout(modeTimer); mode='poem';
   setState(el, p, true);
   void sceneEl.offsetWidth; sceneEl.style.transition='';
 }
@@ -334,16 +366,21 @@ function openPoem(i, push=true){
     enterScene(p.el, p);
   }
   $('#d-scroll').scrollTop = 0;
+  if (view!=='detail') detailFrom = view==='space' ? 'space' : 'index';
   show('detail');
   if (push) history.pushState({v:'detail', i}, '');
 }
-$('#back').addEventListener('click', ()=>{ setLooking&&setLooking(false); if (history.state && history.state.v==='detail') history.back(); else show('index'); });
+$('#back').addEventListener('click', ()=>{ setLooking&&setLooking(false); if (history.state && history.state.v==='detail') history.back(); else show(detailFrom); });
+function openIndex(){ show('index'); history.pushState({v:'index'}, ''); }
+$('#i-back').addEventListener('click', ()=>{ if (history.state && history.state.v==='index') history.back(); else show('space'); });
 addEventListener('popstate', e=>{
   if (!opened) return;
-  if (e.state && e.state.v==='detail') openPoem(e.state.i, false); else show('index');
+  if (lock.classList.contains('on')) hideLock();
+  const v = e.state && e.state.v;
+  if (v==='detail') openPoem(e.state.i, false); else if (v==='index') show('index'); else show('space');
 });
 addEventListener('keydown', e=>{
-  if (e.key==='Escape'){ if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); }
+  if (e.key==='Escape'){ if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
 });
 
 /* ───────────── MATERIAL 01 ─────────────
@@ -466,7 +503,7 @@ function step(dt){
 }
 
 /* ── drawing ── */
-let gl=null, U={}, tex=null, texPh=null, failed=false, photoImg=null, photoSrc='';
+let gl=null, U={}, tex=null, texPh=null, failed=false, photoImg=null, photoSrc='', prog1=null, quadBuf=null;
 const refl = document.createElement('canvas'), rctx = refl.getContext('2d');
 const VS = `attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
 const FS = `precision highp float;
@@ -514,7 +551,7 @@ function setupGL(){
   try{ prog=gl.createProgram(); gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS)); gl.linkProgram(prog);
     if(!gl.getProgramParameter(prog,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog)); gl.useProgram(prog);
   }catch(e){ console.warn(e); failed=true; return; }
-  const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  prog1=prog; const buf=quadBuf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
   const loc=gl.getAttribLocation(prog,'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
   for (const n of ['uRes','uB','uT','cBg','cCore','cEdge','cRim','cHalo','uRimW','uLo','uHi','uCov','uWarp','uGloss','uRefl','uCur','uTex','uPh','uPhOn']) U[n]=gl.getUniformLocation(prog,n);
   tex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,tex);
@@ -547,7 +584,7 @@ const mk = document.createElement('canvas'), mkCtx = mk.getContext('2d');
 const CELL = 8, BAYER = [0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5].map(v=>(v+.5)/16);
 let MW=1, MH=1, mask=new Float32Array(1), mkImg=null, maskLive=false, lens={x:0,y:0,on:false,px:null,py:null};
 function loadPhoto(src){
-  photoOn=0; photoImg=null; photoSrc=src||''; mask.fill(0); maskLive=false; phCtx.clearRect(0,0,phCv.width,phCv.height);
+  photoOn=0; photoImg=null; photoSrc=src||''; clearPhoto();
   if (!src) return;
   const im=new Image(); im.onload=()=>{ if (photoSrc!==src) return; photoImg=im; uploadPhoto(); photoOn=1; }; im.src=src;
 }
@@ -569,6 +606,8 @@ function stamp(x,y){
     for (let i=Math.max(0,Math.floor(cx-r)); i<=Math.min(MW-1,Math.ceil(cx+r)); i++){
       const d=Math.hypot(i+.5-cx,j+.5-cy)/r; if (d<1){ const v=1-d*d*.12; const o=j*MW+i; if (mask[o]<v) mask[o]=v; } }
 }
+function clearPhoto(){ mask.fill(0); maskLive=false; lens.on=false; lens.px=lens.py=null; phCtx.clearRect(0,0,phCv.width,phCv.height); }
+function leavePoem(){ clearPhoto(); clearTimeout(holdTimer); holdStart=null; if (looking) setLooking(false); }
 function drawPhoto(dt){
   if (!photoOn || view!=='detail') return;
   if (lens.on){                                            // stamp along the path, so a quick stroke leaves a continuous trace
@@ -619,9 +658,251 @@ dScroll.addEventListener('touchmove', e=>{ if (looking){ e.preventDefault(); con
 dScroll.addEventListener('touchend', ()=>{ if (looking) endHold(); });
 dScroll.addEventListener('contextmenu', e=>{ if (lastType!=='mouse') e.preventDefault(); });
 
+
+/* ───────────── THE SPACE ─────────────
+   A dark field larger than the screen. You are one body of the material; the camera follows you.
+   The zine lies in the middle as a small book. The five states each keep a pool somewhere out there,
+   with their poems nearby. Links are small bodies you have to get close to. */
+const KIDX = {光:0, 雨:1, 肉:2, 煙:3, 鏡:4};
+const NEUTRAL = {edge:[.34,.33,.30], core:[.60,.58,.53], rim:[.10,.10,.09], halo:[.03,.03,.028]};
+const REG = { 光:{x:140,y:-1250}, 雨:{x:1080,y:-240}, 肉:{x:-1060,y:520}, 煙:{x:-1120,y:-840}, 鏡:{x:900,y:1020} };
+const WORLD = 2150;
+const LINKS = [
+  {name:'instagram',            url:'https://www.instagram.com/wxzldhrl.yhc/', x:300,  y:-210,  k:5},
+  {name:'youtube',              url:'https://www.youtube.com/@yvehax1',         x:-360, y:250,   k:5},
+  {name:'facebook',             url:'https://www.facebook.com/miniyhc.9',       x:400,  y:-1110, k:0},
+  {name:'blu mush · instagram', url:'https://www.instagram.com/blumushh/',      x:1320, y:-70,   k:1},
+  {name:'blu mush · youtube',   url:'https://www.youtube.com/@blumushh',        x:860,  y:-640,  k:1},
+  {name:'email',                mail:['minio121086','gmail.com'],               x:1130, y:1230,  k:4},
+  {name:'streetvoice',          url:'https://streetvoice.com/miniyhc/',         x:-1790,y:-1490, k:3, hidden:true},
+];
+const me = {x:0, y:110, vx:0, vy:0, r:0};
+const cam = {x:0, y:70};
+const SB = [];
+let gl2=null, U2={}, prog2=null;
+const spIn = {mouse:false, touch:false, x:0, y:0, paused:false, keys:new Set()};
+
+function seedSpace(){
+  SB.length = 0;
+  const add = (type, home, n, f) => { const g=[]; for (let i=0;i<n;i++){ const c=REG[home]||home;
+      const b={type, k:KIDX[home]!==undefined?KIDX[home]:5, cx:c.x, cy:c.y, x:c.x+R(-200,200), y:c.y+R(-200,200), vx:0, vy:0, r:0,
+        seed:Math.random(), side:i%2?1:-1, life:Math.random(), idx:i, group:g}; f&&f(b,i); g.push(b); SB.push(b); } };
+  add('flesh','肉',6,(b,i)=>{ b.base = i<3 ? R(85,130) : R(45,70); });
+  add('mirror','鏡',8,(b,i)=>{ b.base = i<2 ? R(70,95) : i<4 ? R(40,58) : R(16,30); });
+  add('rain','雨',12,(b)=>{ b.base=R(10,28); b.y=b.cy+R(-460,460); b.x=b.cx+R(-300,300); });
+  add('smoke','煙',14,(b)=>{ b.base=R(60,120); });
+  add('light','光',30,(b,i)=>{ b.y=b.cy+650-i*(1300/30); b.x=b.cx; });
+  for (const L of LINKS){ const b={type:'link', k:L.k, cx:L.x, cy:L.y, x:L.x, y:L.y, vx:0, vy:0, r:0, seed:Math.random(), link:L}; L.body=b; SB.push(b); }
+}
+
+function stepSpace(dt){
+  // steering: the body heads for the pointer (or finger, or keys); hovering something you can click holds it still
+  let dx=0, dy=0, sp=0;
+  if (spIn.keys.size){
+    if (spIn.keys.has('ArrowLeft')||spIn.keys.has('a')) dx-=1; if (spIn.keys.has('ArrowRight')||spIn.keys.has('d')) dx+=1;
+    if (spIn.keys.has('ArrowUp')||spIn.keys.has('w')) dy-=1;   if (spIn.keys.has('ArrowDown')||spIn.keys.has('s')) dy+=1;
+    const l=Math.hypot(dx,dy)||1; dx/=l; dy/=l; sp=dx||dy ? 1 : 0;
+  } else if ((spIn.mouse || spIn.touch) && !spIn.paused){
+    const tx=spIn.x - W/2 + cam.x, ty=spIn.y - H/2 + cam.y, d=Math.hypot(tx-me.x, ty-me.y);
+    if (d>1){ dx=(tx-me.x)/d; dy=(ty-me.y)/d; sp=clamp((d-36)/240,0,1); }
+  }
+  const MAX = (W<700 ? 360 : 460);
+  me.vx = lerp(me.vx, dx*sp*MAX, Math.min(1,dt*2.6)); me.vy = lerp(me.vy, dy*sp*MAX, Math.min(1,dt*2.6));
+  me.x = clamp(me.x+me.vx*dt, -WORLD, WORLD); me.y = clamp(me.y+me.vy*dt, -WORLD, WORLD);
+  me.r = lerp(me.r, 24*sc, Math.min(1,dt*2));
+  cam.x = lerp(cam.x, me.x, Math.min(1,dt*2.4)); cam.y = lerp(cam.y, me.y, Math.min(1,dt*2.4));
+
+  for (const b of SB){
+    let ax=0, ay=0, tr=0, damp=1.2, grow=1.3;
+    const mdx=me.x-b.x, mdy=me.y-b.y, md=Math.hypot(mdx,mdy)||1;
+    if (b.type==='flesh' || b.type==='mirror'){
+      const fl = b.type==='flesh';
+      tr = b.base*sc*(fl ? .86+.14*Math.sin(t*.4+b.seed*6.28) : 1);
+      const a=noise(b.x*.0015+b.seed*10, b.y*.0015+t*.04)*12.6, wv=fl?16:20;
+      ax+=Math.cos(a)*wv; ay+=Math.sin(a)*wv;
+      for (const o of b.group){ if (o===b) continue;
+        const ox=o.x-b.x, oy=o.y-b.y, d=Math.hypot(ox,oy)||1, R0=b.r+o.r;
+        if (d<R0*.55){ const k=(R0*.55-d)/R0*40; ax-=ox/d*k; ay-=oy/d*k; }
+        else if (d<R0*2.6){ const k=noise(b.seed*37+o.seed*11, t*.035)*11; ax+=ox/d*k; ay+=oy/d*k; } }
+      const ex=b.x-b.cx, ey=b.y-b.cy, e=Math.hypot(ex,ey)/((fl?300:250)*Math.max(sc,.8));
+      if (e>1){ ax-=ex/(Math.hypot(ex,ey)||1)*(e-1)*60; ay-=ey/(Math.hypot(ex,ey)||1)*(e-1)*60; }
+      const rg=480*sc; if (md<rg){ const f=(fl?42:18)*(1-md/rg); ax+=mdx/md*f; ay+=mdy/md*f; }   // they come to you; flesh merges with you
+      damp = fl ? .9 : 1.3;
+      b.vx+=ax*dt; b.vy+=ay*dt; const k=Math.exp(-dt*damp); b.vx*=k; b.vy*=k;
+      const s=Math.hypot(b.vx,b.vy), cap=fl?64:34; if (s>cap){ b.vx*=cap/s; b.vy*=cap/s; }
+    } else if (b.type==='rain'){
+      tr=b.base*sc;
+      const go=sstep(-.15,.35, noise(b.seed*50, t*.22+b.seed*9));
+      b.vy=lerp(b.vy,(36+b.base*4.2)*go,Math.min(1,dt*2.5));
+      let vx=noise(b.seed*30,t*.3)*5; if (md<130) vx -= mdx/md*(130-md)*.9;
+      b.vx=lerp(b.vx,vx,Math.min(1,dt*3));
+      for (const o of b.group){ if (o===b) continue;
+        if (o.y<b.y && Math.hypot(o.x-b.x,o.y-b.y)<(b.r+o.r)*.42 && o.r>3){ b.base=Math.min(52,Math.hypot(b.base,o.base*.75)); o.y=o.cy-460-R(0,80); o.x=o.cx+R(-300,300); o.base=R(10,28); o.r=Math.min(o.r,4); o.vy=0; } }
+      if (b.y>b.cy+470){ b.y=b.cy-460-R(0,80); b.x=b.cx+R(-300,300); b.base=R(10,28); b.r=Math.min(b.r,4); b.vy=0; }
+    } else if (b.type==='smoke'){
+      b.life+=dt*(1/15)*(.85+b.seed*.3);
+      if (b.life>=1){ b.life=0; b.x=b.cx; b.y=b.cy+380; b.vx=b.vy=0; b.r=4; }
+      const h=b.life, ty=b.cy+380-h*860;
+      const tx=b.cx+noise(h*2.4-t*.13,3.1)*260*Math.pow(h,1.3)+(b.seed-.5)*240*Math.pow(h,1.7);
+      tr=lerp(11,b.base*sc*.85,Math.pow(h,1.15))*(1-sstep(.8,1,h)*.7); grow=3;
+      ax+=(tx-b.x)*2.6; ay+=(ty-b.y)*2.6;
+      if (md<200){ const f=(200-md)/200*420; ax-=mdx/md*f; ay-=mdy/md*f; }
+      b.vx+=ax*dt; b.vy+=ay*dt; const k=Math.exp(-dt*2.8); b.vx*=k; b.vy*=k;
+    } else if (b.type==='light'){
+      const n=b.group.length, span=1300, gap=span/n;
+      const slot=b.cy+650-((b.idx*gap+t*20)%span);
+      if (Math.abs(slot-b.y)>span*.6){ b.y=slot; b.vy=0; }
+      const fork=b.side*40*sstep(.18,.5,noise(slot*.0035,t*.05+4));
+      let tx=b.cx+fork+noise(slot*.012,t*.15)*5;
+      const ddy=Math.abs(b.y-me.y); if (ddy<160 && Math.abs(me.x-b.cx)<320) tx+=(me.x-b.cx)*.22*(1-ddy/160);
+      tr=gap*.66;
+      ax+=(tx-b.x)*7; ay+=(slot-b.y)*7;
+      b.vx+=ax*dt; b.vy+=ay*dt; const k=Math.exp(-dt*4.5); b.vx*=k; b.vy*=k;
+    } else {                                        // link
+      const near = md < (b.link.hidden ? 120 : 190);
+      b.link.near = near;
+      const tx=b.cx+Math.sin(t*.6+b.seed*6)*8, ty=b.cy+Math.cos(t*.5+b.seed*5)*8;
+      ax+=(tx-b.x)*3; ay+=(ty-b.y)*3;
+      tr=(near ? 21 : b.link.hidden ? 8 : 14)*Math.max(sc,.8);
+      b.vx+=ax*dt; b.vy+=ay*dt; const k=Math.exp(-dt*3); b.vx*=k; b.vy*=k;
+    }
+    b.x+=b.vx*dt; b.y+=b.vy*dt;
+    b.r=lerp(b.r,tr,Math.min(1,dt*grow));
+  }
+}
+
+const FS2 = `precision highp float;
+uniform vec2 uRes;uniform vec4 uS[48];uniform float uT;uniform vec2 uL;uniform vec3 uBg;
+uniform vec3 kE[6],kC[6],kR[6],kH[6];
+float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+float b2(vec2 a){a=floor(a);return fract(a.x/2.+a.y*a.y*.75);}
+float b4(vec2 a){return b2(.5*a)*.25+b2(a);}
+float field(vec2 q){float f=0.;for(int i=0;i<48;i++){vec4 b=uS[i];vec2 d=q-b.xy;f+=b.z*b.z/(dot(d,d)+1.);}return f;}
+void main(){
+  vec2 p=gl_FragCoord.xy;
+  vec2 q=p+.5*(vec2(vn(p*.022+uT*.03)-.5,vn(p*.022+7.3-uT*.025)-.5)*17.);
+  float f=0.,a0=0.,a1=0.,a2=0.,a3=0.,a4=0.,a5=0.;
+  for(int i=0;i<48;i++){vec4 b=uS[i];vec2 d=q-b.xy;float v=b.z*b.z/(dot(d,d)+1.);f+=v;float k=b.w;
+    if(k<.5)a0+=v;else if(k<1.5)a1+=v;else if(k<2.5)a2+=v;else if(k<3.5)a3+=v;else if(k<4.5)a4+=v;else a5+=v;}
+  float s=max(f,1e-5);float w0=a0/s,w1=a1/s,w2=a2/s,w3=a3/s,w4=a4/s,w5=a5/s;
+  vec3 E=kE[0]*w0+kE[1]*w1+kE[2]*w2+kE[3]*w3+kE[4]*w4+kE[5]*w5;
+  vec3 C=kC[0]*w0+kC[1]*w1+kC[2]*w2+kC[3]*w3+kC[4]*w4+kC[5]*w5;
+  vec3 Rm=kR[0]*w0+kR[1]*w1+kR[2]*w2+kR[3]*w3+kR[4]*w4+kR[5]*w5;
+  vec3 Hh=kH[0]*w0+kH[1]*w1+kH[2]*w2+kH[3]*w3+kH[4]*w4+kH[5]*w5;
+  float solid=smoothstep(.97,1.03,f), smk=smoothstep(.3,2.6,f)*.74;
+  float cov=mix(solid,smk,w3);
+  float inside=step(b4(p)*.94+.03,cov);
+  vec3 col=uBg+Hh*clamp((f-.8)*5.,0.,1.)*(1.-w3);
+  if(inside>.5){
+    vec3 c=mix(mix(E,C,clamp((f-1.)*1.5,0.,1.)),mix(E,C,smk),w3);
+    float rimW=w1*.09+w2*.06+w4*.07+w5*.05;
+    if(f<1.+rimW)c+=Rm;
+    if(w4>.05){
+      vec2 g=vec2(field(q+vec2(1.,0.))-f,field(q+vec2(0.,1.))-f);
+      vec2 n=-normalize(g+1e-6);vec2 L=normalize(uL-p+1e-3);
+      float sp=pow(max(dot(n,L),0.),3.)*smoothstep(1.05,1.6,f)*(1.-smoothstep(1.6,4.,f));
+      c+=vec3(.42,.46,.50)*floor(sp*3.+.4)/3.*w4;
+    }
+    col=c;
+  }
+  col=mix(col,vec3(dot(col,vec3(.4,.4,.2))),.12);
+  gl_FragColor=vec4(col,1.);
+}`;
+function setupSpaceGL(){
+  if (failed || !gl) return;
+  const sh=(type,src)=>{const o=gl.createShader(type);gl.shaderSource(o,src);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o;};
+  try{ prog2=gl.createProgram(); gl.attachShader(prog2,sh(gl.VERTEX_SHADER,VS)); gl.attachShader(prog2,sh(gl.FRAGMENT_SHADER,FS2)); gl.linkProgram(prog2);
+    if(!gl.getProgramParameter(prog2,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog2)); }
+  catch(e){ console.warn(e); prog2=null; return; }
+  gl.useProgram(prog2);
+  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH']) U2[n]=gl.getUniformLocation(prog2,n);
+  const pack = key => { const a=new Float32Array(18); ['光','雨','肉','煙','鏡'].forEach((s,i)=>a.set(LOOK[s][key],i*3)); a.set(NEUTRAL[key],15); return a; };
+  gl.uniform3fv(U2.kE,pack('edge')); gl.uniform3fv(U2.kC,pack('core')); gl.uniform3fv(U2.kR,pack('rim')); gl.uniform3fv(U2.kH,pack('halo'));
+  gl.uniform3f(U2.uBg,.016,.016,.016);
+  gl.useProgram(prog1);
+  seedSpace();
+  for (let i=0;i<240;i++){ t+=1/30; stepSpace(1/30); }   // the space is already alive when you arrive
+}
+const sarr = new Float32Array(48*4), near = [];
+function drawSpace(){
+  if (failed || !prog2) return;
+  near.length=0;
+  const vx0=cam.x-W/2-260, vx1=cam.x+W/2+260, vy0=cam.y-H/2-260, vy1=cam.y+H/2+260;
+  for (const b of SB) if (b.r>.5 && b.x>vx0 && b.x<vx1 && b.y>vy0 && b.y<vy1) near.push(b);
+  if (near.length>47){ near.sort((a,b)=>Math.hypot(a.x-cam.x,a.y-cam.y)-Math.hypot(b.x-cam.x,b.y-cam.y)); near.length=47; }
+  sarr.fill(0);
+  const sx=x=>(x-cam.x+W/2)/PX, sy=y=>(H-(y-cam.y+H/2))/PX;
+  near.forEach((b,i)=>{ sarr[i*4]=sx(b.x); sarr[i*4+1]=sy(b.y); sarr[i*4+2]=b.r/PX; sarr[i*4+3]=b.k; });
+  sarr[47*4]=sx(me.x); sarr[47*4+1]=sy(me.y); sarr[47*4+2]=me.r/PX; sarr[47*4+3]=5;
+  gl.useProgram(prog2);
+  { const l=gl.getAttribLocation(prog2,'p'); gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0); }
+  gl.viewport(0,0,LW,LH);
+  gl.uniform2f(U2.uRes,LW,LH); gl.uniform4fv(U2.uS,sarr); gl.uniform1f(U2.uT,t);
+  gl.uniform2f(U2.uL,sx(me.x),sy(me.y));
+  gl.drawArrays(gl.TRIANGLES,0,3);
+}
+
+/* ── things you can touch in the space ── */
+const spUI = $('#sp-ui'), spEls = [];
+function place(el, wx, wy){ el.style.transform=`translate3d(${(wx-cam.x+W/2).toFixed(1)}px,${(wy-cam.y+H/2).toFixed(1)}px,0)`; }
+function holdStill(el){}
+function buildSpaceUI(){
+  const bk=document.createElement('div'); bk.className='sp-book'; bk.innerHTML='<b>POEMS</b><i></i>'; bk.setAttribute('role','button'); bk.setAttribute('aria-label','POEMS 小誌');
+  bk.addEventListener('click',()=>openIndex()); holdStill(bk); spUI.appendChild(bk); spEls.push({el:bk, x:0, y:0, kind:'book'});
+  for (const L of LINKS){
+    const a=document.createElement('a'); a.className='sp-tag'; a.textContent=L.name;
+    if (L.url){ a.href=L.url; a.target='_blank'; a.rel='noopener'; }
+    else { a.href='#'; a.addEventListener('click',e=>{ e.preventDefault(); location.href='mai'+'lto:'+L.mail.join('@'); }); }
+    holdStill(a); spUI.appendChild(a); spEls.push({el:a, link:L, kind:'link'});
+  }
+  for (const [el,c] of Object.entries(REG)){
+    const ol=document.createElement('ol'); ol.className='sp-list';
+    P.forEach((p,i)=>{ if (p.el!==el) return;
+      const li=document.createElement('li'); li.className='it'+(p.locked?' locked':''); li.textContent=p.title; li.tabIndex=0;
+      li.addEventListener('click',()=>openPoem(i)); li.addEventListener('keydown',e=>{ if (e.key==='Enter') openPoem(i); });
+      ol.appendChild(li); });
+    holdStill(ol); spUI.appendChild(ol); spEls.push({el:ol, x:c.x, y:c.y, kind:'list'});
+  }
+  for (const [el,c] of [['書',{x:0,y:0}], ...Object.entries(REG)]){
+    const d=document.createElement('div'); d.className='sp-dot'; spUI.appendChild(d); spEls.push({el:d, x:c.x, y:c.y, kind:'dot'}); }
+  const sp=$('#space');
+  sp.addEventListener('pointermove',e=>{ if (e.pointerType==='mouse'){ spIn.mouse=true; spIn.x=e.clientX; spIn.y=e.clientY; spIn.paused=!!e.target.closest('.sp-tag.on,.sp-list.on,.sp-book'); } else if (spIn.touch){ spIn.x=e.clientX; spIn.y=e.clientY; } });
+  sp.addEventListener('pointerleave',e=>{ if (e.pointerType==='mouse') spIn.mouse=false; });
+  sp.addEventListener('pointerdown',e=>{ if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book')){ spIn.touch=true; spIn.x=e.clientX; spIn.y=e.clientY; } });
+  const up=()=>{ spIn.touch=false; }; sp.addEventListener('pointerup',up); sp.addEventListener('pointercancel',up);
+  addEventListener('keydown',e=>{ if (view!=='space' || lock.classList.contains('on')) return; const k=e.key.length===1?e.key.toLowerCase():e.key;
+    if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','w','a','s','d'].includes(k)){ spIn.keys.add(k); e.preventDefault(); } });
+  addEventListener('keyup',e=>{ spIn.keys.delete(e.key.length===1?e.key.toLowerCase():e.key); });
+  addEventListener('blur',()=>{ spIn.keys.clear(); spIn.touch=false; spIn.mouse=false; });
+  document.addEventListener('visibilitychange',()=>{ if (document.hidden){ spIn.keys.clear(); spIn.touch=false; spIn.mouse=false; } });
+}
+function placeUI(){
+  if (view!=='space') return;
+  for (const o of spEls){
+    if (o.kind==='book' || o.kind==='list'){
+      if (o.kind==='list'){
+        const on = Math.hypot(me.x-o.x, me.y-o.y) < 440;
+        o.el.classList.toggle('on', on);
+        if (!o.h) o.h=o.el.offsetHeight;
+        const lx=clamp(o.x-cam.x+W/2+150*Math.max(sc,.8), 16, W-o.el.offsetWidth-16), ly=clamp(o.y-cam.y+H/2-o.h/2, 64, Math.max(64,H-o.h-20));
+        o.el.style.transform=`translate3d(${lx.toFixed(1)}px,${ly.toFixed(1)}px,0)`;
+      } else place(o.el, o.x, o.y);
+    } else if (o.kind==='link'){
+      const b=o.link.body; o.el.classList.toggle('on', !!o.link.near); place(o.el, b.x, b.y);
+    } else {                                                   // a faint mark at the edge, toward places off screen
+      const dx=o.x-cam.x, dy=o.y-cam.y, hw=W/2-10, hh=H/2-10, off=Math.abs(dx)>hw+40 || Math.abs(dy)>hh+40;
+      o.el.classList.toggle('on', off);
+      if (off){ const k=Math.min(hw/Math.abs(dx||1), hh/Math.abs(dy||1)); o.el.style.transform=`translate3d(${(W/2+dx*k).toFixed(1)}px,${(H/2+dy*k).toFixed(1)}px,0)`; }
+    }
+  }
+}
+
 const arr = new Float32Array(37*3);
 function draw(){
   if (failed) return;
+  gl.useProgram(prog1); { const l=gl.getAttribLocation(prog1,'p'); gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0); }
   for (let i=0;i<N;i++){ const b=bodies[i]; arr[i*3]=b.x/PX; arr[i*3+1]=(H-b.y)/PX; arr[i*3+2]=b.r/PX; }
   arr[N*3]=you.x/PX; arr[N*3+1]=(H-you.y)/PX; arr[N*3+2]=you.r/PX;
   gl.viewport(0,0,LW,LH);
@@ -643,14 +924,15 @@ function resize(){
 let raf=null, last=0;
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000)*(REDUCED?.35:1); last=now; t+=dt;
-  step(dt); draw(); drawPhoto(dt);
+  if (mode==='space'){ stepSpace(dt); drawSpace(); placeUI(); }
+  else { step(dt); draw(); drawPhoto(dt); }
   raf=requestAnimationFrame(frame);
 }
 function startLoop(){ if (raf||failed) return; last=performance.now(); raf=requestAnimationFrame(frame); }
 function stopLoop(){ if (raf) cancelAnimationFrame(raf); raf=null; }
 document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stopLoop(); else if (opened) startLoop(); });
 addEventListener('resize', resize);
-setupGL(); resize();
+setupGL(); setupSpaceGL(); buildSpaceUI(); resize();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if (state==='鏡') drawReflection(); });
 })();
 </script>
