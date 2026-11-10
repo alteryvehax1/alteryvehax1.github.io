@@ -91,6 +91,12 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* ───────────── MATERIAL ───────────── */
 #scene{position:fixed;inset:0;z-index:0;opacity:0;transition:opacity 1.1s ease;pointer-events:none;background:#050505}
 #scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+#scene canvas#ph{image-rendering:auto}
+#d-title,#d-year,#d-content{transition:opacity .45s ease}
+#detail.looking #d-title,#detail.looking #d-year,#detail.looking #d-content{opacity:.07}
+#detail{-webkit-touch-callout:none}
+#detail.looking *{-webkit-user-select:none;user-select:none}
+@media (hover:none){#d-content,#d-title{-webkit-user-select:none;user-select:none}}
 
 /* ───────────── INDEX ───────────── */
 #index{overflow-y:auto;background:transparent}
@@ -146,7 +152,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 </head>
 <body>
 
-<div id="scene"><canvas id="mat"></canvas></div>
+<div id="scene"><canvas id="mat"></canvas><canvas id="ph"></canvas></div>
 
 <section class="view active" id="intro" aria-label="封面">
   <div id="stage">
@@ -314,7 +320,7 @@ function openPoem(i, push=true){
   show('detail');
   if (push) history.pushState({v:'detail', i}, '');
 }
-$('#back').addEventListener('click', ()=>{ if (history.state && history.state.v==='detail') history.back(); else show('index'); });
+$('#back').addEventListener('click', ()=>{ setLooking&&setLooking(false); if (history.state && history.state.v==='detail') history.back(); else show('index'); });
 addEventListener('popstate', e=>{
   if (!opened) return;
   if (e.state && e.state.v==='detail') openPoem(e.state.i, false); else show('index');
@@ -434,7 +440,7 @@ function step(dt){
     b.r = lerp(b.r, tr, Math.min(1,dt*grow));
   }
   you.x = lerp(you.x, mx, Math.min(1,dt*5)); you.y = lerp(you.y, my, Math.min(1,dt*5));
-  you.r = lerp(you.r, act ? (photoOn ? 82*sc : state==='肉' ? 58*sc : 0) : 0, Math.min(1,dt*(act?3:1.5)));
+  you.r = lerp(you.r, (act && state==='肉') ? 58*sc : 0, Math.min(1,dt*(act?3:1.5)));
   const lt = act ? {x:mx,y:my} : {x:W/2+Math.sin(t*.21)*W*.3, y:H/2+Math.cos(t*.17)*H*.2};
   light.x = lerp(light.x, lt.x, Math.min(1,dt*2)); light.y = lerp(light.y, lt.y, Math.min(1,dt*2));   // the light glides; it never jumps
   const k = 1-Math.exp(-dt*1.7), T = LOOK[state];                                  // ease the look: one state becomes another
@@ -515,19 +521,86 @@ function drawReflection(){                                  // the title, revers
   rctx.fillStyle='#fff'; rctx.textAlign='center'; rctx.textBaseline='middle'; rctx.fillText(mirrorTitle,0,0); rctx.restore();
   gl.bindTexture(gl.TEXTURE_2D,tex); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,refl);
 }
-const phc = document.createElement('canvas'), pctx = phc.getContext('2d');
-function loadPhoto(src){                                    // the photo a poem keeps; only seen through the body that follows you
-  photoOn=0; photoSrc=src||'';
-  if (!src || !gl || failed) return;
-  const im=new Image(); im.onload=()=>{ if (photoSrc!==src) return; photoImg=im; try{ uploadPhoto(); photoOn=1; }catch(e){ photoOn=0; } }; im.src=src;
+/* ── photos ──
+   A poem's photo lies under the dark. Where you look, it shows through in coarse cells,
+   sharp inside; where you have been, it stays a while and dissolves cell by cell. */
+const phCv = $('#ph'), phCtx = phCv.getContext('2d');
+const full = document.createElement('canvas'), fullCtx = full.getContext('2d');
+const mk = document.createElement('canvas'), mkCtx = mk.getContext('2d');
+const CELL = 8, BAYER = [0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5].map(v=>(v+.5)/16);
+let MW=1, MH=1, mask=new Float32Array(1), mkImg=null, maskLive=false, lens={x:0,y:0,on:false,px:null,py:null};
+function loadPhoto(src){
+  photoOn=0; photoImg=null; photoSrc=src||''; mask.fill(0); maskLive=false; phCtx.clearRect(0,0,phCv.width,phCv.height);
+  if (!src) return;
+  const im=new Image(); im.onload=()=>{ if (photoSrc!==src) return; photoImg=im; uploadPhoto(); photoOn=1; }; im.src=src;
 }
 function uploadPhoto(){
+  const d=Math.min(devicePixelRatio||1,2);
+  phCv.width=full.width=Math.round(W*d); phCv.height=full.height=Math.round(H*d);
+  MW=Math.ceil(W/CELL); MH=Math.ceil(H/CELL); mk.width=MW; mk.height=MH;
+  if (mask.length!==MW*MH) mask=new Float32Array(MW*MH);
+  mkImg=mkCtx.createImageData(MW,MH);
   if (!photoImg) return;
-  phc.width=LW; phc.height=LH;
-  const k=Math.max(LW/photoImg.width, LH/photoImg.height), w=photoImg.width*k, h=photoImg.height*k;
-  pctx.drawImage(photoImg,(LW-w)/2,(LH-h)/2,w,h);
-  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,texPh); gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,phc); gl.activeTexture(gl.TEXTURE0);
+  const k=Math.max(full.width/photoImg.width, full.height/photoImg.height), w=photoImg.width*k, h=photoImg.height*k;
+  fullCtx.filter='saturate(.85) brightness(.9)';
+  fullCtx.drawImage(photoImg,(full.width-w)/2,(full.height-h)/2,w,h);
+  fullCtx.filter='none';
 }
+function stamp(x,y){
+  const r=Math.max(64,96*sc)/CELL, cx=x/CELL, cy=y/CELL;
+  for (let j=Math.max(0,Math.floor(cy-r)); j<=Math.min(MH-1,Math.ceil(cy+r)); j++)
+    for (let i=Math.max(0,Math.floor(cx-r)); i<=Math.min(MW-1,Math.ceil(cx+r)); i++){
+      const d=Math.hypot(i+.5-cx,j+.5-cy)/r; if (d<1){ const v=1.35-d*d*.3; const o=j*MW+i; if (mask[o]<v) mask[o]=v; } }
+}
+function drawPhoto(dt){
+  if (!photoOn || view!=='detail') return;
+  if (lens.on){                                            // stamp along the path, so a quick stroke leaves a continuous trace
+    if (lens.px!==null){ const dx=lens.x-lens.px, dy=lens.y-lens.py, n=Math.max(1,Math.ceil(Math.hypot(dx,dy)/(CELL*2)));
+      for (let k=1;k<=n;k++) stamp(lens.px+dx*k/n, lens.py+dy*k/n); } else stamp(lens.x,lens.y);
+    lens.px=lens.x; lens.py=lens.y; maskLive=true;
+  } else lens.px=lens.py=null;
+  if (!maskLive) return;
+  const f=Math.exp(-dt/5.5), px=mkImg.data; let any=false;
+  for (let j=0;j<MH;j++) for (let i=0;i<MW;i++){
+    const o=j*MW+i, v=mask[o]*f; mask[o]=v<.004?0:v; if (v>.004) any=true;
+    px[o*4+3] = v>BAYER[(j&3)*4+(i&3)]*.92 ? 255 : 0;
+  }
+  maskLive=any;
+  mkCtx.putImageData(mkImg,0,0);
+  phCtx.globalCompositeOperation='copy'; phCtx.imageSmoothingEnabled=false;
+  phCtx.drawImage(mk,0,0,phCv.width,phCv.height);
+  phCtx.globalCompositeOperation='source-in'; phCtx.imageSmoothingEnabled=true;
+  phCtx.drawImage(full,0,0);
+  phCtx.globalCompositeOperation='source-over';
+}
+
+/* ── looking: hold to look, let go to read ──
+   mouse: hovering shows the photo; holding the button also lowers the poem.
+   touch: a short hold (without moving) stops the page from scrolling; drag to look; lift to read. */
+const detailEl = $('#detail'), dScroll = $('#d-scroll');
+let holdTimer=null, holdStart=null, looking=false;
+function setLooking(v){ looking=v; detailEl.classList.toggle('looking',v); if (!v && lastType!=='mouse') lens.on=false; }
+let lastType='mouse';
+dScroll.addEventListener('pointerdown', e=>{
+  lastType=e.pointerType; if (e.target.closest('#back')) return;
+  if (e.pointerType==='mouse'){ if (e.button===0) setLooking(true); return; }
+  holdStart={x:e.clientX,y:e.clientY}; clearTimeout(holdTimer);
+  holdTimer=setTimeout(()=>{ setLooking(true); lens.on=true; lens.x=holdStart.x; lens.y=holdStart.y; lens.px=null;
+    if (navigator.vibrate) navigator.vibrate(6); }, 260);
+});
+dScroll.addEventListener('pointermove', e=>{
+  lastType=e.pointerType;
+  if (e.pointerType==='mouse'){ lens.on=true; lens.x=e.clientX; lens.y=e.clientY; return; }
+  if (looking){ lens.x=e.clientX; lens.y=e.clientY; }
+  else if (holdStart && Math.hypot(e.clientX-holdStart.x,e.clientY-holdStart.y)>9){ clearTimeout(holdTimer); holdStart=null; }
+});
+const endHold=()=>{ clearTimeout(holdTimer); holdStart=null; if (looking) setLooking(false); };
+dScroll.addEventListener('pointerup', endHold); dScroll.addEventListener('pointercancel', e=>{ if (!looking) endHold(); });
+dScroll.addEventListener('pointerleave', e=>{ if (e.pointerType==='mouse'){ lens.on=false; endHold(); } });
+dScroll.addEventListener('touchmove', e=>{ if (looking){ e.preventDefault(); const t0=e.touches[0]; lens.x=t0.clientX; lens.y=t0.clientY; } }, {passive:false});
+dScroll.addEventListener('touchend', ()=>{ if (looking) endHold(); });
+dScroll.addEventListener('contextmenu', e=>{ if (lastType!=='mouse') e.preventDefault(); });
+
 const arr = new Float32Array(37*3);
 function draw(){
   if (failed) return;
@@ -538,7 +611,7 @@ function draw(){
   gl.uniform3fv(U.cBg,look.bg); gl.uniform3fv(U.cCore,look.core); gl.uniform3fv(U.cEdge,look.edge); gl.uniform3fv(U.cRim,look.rim); gl.uniform3fv(U.cHalo,look.halo);
   gl.uniform1f(U.uRimW,look.rimW); gl.uniform1f(U.uLo,look.lo); gl.uniform1f(U.uHi,look.hi); gl.uniform1f(U.uCov,look.cov);
   gl.uniform1f(U.uWarp,look.warp); gl.uniform1f(U.uGloss,look.gloss); gl.uniform1f(U.uRefl,look.refl);
-  gl.uniform3f(U.uCur,light.x/PX,(H-light.y)/PX,1); gl.uniform1f(U.uPhOn,photoOn);
+  gl.uniform3f(U.uCur,light.x/PX,(H-light.y)/PX,1); gl.uniform1f(U.uPhOn,0);
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
 function resize(){
@@ -547,12 +620,12 @@ function resize(){
   cv.width=LW; cv.height=LH;
   if (!bodies.length) seedBodies();
   if (state==='鏡') drawReflection();
-  if (photoOn) uploadPhoto();
+  uploadPhoto();
 }
 let raf=null, last=0;
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000)*(REDUCED?.35:1); last=now; t+=dt;
-  step(dt); draw();
+  step(dt); draw(); drawPhoto(dt);
   raf=requestAnimationFrame(frame);
 }
 function startLoop(){ if (raf||failed) return; last=performance.now(); raf=requestAnimationFrame(frame); }
