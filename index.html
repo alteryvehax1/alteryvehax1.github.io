@@ -550,7 +550,7 @@ function stamp(x,y){
   const r=Math.max(64,96*sc)/CELL, cx=x/CELL, cy=y/CELL;
   for (let j=Math.max(0,Math.floor(cy-r)); j<=Math.min(MH-1,Math.ceil(cy+r)); j++)
     for (let i=Math.max(0,Math.floor(cx-r)); i<=Math.min(MW-1,Math.ceil(cx+r)); i++){
-      const d=Math.hypot(i+.5-cx,j+.5-cy)/r; if (d<1){ const v=1.35-d*d*.3; const o=j*MW+i; if (mask[o]<v) mask[o]=v; } }
+      const d=Math.hypot(i+.5-cx,j+.5-cy)/r; if (d<1){ const v=1-d*d*.12; const o=j*MW+i; if (mask[o]<v) mask[o]=v; } }
 }
 function drawPhoto(dt){
   if (!photoOn || view!=='detail') return;
@@ -560,10 +560,11 @@ function drawPhoto(dt){
     lens.px=lens.x; lens.py=lens.y; maskLive=true;
   } else lens.px=lens.py=null;
   if (!maskLive) return;
-  const fall=dt*.27, px=mkImg.data; let any=false;        // linear: a full stroke is gone in ~5 s
+  const fall=dt/2.5, px=mkImg.data; let any=false;        // a stroke lives 2.5 s; it holds, then goes faster and faster
   for (let j=0;j<MH;j++) for (let i=0;i<MW;i++){
-    const o=j*MW+i, v=mask[o]-fall; mask[o]=v>0?v:0; if (v>0) any=true;
-    px[o*4+3] = v>BAYER[(j&3)*4+(i&3)]*.92 ? 255 : 0;
+    const o=j*MW+i, L=mask[o]-fall; mask[o]=L>0?L:0; if (L>0) any=true;
+    const v=L>0 ? 1-(1-L)*(1-L) : 0;
+    px[o*4+3] = v>BAYER[(j&3)*4+(i&3)]*.92+.02 ? 255 : 0;
   }
   maskLive=any;
   mkCtx.putImageData(mkImg,0,0);
@@ -586,7 +587,7 @@ dScroll.addEventListener('pointerdown', e=>{
   if (e.pointerType==='mouse'){ if (e.button===0) setLooking(true); return; }
   holdStart={x:e.clientX,y:e.clientY}; clearTimeout(holdTimer);
   holdTimer=setTimeout(()=>{ setLooking(true); lens.on=true; lens.x=holdStart.x; lens.y=holdStart.y; lens.px=null;
-    if (navigator.vibrate) navigator.vibrate(6); }, 260);
+    if (navigator.vibrate && navigator.userActivation && navigator.userActivation.hasBeenActive) navigator.vibrate(6); }, 260);
 });
 dScroll.addEventListener('pointermove', e=>{
   lastType=e.pointerType;

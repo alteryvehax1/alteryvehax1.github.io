@@ -1,9 +1,6 @@
-// 小誌 Vol.3 ── 詩的資料
-// 排列順序 = 目錄順序（新到舊）。新增一首：複製一段 { ... }，放到想要的位置。
-// el 是背景場景：光、雨、肉、煙、鏡（「態」只給〈都是一種狀態〉用）
-// locked: true 會要求輸入密碼。photo 是這首詩藏著的照片（可以不寫）。content 裡的空行會照原樣顯示。
+// 由 build.py 從「小誌vol3素材/詩」產生，請改那裡的資料夾，不要直接改這個檔案。
 window.POEMS = [
-  {title:"都是一種狀態", year:2026, el:'態', photo:'photos/glitch.jpg', content:`1
+  {title:"都是一種狀態", year:2026, el:'態', photo:'photos/p/01.jpg', content:`1
 不要告訴我 你其實知道
 不要看透我 像是穿過一道
 玻璃拉門
@@ -191,7 +188,7 @@ feedback世界的泛音
 沒有上限
 也沒有下限`},
 
-  {title:"再讓我們跳一支舞", year:2026, el:'光', photo:'photos/whitebus.jpg', content:`再讓我們跳一支舞
+  {title:"再讓我們跳一支舞", year:2026, el:'光', photo:'photos/p/02.jpg', content:`再讓我們跳一支舞
 等風吹過，等清晨第一班捷運
 只屬於我們的世界
 那些小說家、舞者、音樂家、金融學家
@@ -208,7 +205,7 @@ feedback世界的泛音
 讓麥田被風吹亮
 讓狐狸等不到我們`},
 
-  {title:"如果你是", year:2026, el:'光', photo:'photos/lamp.jpg', content:`你是我的快樂
+  {title:"如果你是", year:2026, el:'光', photo:'photos/p/03.jpg', content:`你是我的快樂
 如果你是我的快樂
 讓光打在我身上
 返照出所有的塵埃
@@ -238,7 +235,7 @@ feedback世界的泛音
 夜晚的眼睛
 都是黑色`},
 
-  {title:"#2", year:2026, el:'煙', photo:'photos/swim.jpg', content:`等待你
+  {title:"#2", year:2026, el:'煙', photo:'photos/p/05.jpg', content:`等待你
 像是等待一個
 未曾有人投入信紙的信箱
 
@@ -258,7 +255,7 @@ feedback世界的泛音
 鴻雁凝視遠方
 同我們素常一樣。`},
 
-  {title:"我想要製造更大的雨", year:2026, el:'雨', photo:'photos/rainstreet.jpg', content:`不能否認成為
+  {title:"我想要製造更大的雨", year:2026, el:'雨', photo:'photos/p/06.jpg', content:`不能否認成為
 與反對
 我只在想你的迴圈
 是不是也跟我一樣
@@ -276,7 +273,7 @@ feedback世界的泛音
 橘色的發財車要開過來了
 你要被我丟掉了`},
 
-  {title:"#1", year:2026, el:'鏡', photo:'photos/mouth.jpg', content:`我在鏡子外面
+  {title:"#1", year:2026, el:'鏡', content:`我在鏡子外面
 看到自己
 坐在小小的司令台
 望穿雲霧 稻田 櫻花樹
@@ -304,7 +301,7 @@ feedback世界的泛音
 從前我也厭倦代表我自己的模樣
 因為我總是代表我自己的模樣`},
 
-  {title:"給去年的我", year:2026, el:'肉', photo:'photos/meat.jpg', content:`我想你是最清楚的人
+  {title:"給去年的我", year:2026, el:'肉', photo:'photos/p/10.jpg', content:`我想你是最清楚的人
 在每一次愛、每一次恨、每一次逃避
 之後
 等待著的都不是恐懼與虛空
@@ -342,7 +339,7 @@ feedback世界的泛音
 叛逆的呼吸
 你說的，都不是真的`},
 
-  {title:"馬利亞", year:2026, el:'肉', photo:'photos/maria.jpg', content:`媽媽 你要帶我去哪呢
+  {title:"馬利亞", year:2026, el:'肉', photo:'photos/p/12.jpg', content:`媽媽 你要帶我去哪呢
 那些多餘的聲音
 我都丟在路上了
 
@@ -367,7 +364,7 @@ feedback世界的泛音
 窒息 電車 母腹 胎兒
 運輸 等待 報廢 新生`},
 
-  {title:"阿嬤 健康", year:2026, el:'肉', photo:'photos/ama.jpg', content:`爬滿青苔的身體
+  {title:"阿嬤 健康", year:2026, el:'肉', photo:'photos/p/13.jpg', content:`爬滿青苔的身體
 被油燙過千萬遍
 斑點的手
 紋路
@@ -394,7 +391,7 @@ feedback世界的泛音
 不放過你
 阿嬤，要健康喔`},
 
-  {title:"過敏", year:2026, el:'雨', locked:true, photo:'photos/mist.jpg', content:`我只是習慣了每一處髒污
+  {title:"過敏", year:2026, el:'雨', locked:true, photo:'photos/p/14.jpg', content:`我只是習慣了每一處髒污
 每一段潮濕
 每一個下午
 讓我想起一首歌
@@ -410,7 +407,7 @@ feedback世界的泛音
 我又恨你，又愛你
 我只能一邊咳嗽，一邊索吻`},
 
-  {title:"曠野", year:2025, el:'光', photo:'photos/hills.jpg', content:`我已厭倦
+  {title:"曠野", year:2025, el:'光', photo:'photos/p/15.jpg', content:`我已厭倦
 步伐與步伐之間
 那些彷彿
 會變又不變的
@@ -510,7 +507,7 @@ feedback世界的泛音
 門死死的鎖上
 影子又死在夜裡`},
 
-  {title:"分享", year:2025, el:'煙', photo:'photos/shadow.jpg', content:`分享你不在的日子
+  {title:"分享", year:2025, el:'煙', photo:'photos/p/18.jpg', content:`分享你不在的日子
 分享我散步的那天
 一片落葉從眼角凋落
 於是我失去了聲音
@@ -519,7 +516,7 @@ feedback世界的泛音
 深邃的 同你的口
 說出那些話的時候`},
 
-  {title:"ㄋㄓㄉㄉ", year:2025, el:'鏡', photo:'photos/doodle.jpg', content:`你知道的所有人都能夠寫出一些文字
+  {title:"ㄋㄓㄉㄉ", year:2025, el:'鏡', photo:'photos/p/19.jpg', content:`你知道的所有人都能夠寫出一些文字
 東西就像血 洞
 擠一擠還是會流出來
 但通常很難吃
@@ -530,7 +527,7 @@ feedback世界的泛音
 最多就跟你說
 我心碎了 沒人愛我`},
 
-  {title:"鼠", year:2025, el:'光', photo:'photos/dawn.jpg', content:`我已經認不出你了
+  {title:"鼠", year:2025, el:'光', photo:'photos/p/20.jpg', content:`我已經認不出你了
 在時與刻之間，在一瞬眼
 在明天的過去，在未來的一瞬眼
 
@@ -564,7 +561,7 @@ feedback世界的泛音
 ：明天請趁早
 如果你想說更多的話`},
 
-  {title:"2025.07.05", year:2025, el:'煙', photo:'photos/pink.jpg', content:`你一直說世界末日
+  {title:"2025.07.05", year:2025, el:'煙', photo:'photos/p/22.jpg', content:`你一直說世界末日
 相信它的來臨
 就在今天
 
@@ -610,7 +607,7 @@ feedback世界的泛音
 
 不如新生 或是地獄。`},
 
-  {title:"解渴（組詩）", year:2024, el:'煙', photo:'photos/cat.jpg', content:`我只要生命的河 我要解渴
+  {title:"解渴（組詩）", year:2024, el:'煙', photo:'photos/p/24.jpg', content:`我只要生命的河 我要解渴
 你一直走路一直走路一直走路
 這是自轉的計畫
 
@@ -640,7 +637,7 @@ feedback世界的泛音
 橫越了三個自己
 也成不了超人。`},
 
-  {title:"毛毛", year:2024, el:'煙', photo:'photos/mesh.jpg', content:`在這種時候我卻想到你
+  {title:"毛毛", year:2024, el:'煙', photo:'photos/p/25.jpg', content:`在這種時候我卻想到你
 連輪廓都是模糊的
 我們總是隔著毛玻璃說話
 
@@ -716,7 +713,7 @@ feedback世界的泛音
 我們用什麼自卑
 用什麼衡量生命`},
 
-  {title:"人", year:2023, el:'肉', photo:'photos/hand.jpg', content:`你要是睡著我就不說了
+  {title:"人", year:2023, el:'肉', photo:'photos/p/29.jpg', content:`你要是睡著我就不說了
 把一些東西扯開
 一些自己和一些
 塞進我想要的生活
@@ -732,7 +729,7 @@ feedback世界的泛音
 死去之前還得算計
 喪禮能否擺上一桌席`},
 
-  {title:"因為暗", year:2023, el:'雨', photo:'photos/buswindow.jpg', content:`好想要下大雨
+  {title:"因為暗", year:2023, el:'雨', photo:'photos/p/30.jpg', content:`好想要下大雨
 的聲音好想停電想要在
 所有沒有光的地方生活
 
@@ -809,7 +806,7 @@ feedback世界的泛音
 滴答
 到整點。`},
 
-  {title:"金黃色", year:2023, el:'肉', locked:true, photo:'photos/tissue.jpg', content:`有人說傷是金黃色的
+  {title:"金黃色", year:2023, el:'肉', locked:true, photo:'photos/p/34.jpg', content:`有人說傷是金黃色的
 我畫著一次兩次三次四次五次六次七次八次九次十次十一次
 十二次十三次十四次十五次
 像用鉛筆細細描繪著
@@ -822,7 +819,7 @@ feedback世界的泛音
 對著同樣的地方
 卻仍只有一道新月`},
 
-  {title:"怎麼走到了這裡還是一樣", year:2022, el:'鏡', photo:'photos/cctv.jpg', content:`冬天的夜 我看不來明路的藤蔓站在門外
+  {title:"怎麼走到了這裡還是一樣", year:2022, el:'鏡', photo:'photos/p/35.jpg', content:`冬天的夜 我看不來明路的藤蔓站在門外
 不成熟的守衛搖晃著手撐頭
 語言都睏了
 至高無上的 你的神明在看
@@ -892,7 +889,7 @@ feedback世界的泛音
 雨成人群壅塞我
 震耳欲聾的幸福`},
 
-  {title:"白紙", year:2022, el:'鏡', photo:'photos/crowd.jpg', content:`自主的人
+  {title:"白紙", year:2022, el:'鏡', photo:'photos/p/40.jpg', content:`自主的人
 如果時間需要你們犧牲
 請用歲月贖罪
 以苦汗取代淚水
@@ -955,7 +952,7 @@ feedback世界的泛音
 
 那該有多好`},
 
-  {title:"一切都好極了", year:2021, el:'雨', photo:'photos/sea.jpg', content:`一切都好極了
+  {title:"一切都好極了", year:2021, el:'雨', photo:'photos/p/44.jpg', content:`一切都好極了
 寧靜 湖泊還有誰的天空
 填滿我的午夜
 用最寒冷的水
@@ -1015,7 +1012,7 @@ feedback世界的泛音
 你聽見鐘聲
 我看見你。`},
 
-  {title:"牆迫症", year:2021, el:'肉', photo:'photos/kiss.jpg', content:`嘿 我的愛人
+  {title:"牆迫症", year:2021, el:'肉', photo:'photos/p/46.jpg', content:`嘿 我的愛人
 我清楚你的緘默與冰冷
 你也許明白我的悲傷
 
@@ -1051,7 +1048,7 @@ feedback世界的泛音
 從未
 存在`},
 
-  {title:"明夜", year:2021, el:'雨', photo:'photos/grass.jpg', content:`窗外是薰衣草田
+  {title:"明夜", year:2021, el:'雨', photo:'photos/p/48.jpg', content:`窗外是薰衣草田
 你在我的夢裡流浪
 渡過的日子是冬天的河
 空隙太少
