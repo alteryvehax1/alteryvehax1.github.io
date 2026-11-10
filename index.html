@@ -217,7 +217,7 @@ const views = {intro:$('#intro'), index:$('#index'), detail:$('#detail')};
 const sceneEl = $('#scene');
 let view = 'intro';
 function show(name){
-  view = name;
+  view = name; if (name!=='index'){ sceneEl.style.transition=''; }
   for (const k in views) views[k].classList.toggle('active', k===name);
   sceneEl.style.opacity = name==='detail' ? 1 : 0;
 }
@@ -259,14 +259,24 @@ addEventListener('keydown', e => { if (!opened && (e.key==='Enter'||e.key===' ')
       li.className = 'it' + (p.locked?' locked':''); li.tabIndex = 0; li.textContent = p.title;
       li.addEventListener('click', ()=>openPoem(i));
       li.addEventListener('keydown', e=>{ if(e.key==='Enter') openPoem(i); });
-      li.addEventListener('pointerenter', e=>{ if (e.pointerType!=='mouse' || view!=='index') return;
-        setState(p.el==='態' ? STATE_SECTIONS[0] : p.el, p, +sceneEl.style.opacity<.05); sceneEl.style.opacity=.55; });
+      li.addEventListener('pointerenter', e=>{ if (e.pointerType!=='mouse' || view!=='index') return; preview(p); });
       ol.appendChild(li);
     });
     list.appendChild(sec);
   }
-  list.addEventListener('pointerleave', ()=>{ if (view==='index') sceneEl.style.opacity=0; });
+  list.addEventListener('pointerleave', ()=>{ if (view==='index'){ clearTimeout(pvTimer); sceneEl.style.transition='opacity .5s ease'; sceneEl.style.opacity=0; } });
 })();
+/* hovering a title shows that poem's material. Different state: a quick dip to black, then it is simply there.
+   (only 〈都是一種狀態〉 lets one state turn into another in front of you) */
+let pvTimer=null;
+function preview(p){
+  const el = p.el==='態' ? STATE_SECTIONS[0] : p.el;
+  clearTimeout(pvTimer);
+  if (el===state && +sceneEl.style.opacity>.05){ setState(el,p,false); sceneEl.style.transition='opacity .5s ease'; sceneEl.style.opacity=.55; return; }
+  const dark = +sceneEl.style.opacity<=.05;
+  sceneEl.style.transition='opacity .22s ease'; sceneEl.style.opacity=0;
+  pvTimer=setTimeout(()=>{ if (view!=='index') return; setState(el,p,true); sceneEl.style.transition='opacity .6s ease'; sceneEl.style.opacity=.55; }, dark?0:230);
+}
 
 /* ── LOCK ── */
 const lock = $('#lock'), lockIns = [...lock.querySelectorAll('input')];
@@ -292,7 +302,8 @@ lockIns.forEach((inp,k)=>{
 let secObs = null;
 const esc = s => s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const renderLines = lines => lines.map(l => l.trim()==='' ? '<div class="gap"></div>' : `<div>${esc(l)}</div>`).join('');
-function enterScene(el, p){                 // a poem always opens on its material already settled, faded in from black
+function enterScene(el, p){
+  clearTimeout(pvTimer);                 // a poem always opens on its material already settled, faded in from black
   sceneEl.style.transition='none'; sceneEl.style.opacity=0;
   lastPointer=-1e9;                          // the tap that opened the poem is not a touch on the material
   setState(el, p, true);
