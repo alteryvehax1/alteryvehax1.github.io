@@ -1043,7 +1043,7 @@ function draw(){
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
 function resize(){
-  W=innerWidth; H=innerHeight; LW=Math.ceil(W/PX); LH=Math.ceil(H/PX);
+  W=Math.max(1,innerWidth); H=Math.max(1,innerHeight); LW=Math.ceil(W/PX); LH=Math.ceil(H/PX);
   sc=clamp(Math.min(W,H)/800,.62,1.4);
   cv.width=LW; cv.height=LH;
   if (!bodies.length) seedBodies();
