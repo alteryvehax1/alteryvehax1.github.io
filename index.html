@@ -127,6 +127,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* ───────────── SPACE ───────────── */
 #space{background:transparent;touch-action:none;overflow:hidden;cursor:default;-webkit-user-select:none;user-select:none}
 #sp-ui{position:absolute;inset:0;pointer-events:none}
+.sp-film{position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none}
 #sp-ui>*{position:absolute;left:0;top:0;will-change:transform}
 .sp-book{width:46px;height:64px;margin:-32px 0 0 -23px;background-color:var(--cover);background-image:var(--paper-noise);border-radius:2px 4px 4px 2px;
   box-shadow:inset 3px 0 4px rgba(70,55,30,.3),0 8px 22px rgba(0,0,0,.7);cursor:pointer;pointer-events:auto}
@@ -244,6 +245,7 @@ let mode = 'poem', modeTimer = null;          // which picture the material draw
 function show(name){
   const was = view; view = name; if (name!=='index'){ sceneEl.style.transition=''; }
   if (was==='detail' && name!=='detail') leavePoem();
+  if (name!=='space' && typeof muteSounds==='function') muteSounds();
   if (typeof spIn!=='undefined'){ spIn.touch=false; spIn.mouse=false; spIn.paused=false; spIn.keys.clear(); }
   for (const k in views) views[k].classList.toggle('active', k===name);
   sceneEl.style.opacity = (name==='detail' || name==='space') ? 1 : 0;
@@ -266,7 +268,7 @@ intro.addEventListener('pointermove', e => {
 });
 intro.addEventListener('pointerleave', () => { if(!opened){ book.style.removeProperty('--rx'); book.style.removeProperty('--ry'); }});
 function openBook(){
-  if (opened) return; opened = true;
+  if (opened) return; opened = true; wakeAudio();
   book.style.removeProperty('--rx'); book.style.removeProperty('--ry');
   const go = () => { show('space'); history.replaceState({v:'space'}, ''); startLoop(); };
   if (REDUCED){ go(); return; }
@@ -676,10 +678,28 @@ const LINKS = [
   {name:'email',                mail:['minio121086','gmail.com'],               x:1130, y:1230,  k:4},
   {name:'streetvoice',          url:'https://streetvoice.com/miniyhc/',         x:-1790,y:-1490, k:3, hidden:true},
 ];
+/* sounds have no names. a faint light marks where one is; it grows as you come closer, and so does the sound. */
+const SOUNDS = [
+  {src:'audio/s1.m4a', x:-430,  y:-390},
+  {src:'audio/s2.m4a', x:330,   y:420},
+  {src:'audio/s3.m4a', x:-90,   y:900},
+  {src:'audio/s4.m4a', x:640,   y:-760},
+  {src:'audio/s5.m4a', x:-1700, y:140},
+  {src:'audio/s6.m4a', x:1500,  y:520},
+];
+const EDGE = {src:'audio/edge.m4a', edge:true};          // flown too far: 此路不通
+/* each pool keeps one film. come close and the body opens: the film plays inside its shape, with its sound. */
+const VIDEOS = [
+  {src:'video/v5.mp4', k:'光', x:-230,  y:-1020},
+  {src:'video/v1.mp4', k:'雨', x:760,   y:60},
+  {src:'video/v4.mp4', k:'肉', x:-1400, y:780},
+  {src:'video/v3.mp4', k:'煙', x:-1450, y:-560},
+  {src:'video/v2.mp4', k:'鏡', x:560,   y:1180},
+];
 const me = {x:0, y:110, vx:0, vy:0, r:0};
 const cam = {x:0, y:70};
 const SB = [];
-let gl2=null, U2={}, prog2=null;
+let gl2=null, U2={}, prog2=null, texVid=null;
 const spIn = {mouse:false, touch:false, x:0, y:0, paused:false, keys:new Set()};
 
 function seedSpace(){
@@ -692,6 +712,8 @@ function seedSpace(){
   add('rain','雨',12,(b)=>{ b.base=R(10,28); b.y=b.cy+R(-460,460); b.x=b.cx+R(-300,300); });
   add('smoke','煙',14,(b)=>{ b.base=R(60,120); });
   add('light','光',30,(b,i)=>{ b.y=b.cy+650-i*(1300/30); b.x=b.cx; });
+  for (const V of VIDEOS){ const b={type:'video', k:KIDX[V.k], k0:KIDX[V.k], cx:V.x, cy:V.y, x:V.x, y:V.y, vx:0, vy:0, r:0, seed:Math.random(), vid:V}; V.body=b; SB.push(b); }
+  for (const S of SOUNDS){ const b={type:'sound', k:5, cx:S.x, cy:S.y, x:S.x, y:S.y, vx:0, vy:0, r:0, seed:Math.random(), snd:S}; S.body=b; SB.push(b); }
   for (const L of LINKS){ const b={type:'link', k:L.k, cx:L.x, cy:L.y, x:L.x, y:L.y, vx:0, vy:0, r:0, seed:Math.random(), link:L}; L.body=b; SB.push(b); }
 }
 
@@ -758,6 +780,17 @@ function stepSpace(dt){
       tr=gap*.66;
       ax+=(tx-b.x)*7; ay+=(slot-b.y)*7;
       b.vx+=ax*dt; b.vy+=ay*dt; const k=Math.exp(-dt*4.5); b.vx*=k; b.vy*=k;
+    } else if (b.type==='video'){
+      const c = clamp(1-md/560, 0, 1);
+      const tx=b.cx+Math.sin(t*.23+b.seed*6)*14, ty=b.cy+Math.cos(t*.19+b.seed*5)*14;
+      ax+=(tx-b.x)*1.6; ay+=(ty-b.y)*1.6;
+      if (md<380*sc){ const f=10*(1-md/(380*sc)); ax+=mdx/md*f; ay+=mdy/md*f; }
+      tr=(46 + 112*sstep(0,1,c))*Math.max(sc,.75); grow=1.6;
+      b.vx+=ax*dt; b.vy+=ay*dt; const k=Math.exp(-dt*2.2); b.vx*=k; b.vy*=k;
+    } else if (b.type==='sound'){
+      const c = clamp(1-md/700, 0, 1);
+      b.x = b.cx + Math.sin(t*.37+b.seed*6)*5; b.y = b.cy + Math.cos(t*.29+b.seed*4)*5;
+      tr = (3 + 11*c*c + Math.sin(t*1.3+b.seed*6)*1.2*(.3+c)) * Math.max(sc,.8);
     } else {                                        // link
       const near = md < (b.link.hidden ? 120 : 190);
       b.link.near = near;
@@ -774,6 +807,7 @@ function stepSpace(dt){
 const FS2 = `precision highp float;
 uniform vec2 uRes;uniform vec4 uS[48];uniform float uT;uniform vec2 uL;uniform vec3 uBg;
 uniform vec3 kE[6],kC[6],kR[6],kH[6];
+uniform sampler2D uVid;uniform vec3 uVC;uniform float uVA,uVOn;
 float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
   return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
@@ -783,10 +817,10 @@ float field(vec2 q){float f=0.;for(int i=0;i<48;i++){vec4 b=uS[i];vec2 d=q-b.xy;
 void main(){
   vec2 p=gl_FragCoord.xy;
   vec2 q=p+.5*(vec2(vn(p*.022+uT*.03)-.5,vn(p*.022+7.3-uT*.025)-.5)*17.);
-  float f=0.,a0=0.,a1=0.,a2=0.,a3=0.,a4=0.,a5=0.;
+  float f=0.,a0=0.,a1=0.,a2=0.,a3=0.,a4=0.,a5=0.,a6=0.;
   for(int i=0;i<48;i++){vec4 b=uS[i];vec2 d=q-b.xy;float v=b.z*b.z/(dot(d,d)+1.);f+=v;float k=b.w;
-    if(k<.5)a0+=v;else if(k<1.5)a1+=v;else if(k<2.5)a2+=v;else if(k<3.5)a3+=v;else if(k<4.5)a4+=v;else a5+=v;}
-  float s=max(f,1e-5);float w0=a0/s,w1=a1/s,w2=a2/s,w3=a3/s,w4=a4/s,w5=a5/s;
+    if(k<.5)a0+=v;else if(k<1.5)a1+=v;else if(k<2.5)a2+=v;else if(k<3.5)a3+=v;else if(k<4.5)a4+=v;else if(k<5.5)a5+=v;else a6+=v;}
+  float s=max(f,1e-5);float w6=a6/s;float w0=a0/s,w1=a1/s,w2=a2/s,w3=a3/s,w4=a4/s,w5=(a5+a6)/s;
   vec3 E=kE[0]*w0+kE[1]*w1+kE[2]*w2+kE[3]*w3+kE[4]*w4+kE[5]*w5;
   vec3 C=kC[0]*w0+kC[1]*w1+kC[2]*w2+kC[3]*w3+kC[4]*w4+kC[5]*w5;
   vec3 Rm=kR[0]*w0+kR[1]*w1+kR[2]*w2+kR[3]*w3+kR[4]*w4+kR[5]*w5;
@@ -805,6 +839,13 @@ void main(){
       float sp=pow(max(dot(n,L),0.),3.)*smoothstep(1.05,1.6,f)*(1.-smoothstep(1.6,4.,f));
       c+=vec3(.42,.46,.50)*floor(sp*3.+.4)/3.*w4;
     }
+    if(uVOn>.5&&w6>.35){
+      float side=uVC.z*2.25; vec2 sz=uVA>=1.?vec2(side*uVA,side):vec2(side,side/uVA);
+      vec2 uv=(p-uVC.xy)/sz+.5;
+      vec3 vc=texture2D(uVid,clamp(uv,0.,1.)).rgb;
+      c=mix(c,vc*.92,smoothstep(.35,.62,w6));
+      if(f<1.05)c+=vec3(.10,.10,.09);
+    }
     col=c;
   }
   col=mix(col,vec3(dot(col,vec3(.4,.4,.2))),.12);
@@ -817,7 +858,12 @@ function setupSpaceGL(){
     if(!gl.getProgramParameter(prog2,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog2)); }
   catch(e){ console.warn(e); prog2=null; return; }
   gl.useProgram(prog2);
-  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH']) U2[n]=gl.getUniformLocation(prog2,n);
+  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH','uVid','uVC','uVA','uVOn']) U2[n]=gl.getUniformLocation(prog2,n);
+  texVid=gl.createTexture(); gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,texVid);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
+  gl.uniform1i(U2.uVid,2); gl.activeTexture(gl.TEXTURE0);
   const pack = key => { const a=new Float32Array(18); ['光','雨','肉','煙','鏡'].forEach((s,i)=>a.set(LOOK[s][key],i*3)); a.set(NEUTRAL[key],15); return a; };
   gl.uniform3fv(U2.kE,pack('edge')); gl.uniform3fv(U2.kC,pack('core')); gl.uniform3fv(U2.kR,pack('rim')); gl.uniform3fv(U2.kH,pack('halo'));
   gl.uniform3f(U2.uBg,.016,.016,.016);
@@ -825,6 +871,81 @@ function setupSpaceGL(){
   seedSpace();
   for (let i=0;i<240;i++){ t+=1/30; stepSpace(1/30); }   // the space is already alive when you arrive
 }
+let actx = null;
+function wakeAudio(){
+  try{ if (!actx){ const AC = window.AudioContext||window.webkitAudioContext; if (AC) actx = new AC(); }
+       if (actx && actx.state==='suspended') actx.resume(); }catch(e){ actx=null; }
+}
+function makeVoice(buf){
+  const g=actx.createGain(); g.gain.value=0;
+  const pn=actx.createStereoPanner ? actx.createStereoPanner() : null;
+  if (pn){ g.connect(pn); pn.connect(actx.destination); } else g.connect(actx.destination);
+  return {buf, g, pn, src:null, at:0, off:0};
+}
+function voicePlay(v, offset){
+  if (v.src){ try{ v.src.stop(); }catch(e){} }
+  const src=actx.createBufferSource(); src.buffer=v.buf; src.loop=true; src.connect(v.g);
+  src.start(0, offset % v.buf.duration); v.src=src; v.at=actx.currentTime; v.off=offset;
+}
+function voiceStop(v){ if (v.src){ try{ v.src.stop(); }catch(e){} v.src=null; } }
+function voiceAim(v, gain, pan){
+  v.g.gain.setTargetAtTime(gain, actx.currentTime, .18);
+  if (v.pn) v.pn.pan.setTargetAtTime(pan, actx.currentTime, .12);
+}
+const decode = ab => new Promise((ok,no)=>actx.decodeAudioData(ab,ok,no));
+function loadSound(S){
+  S.loading=true;
+  fetch(S.src).then(r=>r.arrayBuffer()).then(decode).then(buf=>{ S.voice=makeVoice(buf); voicePlay(S.voice,0); }).catch(()=>{ S.loading=false; });
+}
+function loadFilm(V){
+  V.loading=true;
+  fetch(V.src).then(r=>r.arrayBuffer()).then(ab=>{
+    const el=document.createElement('video'); el.muted=true; el.loop=true; el.playsInline=true; el.setAttribute('playsinline','');
+    el.className='sp-film'; el.src=URL.createObjectURL(new Blob([ab],{type:'video/mp4'}));
+    el.addEventListener('loadeddata',()=>{ V.ready=true; },{once:true});
+    document.body.appendChild(el); V.el=el;
+    if (actx) decode(ab.slice(0)).then(buf=>{ V.voice=makeVoice(buf); }).catch(()=>{});
+  }).catch(()=>{ V.loading=false; });
+}
+function updateSound(){
+  const here = view==='space';
+  for (const V of VIDEOS){                                   // films load when you are near, play only when you are close
+    const d=Math.hypot(V.x-me.x, V.y-me.y);
+    if (!V.loading && d<1300 && here) loadFilm(V);
+    if (!V.el) continue;
+    const open = here && d<560;
+    if (open && V.el.paused){ const p=V.el.play(); if (p && p.catch) p.catch(()=>{}); }
+    if (!open && !V.el.paused){ V.el.pause(); }
+    if (actx && V.voice){
+      if (open && V.ready){
+        const dur=V.voice.buf.duration, want=V.el.currentTime % dur;
+        const at=(V.voice.off + actx.currentTime - V.voice.at) % dur;
+        if (!V.voice.src || Math.min(Math.abs(at-want), dur-Math.abs(at-want)) > .2) voicePlay(V.voice, want);
+        const c=clamp(1-d/560,0,1); voiceAim(V.voice, Math.pow(c,1.4)*.9, clamp((V.x-me.x)/420,-1,1));
+      } else if (V.voice.src){ voiceAim(V.voice,0,0); if (!open) setTimeout(()=>{ if (V.el.paused) voiceStop(V.voice); }, 600); }
+    }
+  }
+  if (!actx) return;
+  for (const S of SOUNDS){
+    const d=Math.hypot(S.x-me.x, S.y-me.y);
+    if (!S.voice && !S.loading && d<1150 && here) loadSound(S);
+    if (S.voice){ const c=here ? clamp(1-d/700,0,1) : 0; voiceAim(S.voice, Math.pow(c,1.6)*.85, clamp((S.x-me.x)/420,-1,1)); }
+  }
+  // the edge: past here there is nothing. you hear it before you reach it.
+  const room = WORLD - Math.max(Math.abs(me.x), Math.abs(me.y));
+  if (!EDGE.voice && !EDGE.loading && room<700 && here) loadSound(EDGE);
+  if (EDGE.voice){
+    const c = here ? clamp(1-room/380,0,1) : 0;
+    const pan = Math.abs(me.x)>Math.abs(me.y) ? Math.sign(me.x) : 0;
+    voiceAim(EDGE.voice, Math.pow(c,1.3)*.9, pan*.8);
+  }
+}
+function muteSounds(){
+  for (const V of VIDEOS) if (V.el && !V.el.paused) V.el.pause();
+  if (!actx) return;
+  for (const S of [...SOUNDS, EDGE, ...VIDEOS]) if (S.voice) S.voice.g.gain.setTargetAtTime(0, actx.currentTime, .12);
+}
+document.addEventListener('visibilitychange',()=>{ if (!actx) return; if (document.hidden) actx.suspend(); else if (opened) actx.resume(); });
 const sarr = new Float32Array(48*4), near = [];
 function drawSpace(){
   if (failed || !prog2) return;
@@ -834,13 +955,21 @@ function drawSpace(){
   if (near.length>47){ near.sort((a,b)=>Math.hypot(a.x-cam.x,a.y-cam.y)-Math.hypot(b.x-cam.x,b.y-cam.y)); near.length=47; }
   sarr.fill(0);
   const sx=x=>(x-cam.x+W/2)/PX, sy=y=>(H-(y-cam.y+H/2))/PX;
-  near.forEach((b,i)=>{ sarr[i*4]=sx(b.x); sarr[i*4+1]=sy(b.y); sarr[i*4+2]=b.r/PX; sarr[i*4+3]=b.k; });
+  let film=null, fd=1e9;
+  for (const V of VIDEOS){ const d=Math.hypot(V.x-me.x,V.y-me.y); if (V.el && V.ready && !V.el.paused && d<fd && d<560){ film=V; fd=d; } }
+  near.forEach((b,i)=>{ sarr[i*4]=sx(b.x); sarr[i*4+1]=sy(b.y); sarr[i*4+2]=b.r/PX; sarr[i*4+3]=(film && b===film.body) ? 6 : b.k; });
   sarr[47*4]=sx(me.x); sarr[47*4+1]=sy(me.y); sarr[47*4+2]=me.r/PX; sarr[47*4+3]=5;
   gl.useProgram(prog2);
   { const l=gl.getAttribLocation(prog2,'p'); gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0); }
   gl.viewport(0,0,LW,LH);
   gl.uniform2f(U2.uRes,LW,LH); gl.uniform4fv(U2.uS,sarr); gl.uniform1f(U2.uT,t);
   gl.uniform2f(U2.uL,sx(me.x),sy(me.y));
+  if (film && film.el.readyState>=2){
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,texVid);
+    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,film.el); gl.uniform1f(U2.uVOn,1); }catch(e){ gl.uniform1f(U2.uVOn,0); }
+    gl.activeTexture(gl.TEXTURE0);
+    gl.uniform3f(U2.uVC,sx(film.body.x),sy(film.body.y),film.body.r/PX); gl.uniform1f(U2.uVA,film.el.videoWidth/(film.el.videoHeight||1));
+  } else gl.uniform1f(U2.uVOn,0);
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
 
@@ -870,7 +999,7 @@ function buildSpaceUI(){
   const sp=$('#space');
   sp.addEventListener('pointermove',e=>{ if (e.pointerType==='mouse'){ spIn.mouse=true; spIn.x=e.clientX; spIn.y=e.clientY; spIn.paused=!!e.target.closest('.sp-tag.on,.sp-list.on,.sp-book'); } else if (spIn.touch){ spIn.x=e.clientX; spIn.y=e.clientY; } });
   sp.addEventListener('pointerleave',e=>{ if (e.pointerType==='mouse') spIn.mouse=false; });
-  sp.addEventListener('pointerdown',e=>{ if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book')){ spIn.touch=true; spIn.x=e.clientX; spIn.y=e.clientY; } });
+  sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book')){ spIn.touch=true; spIn.x=e.clientX; spIn.y=e.clientY; } });
   const up=()=>{ spIn.touch=false; }; sp.addEventListener('pointerup',up); sp.addEventListener('pointercancel',up);
   addEventListener('keydown',e=>{ if (view!=='space' || lock.classList.contains('on')) return; const k=e.key.length===1?e.key.toLowerCase():e.key;
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','w','a','s','d'].includes(k)){ spIn.keys.add(k); e.preventDefault(); } });
@@ -924,6 +1053,7 @@ function resize(){
 let raf=null, last=0;
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000)*(REDUCED?.35:1); last=now; t+=dt;
+  updateSound();
   if (mode==='space'){ stepSpace(dt); drawSpace(); placeUI(); }
   else { step(dt); draw(); drawPhoto(dt); }
   raf=requestAnimationFrame(frame);
