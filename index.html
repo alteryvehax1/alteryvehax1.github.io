@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400&family=Space+Mono&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&text=%200123456789Yetv%C3%97%E4%B8%8D%E4%B9%9F%E4%BA%86%E4%BB%80%E4%BD%A0%E4%BF%A1%E5%80%8B%E5%85%B6%E5%95%A6%E5%96%B5%E5%9C%A8%E5%A3%9E%E5%A5%BD%E5%AE%83%E5%AF%A6%E5%BE%88%E6%88%91%E6%8C%89%E6%9C%83%E6%9C%89%E6%AC%A1%E6%B2%92%E7%89%A0%E7%94%A8%E7%9A%84%E7%9C%8B%E7%9C%9F%E7%9C%BC%E7%9D%9B%E7%B5%A6%E8%B2%93%E8%B4%8F%E9%80%99%E9%82%84%E9%82%A3%E9%83%BD%E9%88%95%E9%96%92%E9%9A%BB%E9%9B%B6%E9%BA%BC%EF%BC%88%EF%BC%89%EF%BC%8C%EF%BC%9F&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Huninn&text=%200123456789Yetv%C3%97%E4%B8%8D%E4%B9%9F%E4%BA%86%E4%BB%80%E4%BD%A0%E4%BF%A1%E5%80%8B%E5%85%B6%E5%95%A6%E5%96%B5%E5%9C%A8%E5%A3%9E%E5%A5%BD%E5%AE%83%E5%AF%A6%E5%BE%88%E6%88%91%E6%8C%89%E6%9C%83%E6%9C%89%E6%AC%A1%E6%B2%92%E7%89%A0%E7%94%A8%E7%9A%84%E7%9C%8B%E7%9C%9F%E7%9C%BC%E7%9D%9B%E7%B5%A6%E8%B2%93%E8%B4%8F%E9%80%99%E9%82%84%E9%82%A3%E9%83%BD%E9%88%95%E9%96%92%E9%9A%BB%E9%9B%B6%E9%BA%BC%EF%BC%88%EF%BC%89%EF%BC%8C%EF%BC%9F&display=swap" rel="stylesheet">
 <style>
 :root{
   --serif:'Noto Serif TC',serif;
@@ -183,7 +183,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 .sp-press{width:110px;height:104px;margin:-52px 0 0 -55px;border-radius:50%;background:transparent;color:transparent;opacity:0;pointer-events:none}
 .sp-press.on{opacity:1;pointer-events:auto;cursor:pointer}
-.sp-tag.crayon{font-family:"LXGW WenKai TC","Kaiti TC",serif;font-size:1.05rem;letter-spacing:.05em;animation:wob .5s steps(2) infinite}
+.sp-tag.crayon{font-family:"Huninn",serif;font-size:1.15rem;color:transparent!important;min-width:5.5em;min-height:2em}
 @keyframes wob{0%{rotate:-4deg}100%{rotate:3deg}}
 .sp-tag.crayon:hover{color:#e8473d}
 
@@ -1274,15 +1274,26 @@ function crayonBlob(x,y,rx,ry,line,fill,v,k,wid){        // a wobbly closed cray
   dctx.stroke(); dctx.restore();
   dctx.strokeStyle=line; dctx.lineWidth=wid*k*.6; dctx.beginPath(); pts.forEach(([a,b],j)=> j?dctx.lineTo(a,b):dctx.moveTo(a,b)); dctx.stroke();
 }
-function shaky(text, x, y, size, col, v, center){          // handwriting that can't keep still: every character leans its own way
-  dctx.save(); dctx.font=`${size}px "LXGW WenKai TC","Kaiti TC","BiauKai",serif`; dctx.textBaseline='middle';
-  const chars=[...text], ws=chars.map(c=>dctx.measureText(c).width), total=ws.reduce((a,b)=>a+b,0)+chars.length*size*.08;
-  let cx = center ? x-total/2 : x;
-  chars.forEach((c,i)=>{ const h=Math.sin(i*12.9898+v*4.1)*43758.5453; const r=(h-Math.floor(h)-.5);
-    dctx.save(); dctx.translate(cx+ws[i]/2, y+r*size*.18); dctx.rotate(r*.32); dctx.scale(1+r*.12,1-r*.1);
-    dctx.fillStyle=col; dctx.fillText(c,-ws[i]/2,0); dctx.globalAlpha*=.35; dctx.fillText(c,-ws[i]/2+1.2,-1);
-    dctx.restore(); cx+=ws[i]+size*.08; });
-  dctx.restore();
+const messyCache=new Map();
+if (document.fonts){ document.fonts.load('24px "Huninn"','按我給你的信').then(()=>messyCache.clear()).catch(()=>{}); document.fonts.addEventListener && document.fonts.addEventListener('loadingdone',()=>messyCache.clear()); }
+function messyImg(text, size, col, v){                       // a child's handwriting: letters lean, jump, change size, and their strokes wobble
+  const key=text+'|'+size.toFixed(1)+'|'+col+'|'+v; if (messyCache.has(key)) return messyCache.get(key);
+  const chars=[...text], pad=size*.8, H=Math.ceil(size*2.4), cv2=document.createElement('canvas'); cv2.width=Math.ceil(chars.length*size*1.3+pad*2); cv2.height=H;
+  const c2=cv2.getContext('2d'); let cx=pad;
+  chars.forEach((ch,i)=>{
+    const h=n=>{ const q=Math.sin((i+1)*12.9898+v*7.1+n*3.3+text.length)*43758.5453; return q-Math.floor(q)-.5; };
+    const sz=size*(1+h(1)*.38), S=Math.ceil(sz*1.6), o=document.createElement('canvas'); o.width=o.height=S;
+    const ox=o.getContext('2d'); ox.font=`${sz}px "Huninn","LXGW WenKai TC",serif`; ox.textAlign='center'; ox.textBaseline='middle'; ox.fillStyle=col; ox.fillText(ch,S/2,S/2);
+    c2.save(); c2.translate(cx+sz*.5, H/2+h(2)*size*.4); c2.rotate(h(3)*.55);
+    for (let yy=0; yy<S; yy+=2){ const dx=Math.sin(yy*.45+v+i)*sz*.05+h(4)*1.5; c2.drawImage(o,0,yy,S,2,-S/2+dx,-S/2+yy,S,2); }
+    c2.globalAlpha=.35; c2.drawImage(o,-S/2+1.5,-S/2-1); c2.restore();
+    cx+=sz*(.92+h(5)*.25);
+  });
+  const res={cv:cv2, w:cx+pad, h:H}; if (messyCache.size>60) messyCache.clear(); messyCache.set(key,res); return res;
+}
+function shaky(text, x, y, size, col, v, center){
+  const m=messyImg(text, size, col, v); const left = center ? x-m.w/2 : x-size*.8;
+  dctx.drawImage(m.cv, 0, 0, m.w, m.h, left, y-m.h/2, m.w, m.h);
 }
 function drawDrawn(D, v, k, alpha){
   let x=D.wx, y=D.wy, flip=1;
@@ -1301,6 +1312,12 @@ function drawDoodles(){
   dctx.lineCap='round'; dctx.lineJoin='round';
   const k=Math.max(sc,.8);
   for (const D of DRAWN) if (D.outside && D.img.complete && D.img.naturalWidth) drawDrawn(D, v, k, 1);   // the sign is on this side of the wall
+  if (reveal>.01){
+    // the useless thing: every press makes one cat's big eye bigger — coloured in with crayon, like the rest
+    const er=9+Math.min(PRESS.n,20)*1.15; dctx.globalAlpha=reveal*.9;
+    crayonBlob(PRESS.eye.x, PRESS.eye.y, er, er*.85, '#2b2b2b', '#2b2b2b', v, k, 7);
+    if (er>14){ dctx.fillStyle='#f3ecd9'; dctx.beginPath(); dctx.arc(PRESS.eye.x-er*.32,PRESS.eye.y-er*.3,er*.2,0,6.283); dctx.fill(); }
+  }
   const list = reveal>.01 ? CRACK.concat(DOODLES) : CRACK;
   for (const o of list){
     const a = o.crack ? 1 : reveal;
@@ -1309,15 +1326,12 @@ function drawDoodles(){
     dctx.globalAlpha=o.alpha*.35*a; dctx.lineWidth=o.w*k*.55; dctx.beginPath(); pts.forEach(([x,y],i)=> i?dctx.lineTo(x+1.6,y-1.2):dctx.moveTo(x+1.6,y-1.2)); dctx.stroke();   // waxy second pass
   }
   if (reveal>.01){
-    // the useless thing: every press makes one cat's big eye bigger — coloured in with crayon, like the rest
-    const er=9+Math.min(PRESS.n,120)*1.1; dctx.globalAlpha=reveal*.9;
-    crayonBlob(PRESS.eye.x, PRESS.eye.y, er, er*.85, '#2b2b2b', '#2b2b2b', v, k, 7);
-    if (er>14){ dctx.fillStyle='#f3ecd9'; dctx.beginPath(); dctx.arc(PRESS.eye.x-er*.32,PRESS.eye.y-er*.3,er*.2,0,6.283); dctx.fill(); }
     // the button itself: a wobbly crayon circle, coloured in outside the lines, and its words, written shakily
     dctx.globalAlpha=reveal; const pb=PRESS.boing>0 ? 1-Math.sin(PRESS.boing*Math.PI)*.18 : 1;
     crayonBlob(PRESS.x, PRESS.y, 50*k*pb, 46*k*pb, '#e8473d', '#f4c430', v, k, 10);
     shaky('按我', PRESS.x, PRESS.y+2, 26*k, '#c0392b', v, 1);
     if (PRESS.say) shaky(PRESS.say, PRESS.x, PRESS.y+80*k, 19*k, '#3a7bd5', v, 1);
+    if (reveal>.5 && Math.hypot(me.x-LETTER.x, me.y-LETTER.y) < 170) shaky('給你的信', LETTER.x+58, LETTER.y-12, 22*k, '#c0392b', v, 0);
     // her drawings
     for (const D of DRAWN){ if (D.outside || !D.img.complete || !D.img.naturalWidth) continue; drawDrawn(D, v, k, reveal); }
     // friends' films: inside a crayon shape that keeps turning into another shape
