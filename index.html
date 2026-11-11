@@ -1457,12 +1457,11 @@ function drawDoodles(){
 /* ───────────── THE RECEIPT ─────────────
    Everything a visitor does is noted (in their own browser only, for this visit).
    A strip of receipt paper grows out of the little book as they go; tear it off any time. */
-const VISIT = (()=>{ let v=null; try{ v=JSON.parse(sessionStorage.getItem('visit')||'null'); }catch(e){}
+const VISIT = (()=>{ let v=null; try{ sessionStorage.removeItem('visit'); }catch(e){}
   return v || {start:Date.now(), poems:[], photos:[], sounds:[], films:[], links:[], secret:false, letter:false, notes:0, presses:0, dist:0, path:[], torn:0, no:Math.floor(100000+Math.random()*899999)}; })();
 let visitDirty=false;
 function seen(kind, id){ const a=VISIT[kind]; if (!a.includes(id)){ a.push(id); visitDirty=true; printTick(); } }
-function visitSave(){ if (!visitDirty) return; visitDirty=false; try{ sessionStorage.setItem('visit', JSON.stringify(VISIT)); }catch(e){} }
-setInterval(visitSave, 3000); addEventListener('pagehide', ()=>{ visitDirty=true; visitSave(); });
+function visitSave(){}                                   // a visit lasts as long as the page: reload, and it is a new one
 const visitItems = () => VISIT.poems.length+VISIT.photos.length+VISIT.sounds.length+VISIT.films.length+VISIT.links.length+(VISIT.secret?2:0)+(VISIT.letter?1:0)+VISIT.notes+Math.floor(VISIT.dist/3000);
 let lastPt=null;
 function visitTrack(dt){                                  // the route: a point whenever you've moved a little
@@ -1532,84 +1531,82 @@ function collage(){                                       // up to ten lines, ea
   while (out2.length<want && guard++<200){ const pool=pools[k%pools.length]; k++; if (!pool.length) continue; const j=Math.floor(rnd2()*pool.length); const l=pool.splice(j,1)[0]; out2.push(l); if (pools.every(p=>!p.length)) break; }
   return out2;
 }
-function crumple(g, w, h, seed){                         // folds, creases and grain over the printed paper
-  let sd=(seed>>>0)%2147483646+1; const r=()=>{ sd=(sd*16807)%2147483647; return sd/2147483647; };
-  g.save(); g.beginPath(); g.rect(0,0,w,h); g.clip();
-  for (let i=0;i<24;i++){ const x=r()*w, y=r()*h, a=r()*Math.PI, dx=Math.cos(a), dy=Math.sin(a), B=5000;   // big soft facets
-    g.fillStyle = i%2 ? 'rgba(255,255,255,.045)' : 'rgba(70,58,40,.03)';
-    g.beginPath(); g.moveTo(x-dx*B,y-dy*B); g.lineTo(x+dx*B,y+dy*B); g.lineTo(x+dx*B-dy*B,y+dy*B+dx*B); g.lineTo(x-dx*B-dy*B,y-dy*B+dx*B); g.fill(); }
-  for (let i=0;i<30;i++){ const x=r()*w, y=r()*h, a=r()*Math.PI, len=180+r()*520, sh=22+r()*46, k=.5+r()*.7;   // creases
-    g.save(); g.translate(x,y); g.rotate(a);
-    let gr=g.createLinearGradient(0,0,0,sh); gr.addColorStop(0,`rgba(60,50,34,${(.075*k).toFixed(3)})`); gr.addColorStop(1,'rgba(60,50,34,0)');
-    g.fillStyle=gr; g.beginPath(); g.moveTo(-len/2,0); g.bezierCurveTo(-len/4,sh,len/4,sh,len/2,0); g.closePath(); g.fill();
-    gr=g.createLinearGradient(0,0,0,-sh); gr.addColorStop(0,`rgba(255,255,255,${(.22*k).toFixed(3)})`); gr.addColorStop(1,'rgba(255,255,255,0)');
-    g.fillStyle=gr; g.beginPath(); g.moveTo(-len/2,0); g.bezierCurveTo(-len/4,-sh*.8,len/4,-sh*.8,len/2,0); g.closePath(); g.fill();
-    g.strokeStyle=`rgba(60,50,34,${(.085*k).toFixed(3)})`; g.lineWidth=1; g.beginPath(); g.moveTo(-len/2,0);
-    for (let q=1;q<=4;q++) g.lineTo(-len/2+len*q/4, (r()-.5)*3); g.stroke(); g.restore(); }
-  const vg=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.75); vg.addColorStop(0,'rgba(120,100,60,0)'); vg.addColorStop(1,'rgba(120,100,60,.08)');
-  g.fillStyle=vg; g.fillRect(0,0,w,h);
-  const im=g.getImageData(0,0,w,h), D=im.data;
-  for (let i=0;i<D.length;i+=4){ const n=(Math.random()-.5)*14; D[i]+=n; D[i+1]+=n; D[i+2]+=n; }
-  g.putImageData(im,0,0); g.restore();
+function paperTex(w, h, seed){                            // crumpled-then-flattened paper: a height field of tents between cell borders, lit from one side
+  const S=3, tw=Math.ceil(w/S), th=Math.ceil(h/S), Hf=new Float32Array(tw*th);
+  const hash=(x,y,o)=>{ let k=Math.imul(x,374761393)^Math.imul(y,668265263)^Math.imul(o+seed,2147483647); k=Math.imul(k^(k>>>13),1274126177); return ((k^(k>>>16))>>>0)/4294967296; };
+  const OCT=[[70,1],[30,.55],[13,.28]];                   // cell size in low-res px, strength
+  for (let py=0;py<th;py++) for (let px=0;px<tw;px++){
+    let v=0;
+    for (let o=0;o<3;o++){ const [cs,amp]=OCT[o], gx=px/cs+o*17.3, gy=py/cs+o*9.1, cx=Math.floor(gx), cy=Math.floor(gy);
+      let d1=1e9, d2=1e9, id=0;
+      for (let j=-1;j<=1;j++) for (let i=-1;i<=1;i++){ const X=cx+i, Y=cy+j, fx=X+hash(X,Y,o*3), fy=Y+hash(X,Y,o*3+1), d=(gx-fx)**2+(gy-fy)**2;
+        if (d<d1){ d2=d1; d1=d; id=hash(X,Y,o*3+2); } else if (d<d2) d2=d; }
+      const e=Math.sqrt(d2)-Math.sqrt(d1);                 // 0 on a crease, growing toward the middle of a facet
+      v+=amp*cs*Math.min(e,.6)*(id<.5?1:-1)*.5; }
+    Hf[py*tw+px]=v; }
+  const im=new ImageData(tw,th), D=im.data, lx=-.55, ly=-.83;
+  for (let py=0;py<th;py++) for (let px=0;px<tw;px++){
+    const i=py*tw+px, x0=px?i-1:i, x1=px<tw-1?i+1:i, y0=py?i-tw:i, y1=py<th-1?i+tw:i;
+    const sl=((Hf[x1]-Hf[x0])*lx+(Hf[y1]-Hf[y0])*ly)*.5;
+    const g=.955+Math.max(-.2,Math.min(.06,sl*.09))+(Math.random()-.5)*.025, c=Math.round(255*Math.max(0,Math.min(1,g)));
+    D[i*4]=D[i*4+1]=D[i*4+2]=c; D[i*4+3]=255; }
+  const lo=document.createElement('canvas'); lo.width=tw; lo.height=th; lo.getContext('2d').putImageData(im,0,0);
+  const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d');
+  g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high'; g.drawImage(lo,0,0,w,h);
+  return c;
 }
 function drawReceipt(){
-  // the paper is drawn at its natural length first, then laid on a story-sized (1080×1920) green card, shrunk only if it is too long
-  const pw=780, pc=document.createElement('canvas'); pc.width=pw; pc.height=3600; const g=pc.getContext('2d');
-  g.fillStyle='#f6f4ee'; g.fillRect(0,0,pw,pc.height);
-  const ink='#2b2a27', soft='#8a8679', mono='"Space Mono", monospace', serif='"Noto Serif TC", serif';
-  const L=70, R=pw-70, C=pw/2; let y=96;
+  const RWd=1080, c0=document.createElement('canvas'); c0.width=RWd; c0.height=3600; const g=c0.getContext('2d');
+  g.fillStyle='#f8f8f6'; g.fillRect(0,0,RWd,c0.height);
+  const ink='#1c1c1a', grey='#6d6c68', SANS='"PingFang TC","Noto Sans TC","Microsoft JhengHei","Heiti TC",sans-serif', MONO=`"Space Mono",ui-monospace,${SANS}`;
+  const L=86, R=RWd-86, C=RWd/2; let y=170;
   const text=(s,x,yy,font,col,align)=>{ g.font=font; g.fillStyle=col||ink; g.textAlign=align||'left'; g.fillText(s,x,yy); };
-  const dash=yy=>{ g.strokeStyle=soft; g.setLineDash([10,9]); g.lineWidth=2; g.beginPath(); g.moveTo(L,yy); g.lineTo(R,yy); g.stroke(); g.setLineDash([]); };
-  text('超優惠',C,y,`600 64px ${serif}`,ink,'center'); y+=58;
-  text('小誌 Vol.3',C,y,`400 34px ${serif}`,ink,'center'); y+=44;
-  text('alteryvehax1.github.io',C,y,`400 22px ${mono}`,soft,'center'); y+=56;
-  const d=new Date(), z=n=>String(n).padStart(2,'0');
-  text(`${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())}  ${z(d.getHours())}:${z(d.getMinutes())}`,L,y,`400 24px ${mono}`); text('No.'+VISIT.no,R,y,`400 24px ${mono}`,ink,'right'); y+=34; dash(y); y+=58;
+  const rule=yy=>{ g.strokeStyle=ink; g.setLineDash([9,7]); g.lineWidth=2; g.beginPath(); g.moveTo(L,yy); g.lineTo(R,yy); g.stroke(); g.setLineDash([]); };
+  const F=`400 36px ${MONO}`, ROW=56;
+  text('超優惠',C,y,`800 132px ${SANS}`,ink,'center'); y+=86;
+  text('小誌 Vol.3',C,y,`400 40px ${SANS}`,ink,'center'); y+=104;
+  const d=new Date(), z=n=>String(n).padStart(2,'0'), wk='日一二三四五六'[d.getDay()];
+  text(`單號 #${VISIT.no}`,L,y,F); y+=50;
+  text(`${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())} (${wk}) ${z(d.getHours())}:${z(d.getMinutes())}`,L,y,F); y+=30;
+  rule(y); y+=52; text('#',L,y,F); text('品項',L+110,y,F); text('數量',R,y,F,ink,'right'); y+=26; rule(y); y+=56;
   const totalPhotos=P.filter(p=>p.photo).length;
+  const items=[['詩',VISIT.poems.length,P.length],['照片',VISIT.photos.length,totalPhotos],['聲音',VISIT.sounds.length,SOUNDS.length],['影片',VISIT.films.length,VIDEOS.length],
+               ['連結',VISIT.links.length,LINKS.length],['信',VISIT.letter?1:0,1],['留言',VISIT.notes,0],['沒有用的按鈕',VISIT.presses,-1]];
+  items.forEach(([k,n,of],i)=>{ text(z(i+1),L,y,F); text(k,L+110,y,F); text(of>0?`${n}/${of}`:of<0?`×${n}`:`${n}`,R,y,F,ink,'right'); y+=ROW; });
+  y-=30; rule(y); y+=54;
+  const got=VISIT.poems.length+VISIT.photos.length+VISIT.sounds.length+VISIT.films.length+VISIT.links.length+(VISIT.letter?1:0)+VISIT.notes;
+  text('品項數:',L,y,F); text(String(items.filter(([,n])=>n>0).length),R,y,F,ink,'right'); y+=ROW;
+  text('合計:',L,y,F); text(`${got} 件`,R,y,F,ink,'right'); y+=26; rule(y); y+=56;
   const mins=Math.max(1,Math.round((Date.now()-VISIT.start)/60000));
-  const rows=[['詩',`${VISIT.poems.length}/${P.length}`],['照片',`${VISIT.photos.length}/${totalPhotos}`],['聲音',`${VISIT.sounds.length}/${SOUNDS.length}`],['影片',`${VISIT.films.length}/${VIDEOS.length}`],['連結',`${VISIT.links.length}/${LINKS.length}`],
-              ['信',VISIT.letter?'1/1':'0/1'],['留言',`${VISIT.notes}`],['沒有用的按鈕',`×${VISIT.presses}`],['走了',`${Math.round(VISIT.dist/100)} 步`],['待了',`${mins} 分鐘`]];
-  for (const [k,v] of rows){
-    text(k,L,y,`400 30px ${serif}`); const kw=g.measureText(k).width;
-    g.font=`400 28px ${mono}`; const vw=g.measureText(v).width;
-    g.fillStyle=soft; for (let x=R-vw-16; x>L+kw+16; x-=13) g.fillRect(x,y-4,3,3);     // leader dots, one pitch for every row
-    text(v,R,y,`400 28px ${mono}`,ink,'right'); y+=46; }
-  y+=6; text(VISIT.secret ? SECRET_FOUND : SECRET_MISSED, C, y+8, `400 26px ${serif}`, VISIT.secret?'#c0392b':soft, 'center'); y+=40; dash(y); y+=36;
-  // the route
-  const mw=R-L, mh=460, WX0=-WORLD, WX1=VISIT.secret?SECRET.x1:WORLD, WY0=Math.min(-WORLD,VISIT.secret?SECRET.y0:0), WY1=Math.max(WORLD,VISIT.secret?SECRET.y1:0);
+  text(`步數: ${Math.round(VISIT.dist/100)}`,L,y,F); y+=ROW;
+  text(`停留: ${mins} 分鐘`,L,y,F); y+=ROW;
+  text(`牆: ${VISIT.secret ? SECRET_FOUND : SECRET_MISSED}`,L,y,F); y+=28; rule(y); y+=44;
+  // the route, in ink
+  const mw=R-L, mh=560, WX0=-WORLD, WX1=VISIT.secret?SECRET.x1:WORLD, WY0=Math.min(-WORLD,VISIT.secret?SECRET.y0:0), WY1=Math.max(WORLD,VISIT.secret?SECRET.y1:0);
   const sx=Math.min(mw/(WX1-WX0), mh/(WY1-WY0)), ox=L+(mw-(WX1-WX0)*sx)/2, oy=y;
   const toP=(x,yy)=>[ox+(x-WX0)*sx, oy+(yy-WY0)*sx];
-  g.strokeStyle='#d8d4c8'; g.lineWidth=2; g.strokeRect(...toP(-WORLD,-WORLD), WORLD*2*sx, WORLD*2*sx);
-  if (VISIT.secret){ const [a,b]=toP(SECRET.x0,SECRET.y0); g.setLineDash([6,6]); g.strokeRect(a,b,(SECRET.x1-SECRET.x0)*sx,(SECRET.y1-SECRET.y0)*sx); g.setLineDash([]); }
-  const glyph={光:'#c9c4b4',雨:'#6f8f8a',肉:'#7a2a33',煙:'#9a9a94',鏡:'#2b2a27'};
-  for (const [k2,c2] of Object.entries(REG)){ const [a,b]=toP(c2.x,c2.y); g.fillStyle=glyph[k2]; g.beginPath(); g.arc(a,b,16,0,6.283); g.fill(); text(k2,a,b+44,`400 22px ${serif}`,soft,'center'); }
-  { const [a,b]=toP(0,0); g.fillStyle='#e8e1cf'; g.strokeStyle=ink; g.lineWidth=2; g.fillRect(a-8,b-11,16,22); g.strokeRect(a-8,b-11,16,22); }
-  if (VISIT.path.length>1){ g.strokeStyle='#c0392b'; g.lineWidth=3; g.lineJoin='round'; g.lineCap='round'; g.beginPath(); VISIT.path.forEach(([x,yy],i)=>{ const [a,b]=toP(x,yy); i?g.lineTo(a,b):g.moveTo(a,b); }); g.stroke();
-    const [ex,ey]=toP(...VISIT.path[VISIT.path.length-1]); g.fillStyle='#c0392b'; g.beginPath(); g.arc(ex,ey,7,0,6.283); g.fill(); }
-  y=oy+(WY1-WY0)*sx+40; dash(y); y+=60;
+  g.strokeStyle=ink; g.lineWidth=2; g.strokeRect(...toP(-WORLD,-WORLD), WORLD*2*sx, WORLD*2*sx);
+  if (VISIT.secret){ const [a,b]=toP(SECRET.x0,SECRET.y0); g.setLineDash([7,6]); g.strokeRect(a,b,(SECRET.x1-SECRET.x0)*sx,(SECRET.y1-SECRET.y0)*sx); g.setLineDash([]); }
+  for (const [k2,c2] of Object.entries(REG)){ const [a,b]=toP(c2.x,c2.y); g.strokeStyle=grey; g.lineWidth=3; g.beginPath(); g.arc(a,b,13,0,6.283); g.stroke(); text(k2,a,b+50,`400 28px ${SANS}`,grey,'center'); }
+  { const [a,b]=toP(0,0); g.fillStyle=ink; g.fillRect(a-8,b-11,16,22); }
+  if (VISIT.path.length>1){ g.strokeStyle=ink; g.lineWidth=4; g.lineJoin='round'; g.lineCap='round'; g.beginPath(); VISIT.path.forEach(([x,yy],i)=>{ const [a,b]=toP(x,yy); i?g.lineTo(a,b):g.moveTo(a,b); }); g.stroke();
+    const [ex,ey]=toP(...VISIT.path[VISIT.path.length-1]); g.fillStyle=ink; g.beginPath(); g.arc(ex,ey,9,0,6.283); g.fill(); }
+  y=oy+(WY1-WY0)*sx+44; rule(y); y+=64;
   // the collage poem
   const lines=collage();
-  text('本次拼貼詩',C,y,`400 24px ${mono}`,soft,'center'); y+=58;
-  if (!lines.length){ text('（本次未選購任何詩）',C,y,`400 30px ${serif}`,soft,'center'); y+=50; }
-  else for (const l of lines){ text(l,C,y,`300 32px ${serif}`,ink,'center'); y+=58; }
-  y+=10; dash(y); y+=50;
+  text('本次拼貼詩',C,y,`400 30px ${SANS}`,grey,'center'); y+=66;
+  if (!lines.length){ text('（本次未選購任何詩）',C,y,`400 36px ${SANS}`,grey,'center'); y+=60; }
+  else for (const l of lines){ text(l,C,y,`400 38px ${SANS}`,ink,'center'); y+=62; }
+  y+=6; rule(y); y+=78;
+  text(THANKS,C,y,`400 38px ${SANS}`,ink,'center'); y+=46;
   // barcode from the receipt number
-  let h=hashStr(String(VISIT.no)+VISIT.poems.join(',')); let bx=C-250;
-  for (let i=0;i<70;i++){ h=Math.imul(h^(h>>>15),2246822507)>>>0; const w=1+(h%4); if (i%2===0){ g.fillStyle=ink; g.fillRect(bx,y,w*2,90); } bx+=w*2+2; if (bx>C+250) break; }
-  y+=150; text(THANKS,C,y,`400 28px ${serif}`,ink,'center');
-  const ph=Math.min(pc.height, y+70);
-  crumple(g, pw, ph, VISIT.no);
+  let h=hashStr(String(VISIT.no)+VISIT.poems.join(',')); let bx=L+40; const by=y;
+  while (bx<R-40){ h=Math.imul(h^(h>>>15),2246822507)>>>0; const w=2+(h%4)*2; g.fillStyle=ink; g.fillRect(bx,by,w,150); h=Math.imul(h^(h>>>13),1274126177)>>>0; bx+=w+2+(h%3)*3; }
+  y+=150+52; text('alteryvehax1.github.io',C,y,`400 34px ${MONO}`,ink,'center'); y+=90;
 
-  const c=document.createElement('canvas'); c.width=RW; c.height=RH; const o=c.getContext('2d');
-  o.fillStyle='#0E4939'; o.fillRect(0,0,RW,RH);
-  const k=Math.min(1,(RH-200)/ph), dw=pw*k, dh=ph*k, dx=(RW-dw)/2, dy=Math.max(90,(RH-dh)/2);
-  const wob=()=>(Math.random()-.5)*5;                       // crumpled paper never lies quite straight
-  o.beginPath(); o.moveTo(dx,dy); for (let x=dx; x<=dx+dw; x+=dw/6) o.lineTo(x, dy+wob()); for (let yy=dy; yy<=dy+dh; yy+=dh/9) o.lineTo(dx+dw+wob(), yy);
-  for (let x=dx+dw; x>dx; x-=26) o.lineTo(Math.max(dx,x-13), dy+dh+4+Math.random()*12), o.lineTo(Math.max(dx,x-26), dy+dh);
-  for (let yy=dy+dh; yy>=dy; yy-=dh/9) o.lineTo(dx+wob(), yy);
-  o.closePath();
-  o.save(); o.fillStyle='#f6f4ee'; o.shadowColor='rgba(0,0,0,.35)'; o.shadowBlur=30; o.shadowOffsetY=12; o.fill(); o.restore();
-  o.save(); o.clip(); o.drawImage(pc,0,0,pw,ph,dx,dy,dw,dh); o.restore();
+  const H=y, c=document.createElement('canvas'); c.width=RWd; c.height=H; const o=c.getContext('2d');
+  o.drawImage(c0,0,0,RWd,H,0,0,RWd,H);
+  o.globalCompositeOperation='multiply'; o.drawImage(paperTex(RWd,H,VISIT.no),0,0); o.globalCompositeOperation='source-over';
   return c;
 }
 const SECRET_MISSED = '您錯過了一面牆', SECRET_FOUND = '您穿過了一面牆', THANKS = '狀態售出，概不退換';
