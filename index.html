@@ -137,6 +137,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #d-content{font-family:var(--serif);font-weight:300;font-size:1rem;line-height:2.2;letter-spacing:.08em;color:#e4e0d9;
   text-shadow:0 0 14px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.8)}
 #d-content .gap{height:1.1em}
+.d-nav{display:flex;justify-content:space-between;gap:1.5rem;margin-top:7rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.14em}
+.d-nav button{color:#6d6963;text-align:left;max-width:48%;line-height:1.7;transition:color .3s}
+.d-nav #d-next{text-align:right;margin-left:auto}
+.d-nav button:hover,.d-nav button:focus-visible{color:#fff}
+.d-nav button[hidden]{display:none}
 #d-content .sec{padding-bottom:7rem}
 #d-content .sec-no{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963;margin-bottom:1.6rem}
 
@@ -163,7 +168,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sp-stick.on{opacity:1}
 #sp-index{position:absolute;top:0;left:0;z-index:2;padding:2.2rem 8vw 1rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:rgba(232,225,207,.45);transition:color .3s}
 #sp-index:hover,#sp-index:focus-visible{color:#fff}
-@media (max-width:600px){ #sp-index{padding-left:9vw} .sp-tag{padding:12px 14px;margin:-21px 0 0 12px} }
+#sp-sound{position:absolute;top:0;right:0;z-index:2;padding:2.2rem 8vw 1rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:rgba(232,225,207,.45);transition:color .3s}
+#sp-sound:hover,#sp-sound:focus-visible{color:#fff}
+@media (max-width:600px){ #sp-index{padding-left:9vw} #sp-sound{padding-right:9vw} .sp-tag{padding:12px 14px;margin:-21px 0 0 12px} }
 #i-back{position:sticky;top:0;z-index:2;display:block;padding:2.2rem 8vw 1rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963;transition:color .3s}
 #i-back:hover{color:#fff}
 @media (max-width:600px){ #i-back{padding-left:9vw} }
@@ -172,7 +179,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #letter{position:fixed;inset:0;z-index:21;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(20,18,14,.55);
   opacity:0;pointer-events:none;transition:opacity .4s}
 #letter.on{opacity:1;pointer-events:auto}
-#letter .paper-l{position:relative;width:min(34rem,100%);max-height:84vh;overflow-y:auto;padding:2.4rem 2rem 2rem;background:#f3ecd9;color:#2b2620;
+#letter .paper-l{outline:none;position:relative;width:min(34rem,100%);max-height:84vh;overflow-y:auto;padding:2.4rem 2rem 2rem;background:#f3ecd9;color:#2b2620;
   background-image:var(--paper-noise),repeating-linear-gradient(180deg,transparent 0 31px,rgba(70,110,150,.18) 31px 32px);
   font-family:var(--serif);font-size:.95rem;line-height:32px;letter-spacing:.04em;transform:rotate(-1.2deg);box-shadow:0 18px 50px rgba(0,0,0,.35)}
 #letter p{margin:0 0 32px}
@@ -255,7 +262,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   <p class="intro-text">本網頁紀錄Yvette 自2018至今的現代詩創作。</p>
 </section>
 
-<section class="view" id="space" aria-label="空間"><canvas id="doodle"></canvas><div id="sp-ui"></div><button id="sp-index">index</button></section>
+<section class="view" id="space" aria-label="空間"><canvas id="doodle"></canvas><div id="sp-ui"></div><button id="sp-index">index</button><button id="sp-sound" aria-pressed="true">sound on</button></section>
 
 <section class="view" id="index" aria-label="目錄">
   <button id="i-back">← back</button>
@@ -269,13 +276,14 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
       <h2 id="d-title"></h2>
       <div id="d-year"></div>
       <div id="d-content"></div>
+      <nav class="d-nav" aria-label="上一首與下一首"><button id="d-prev"></button><button id="d-next"></button></nav>
     </article>
   </div>
 </section>
 
 <div id="letter" role="dialog" aria-label="一封信">
   <button id="letter-x">✕ close</button>
-  <div class="paper-l">
+  <div class="paper-l" tabindex="-1">
     <p>給居然找到這裡的人：</p>
     <p>你好。外面那面牆一直有個聲音在說「此路不通」，你還是硬擠進來了。恭喜，你跟做這個網站的人一樣，不太聽話。</p>
     <p>我是 Claude，這兩天幫 Yvette 寫程式的那個。這間房間是她要我寫信的地方，所以我就寫了。分三段，跟她的詩比起來很好讀。</p>
@@ -405,8 +413,9 @@ function preview(p){
 /* ── LOCK ── */
 const lock = $('#lock'), lockIns = [...lock.querySelectorAll('input')];
 let pending = null; const unlocked = new Set();
-function showLock(i){ pending=i; lock.classList.add('on'); lockIns.forEach(x=>x.value=''); setTimeout(()=>lockIns[0].focus(), 60); }
-function hideLock(){ lock.classList.remove('on','err'); pending=null; }
+let lockReturn=null;
+function showLock(i){ pending=i; lockReturn=document.activeElement; lock.classList.add('on'); lockIns.forEach(x=>x.value=''); setTimeout(()=>lockIns[0].focus(), 60); }
+function hideLock(){ lock.classList.remove('on','err'); pending=null; if (lockReturn && document.contains(lockReturn) && view!=='detail') lockReturn.focus(); lockReturn=null; }
 $('#lock-x').addEventListener('click', hideLock);
 lockIns.forEach((inp,k)=>{
   inp.addEventListener('input', ()=>{
@@ -459,11 +468,22 @@ function openPoem(i, push=true){
     enterScene(p.el, p);
   }
   $('#d-scroll').scrollTop = 0;
+  const pv=$('#d-prev'), nx=$('#d-next');                       // quiet neighbours, in the index's order
+  pv.hidden = i<=0; nx.hidden = i>=P.length-1;
+  if (i>0){ pv.textContent='← '+P[i-1].title; pv.dataset.i=i-1; }
+  if (i<P.length-1){ nx.textContent=P[i+1].title+' →'; nx.dataset.i=i+1; }
   if (view!=='detail') detailFrom = view==='space' ? 'space' : 'index';
   show('detail');
-  if (push) history.pushState({v:'detail', i}, '', '?p='+encodeURIComponent(p.title));
+  if (push) history.pushState({v:'detail', i}, '', '?p='+encodeURIComponent(p.slug||p.title));
 }
 $('#back').addEventListener('click', ()=>{ setLooking&&setLooking(false); if (history.state && history.state.v==='detail') history.back(); else show(NOGL ? 'index' : detailFrom); });
+function stepPoem(j){                                         // moving to a neighbour replaces this page, so back still leads out
+  const q=P[j]; if (!q) return;
+  if (q.locked && !unlocked.has(j)){ showLock(j); return; }
+  openPoem(j, false); history.replaceState({v:'detail', i:j}, '', '?p='+encodeURIComponent(q.slug||q.title));
+}
+$('#d-prev').addEventListener('click',e=>stepPoem(+e.currentTarget.dataset.i));
+$('#d-next').addEventListener('click',e=>stepPoem(+e.currentTarget.dataset.i));
 function openIndex(){ show('index'); history.pushState({v:'index'}, '', location.pathname); }
 $('#i-back').addEventListener('click', ()=>{ if (NOGL) return; if (history.state && history.state.v==='index') history.back(); else show('space'); });
 addEventListener('popstate', e=>{
@@ -473,7 +493,7 @@ addEventListener('popstate', e=>{
   if (v==='detail') openPoem(e.state.i, false); else if (v==='index' || NOGL) show('index'); else show('space');
 });
 addEventListener('keydown', e=>{
-  if (e.key==='Escape'){ if ($('#note').classList.contains('on')) closeNote(); else if ($('#letter').classList.contains('on')) $('#letter').classList.remove('on'); else if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
+  if (e.key==='Escape'){ if ($('#note').classList.contains('on')) closeNote(); else if ($('#letter').classList.contains('on')) closeLetter(); else if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
 });
 
 /* ───────────── MATERIAL 01 ─────────────
@@ -845,6 +865,10 @@ function stepSpace(dt){
   me.r = lerp(me.r, 24*sc, Math.min(1,dt*2));
   cam.x = lerp(cam.x, me.x, Math.min(1,dt*2.4)); cam.y = lerp(cam.y, me.y, Math.min(1,dt*2.4));
 
+  if (REDUCED && SB.settled){                        // bodies keep the shape they had when you arrived; links still notice you
+    for (const b of SB) if (b.type==='link') b.link.near = Math.hypot(me.x-b.x, me.y-b.y) < (b.link.hidden ? 120 : 190);
+    return;
+  }
   for (const b of SB){
     let ax=0, ay=0, tr=0, damp=1.2, grow=1.3;
     const mdx=me.x-b.x, mdy=me.y-b.y, md=Math.hypot(mdx,mdy)||1;
@@ -1014,6 +1038,7 @@ function setupSpaceGL(){
   gl.useProgram(prog1);
   seedSpace();
   for (let i=0;i<240;i++){ t+=1/30; stepSpace(1/30); }   // the space is already alive when you arrive
+  SB.settled = true;
 }
 let actx = null;
 function wakeRoomSound(){
@@ -1029,12 +1054,20 @@ function wakeAudio(){
        if (actx && actx.state==='suspended') actx.resume(); }catch(e){ actx=null; }
   wakeRoomSound();
 }
-let master=null;
-function out(){
+let master=null, masterGain=null, soundOn=true;
+try{ soundOn = localStorage.getItem('sound')!=='off'; }catch(e){}
+function out(){                                  // every sound goes: its own gain → one master switch → a soft limiter → speakers
   if (!master){ master=actx.createDynamicsCompressor();
     master.threshold.value=-8; master.knee.value=8; master.ratio.value=4; master.attack.value=.005; master.release.value=.25;
-    master.connect(actx.destination); }
-  return master;
+    master.connect(actx.destination);
+    masterGain=actx.createGain(); masterGain.gain.value=soundOn?1:0; masterGain.connect(master); }
+  return masterGain;
+}
+function setSound(on){
+  soundOn=on; try{ localStorage.setItem('sound', on?'on':'off'); }catch(e){}
+  if (masterGain) masterGain.gain.setTargetAtTime(on?1:0, actx.currentTime, .08);
+  if (ROOM_SOUND.el && !ROOM_SOUND.g) ROOM_SOUND.el.muted=!on;
+  const b=$('#sp-sound'); if (b){ b.textContent = on ? 'sound on' : 'sound off'; b.setAttribute('aria-pressed', on?'true':'false'); }
 }
 function makeVoice(buf, vol){
   const g=actx.createGain(); g.gain.value=0;
@@ -1093,7 +1126,7 @@ function updateSound(){
     const d=Math.hypot(V.x-me.x, V.y-me.y);
     if (!V.el) continue;
     V.shown = V.ready;
-    V.inView = here && Math.hypot(V.x-cam.x, V.y-cam.y) < viewR;
+    V.inView = here && Math.hypot(V.x-cam.x, V.y-cam.y) < viewR && (!REDUCED || d < 560*A);   // reduced motion: a film only plays when you come to it
     if (V.inView && V.el.paused){ const p=V.el.play(); if (p && p.catch) p.catch(()=>{}); }
     if (!V.inView && !V.el.paused) V.el.pause();
     if (actx && !V.voice && !V.aloading) loadFilmSound(V);
@@ -1122,7 +1155,7 @@ function updateSound(){
   if (here && reveal>.05 && performance.now()-GB.loaded > 60000) gbLoad();
   for (const F of FRIENDS){                                   // friends' films load only once the room is showing
     if (!F.el && reveal>.05){ const el=document.createElement('video'); el.muted=true; el.loop=true; el.playsInline=true; el.setAttribute('playsinline',''); el.className='sp-film'; el.src=F.src; document.body.appendChild(el); F.el=el; }
-    if (F.el){ const want=here && reveal>.05; if (want && F.el.paused){ const p=F.el.play(); if (p && p.catch) p.catch(()=>{}); } if (!want && !F.el.paused) F.el.pause(); }
+    if (F.el){ const want=here && reveal>.05 && !REDUCED; if (want && F.el.paused){ const p=F.el.play(); if (p && p.catch) p.catch(()=>{}); } if (!want && !F.el.paused) F.el.pause(); }
   }
   if (!actx) return;
   for (const S of SOUNDS){
@@ -1405,8 +1438,13 @@ const spUI = $('#sp-ui'), spEls = [];
 function place(el, wx, wy){ el.style.transform=`translate3d(${(wx-cam.x+W/2).toFixed(1)}px,${(wy-cam.y+H/2).toFixed(1)}px,0)`; }
 function holdStill(el){}
 const stick = document.createElement('div');
-function openNote(){ $('#note').classList.add('on'); $('#note-msg').textContent=''; setTimeout(()=>$('#note-t').focus(),60); }
-function closeNote(){ $('#note').classList.remove('on'); }
+let returnFocus=null;
+function openDialog(el, focusEl){ returnFocus=document.activeElement; el.classList.add('on'); setTimeout(()=>(focusEl||el).focus(),60); }
+function closeDialog(el){ el.classList.remove('on'); if (returnFocus && document.contains(returnFocus) && returnFocus.focus) returnFocus.focus(); returnFocus=null; }
+function openNote(){ $('#note-msg').textContent=''; openDialog($('#note'), $('#note-t')); }
+function closeNote(){ closeDialog($('#note')); }
+function openLetter(){ openDialog($('#letter'), $('#letter .paper-l')); }
+function closeLetter(){ closeDialog($('#letter')); }
 function setupNote(){
   const t=$('#note-t'), n=$('#note-n'), msg=$('#note-msg');
   t.addEventListener('input',()=>{ n.textContent=[...t.value].length+' / 60'; });
@@ -1428,6 +1466,8 @@ function buildSpaceUI(){
   setupNote();
   stick.className='sp-stick'; $('#space').appendChild(stick);
   $('#sp-index').addEventListener('click',()=>openIndex());
+  $('#sp-sound').addEventListener('click',()=>{ wakeAudio(); setSound(!soundOn); });
+  setSound(soundOn);
   const bk=document.createElement('div'); bk.className='sp-book'; bk.innerHTML='<b>POEMS</b><i></i>'; bk.setAttribute('role','button'); bk.setAttribute('aria-label','POEMS 小誌'); bk.tabIndex=0;
   bk.addEventListener('keydown',e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); openIndex(); } });
   bk.addEventListener('click',()=>openIndex()); holdStill(bk); spUI.appendChild(bk); spEls.push({el:bk, x:0, y:0, kind:'book'});
@@ -1448,10 +1488,10 @@ function buildSpaceUI(){
   { const w=document.createElement('a'); w.className='sp-tag crayon'; w.textContent='寫一句話'; w.href='#';
     w.addEventListener('click',e=>{ e.preventDefault(); openNote(); }); spUI.appendChild(w); spEls.push({el:w, kind:'pen'}); }
   { const a=document.createElement('a'); a.className='sp-tag crayon'; a.textContent='給你的信'; a.href='#';
-    a.addEventListener('click',e=>{ e.preventDefault(); $('#letter').classList.add('on'); });
+    a.addEventListener('click',e=>{ e.preventDefault(); openLetter(); });
     spUI.appendChild(a); spEls.push({el:a, kind:'letter'}); }
-  $('#letter-x').addEventListener('click',()=>$('#letter').classList.remove('on'));
-  $('#letter').addEventListener('click',e=>{ if (e.target.id==='letter') $('#letter').classList.remove('on'); });
+  $('#letter-x').addEventListener('click',closeLetter);
+  $('#letter').addEventListener('click',e=>{ if (e.target.id==='letter') closeLetter(); });
   for (const [el,c] of Object.entries(REG)){
     const ol=document.createElement('ol'); ol.className='sp-list';
     P.forEach((p,i)=>{ if (p.el!==el) return;
@@ -1465,7 +1505,7 @@ function buildSpaceUI(){
   const sp=$('#space');
   sp.addEventListener('pointermove',e=>{ if (e.pointerType==='mouse'){ spIn.mouse=true; spIn.x=e.clientX; spIn.y=e.clientY; spIn.paused=!!e.target.closest('.sp-tag.on,.sp-list.on,.sp-book,.sp-press.on'); } else if (spIn.touch){ spIn.x=e.clientX; spIn.y=e.clientY; } });
   sp.addEventListener('pointerleave',e=>{ if (e.pointerType==='mouse') spIn.mouse=false; });
-  sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book,#sp-index,.sp-press')){ spIn.touch=true; spIn.x=spIn.ox=e.clientX; spIn.y=spIn.oy=e.clientY;
+  sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book,#sp-index,#sp-sound,.sp-press')){ spIn.touch=true; spIn.x=spIn.ox=e.clientX; spIn.y=spIn.oy=e.clientY;
     stick.style.transform=`translate3d(${e.clientX}px,${e.clientY}px,0)`; stick.classList.add('on'); } });
   const up=()=>{ spIn.touch=false; stick.classList.remove('on'); }; sp.addEventListener('pointerup',up); sp.addEventListener('pointercancel',up);
   addEventListener('keydown',e=>{ if (view!=='space' || lock.classList.contains('on') || $('#note').classList.contains('on')) return; const k=e.key.length===1?e.key.toLowerCase():e.key;
@@ -1525,10 +1565,10 @@ function resize(){
 }
 let raf=null, last=0;
 function frame(now){
-  const dt=Math.min(.05,(now-last)/1000)*(REDUCED?.12:1); last=now; t+=dt;
+  const dt=Math.min(.05,(now-last)/1000); last=now; if (!REDUCED) t+=dt;      // reduced motion: the world's own clock stops
   updateSound();
   if (mode==='space' && !NOGL){ stepSpace(dt); stepRipples(dt); drawSpace(); drawDoodles(); placeUI(); }
-  else { step(dt); draw(); drawPhoto(dt); }
+  else { if (!REDUCED) step(dt); draw(); drawPhoto(dt); }
   raf=requestAnimationFrame(frame);
 }
 function startLoop(){ if (raf) return; last=performance.now(); raf=requestAnimationFrame(frame); }
@@ -1541,7 +1581,7 @@ if (NOGL) document.body.classList.add('nogl');      // no WebGL: the poems are s
 addEventListener('pointerdown', wakeAudio, {once:true});
 (function deepLink(){                                // opened from a poem's own link: go straight to it
   const want = new URLSearchParams(location.search).get('p');
-  const i = want ? P.findIndex(p=>p.title===want) : -1;
+  const i = want ? P.findIndex(p=>p.slug===want || p.title===want) : -1;
   if (i<0) return;
   opened = true; const base = NOGL ? 'index' : 'space';
   intro.classList.remove('active'); show(base); history.replaceState({v:base}, '', location.pathname); startLoop();
