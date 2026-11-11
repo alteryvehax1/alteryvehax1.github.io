@@ -179,6 +179,15 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #letter .h{margin-bottom:0;color:#a8452c;letter-spacing:.12em}
 #letter-x{position:absolute;top:1.4rem;right:1.4rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#f3ecd9}
 .sp-tag.crayon{color:#c0392b;font-weight:700}
+.sp-press{width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50% 46% 52% 48%;border:5px solid #e8473d;background:rgba(244,196,48,.75);
+  color:#c0392b;font:700 1.15rem/1 'Chalkboard SE','Comic Sans MS','Marker Felt',cursive;opacity:0;pointer-events:none;transition:opacity .5s;
+  animation:wob .5s steps(2) infinite}
+.sp-press.on{opacity:1;pointer-events:auto;cursor:pointer}
+.sp-press.boing{animation:boing .35s ease}
+@keyframes wob{0%{rotate:-4deg}100%{rotate:3deg}}
+@keyframes boing{0%{scale:1}30%{scale:.82}70%{scale:1.12}100%{scale:1}}
+.sp-say{white-space:nowrap;font:700 1rem/1.4 'Chalkboard SE','Comic Sans MS','Marker Felt',cursive;color:#3a7bd5;rotate:-3deg;opacity:0;transition:opacity .4s;pointer-events:none}
+.sp-say.on{opacity:1}
 .sp-tag.crayon:hover{color:#e8473d}
 
 /* ───────────── LOCK ───────────── */
@@ -987,7 +996,14 @@ function setupSpaceGL(){
   for (let i=0;i<240;i++){ t+=1/30; stepSpace(1/30); }   // the space is already alive when you arrive
 }
 let actx = null;
+function wakeRoomSound(){
+  if (ROOM_SOUND.el) return;
+  const el=new Audio(); el.src=ROOM_SOUND.src; el.preload='none'; el.volume=0; ROOM_SOUND.el=el;
+  el.addEventListener('ended',()=>{ ROOM_SOUND.done=true; });
+  const p=el.play(); if (p && p.then) p.then(()=>el.pause()).catch(()=>{}); else el.pause();
+}
 function wakeAudio(){
+  wakeRoomSound();
   try{ if (!actx){ const AC = window.AudioContext||window.webkitAudioContext; if (AC) actx = new AC(); }
        if (actx && actx.state==='suspended') actx.resume(); }catch(e){ actx=null; }
 }
@@ -1070,6 +1086,20 @@ function updateSound(){
     }
   }
   if (actx){ for (const S of [...SOUNDS, EDGE]) if (!S.voice && !S.loading && here) loadSound(S); }
+  // the room: its sound streams (it is long), plays once, fades out at its own end
+  const R0 = ROOM_SOUND;
+  if (R0.el && !R0.done){
+    const inside = here && reveal>.3;
+    if (inside && R0.el.paused){ const p=R0.el.play(); if (p && p.catch) p.catch(()=>{}); }
+    const d=R0.el.duration||1e9, left=d-R0.el.currentTime, tail=clamp(left/8,0,1);
+    const target = inside ? R0.vol*tail : 0;
+    R0.v = lerp(R0.v||0, target, .06); R0.el.volume = clamp(R0.v,0,1);
+    if (!inside && R0.v<.01 && !R0.el.paused) R0.el.pause();
+  }
+  for (const F of FRIENDS){                                   // friends' films load only once the room is showing
+    if (!F.el && reveal>.05){ const el=document.createElement('video'); el.muted=true; el.loop=true; el.playsInline=true; el.setAttribute('playsinline',''); el.className='sp-film'; el.src=F.src; document.body.appendChild(el); F.el=el; }
+    if (F.el){ const want=here && reveal>.05; if (want && F.el.paused){ const p=F.el.play(); if (p && p.catch) p.catch(()=>{}); } if (!want && !F.el.paused) F.el.pause(); }
+  }
   if (!actx) return;
   for (const S of SOUNDS){
     const d=Math.hypot(S.x-me.x, S.y-me.y);
@@ -1086,6 +1116,7 @@ function updateSound(){
   }
 }
 function muteSounds(){
+  if (ROOM_SOUND.el && !ROOM_SOUND.el.paused){ ROOM_SOUND.el.pause(); ROOM_SOUND.v=0; }
   for (const V of VIDEOS) if (V.el && !V.el.paused) V.el.pause();
   if (!actx) return;
   for (const S of [...SOUNDS, EDGE, ...VIDEOS]) if (S.voice) S.voice.g.gain.setTargetAtTime(0, actx.currentTime, .12);
@@ -1192,6 +1223,8 @@ function buildDoodles(){
   sun(X+1280,Y-470,70);
   rainbow(X+640,Y-330,150);
   cat(X+330,Y-120,70);   cat(X+1110,Y+250,56);
+  PRESS.eye={x:X+330+70*.22, y:Y-120-70*.02}; PRESS.x=X+1290; PRESS.y=Y+90;
+  FRIENDS.forEach(F=>{ F.wx=X+F.x; F.wy=Y+F.y; });
   hamster(X+760,Y+40,52); hamster(X+520,Y+390,40);
   koala(X+1000,Y-120,64);
   envelope(X+250,Y+300,46); LETTER.x=X+250; LETTER.y=Y+300;
@@ -1203,10 +1236,25 @@ function buildDoodles(){
   for (let i=0;i<10;i++){ const x=X+rnd(60,1420), y=Y+rnd(-640,640); add(pick(CRAYON),rnd(3,6),line(x,y,x+rnd(-140,140),y+rnd(-60,60),5),5); }
 }
 const LETTER = {x:0, y:0, near:false};
+const ROOM_SOUND = {src:'audio/room.m4a', vol:.8, done:false};   // plays once while you're in the room, fades out at its end, never repeats
+const FRIENDS = [                                                // friends' clips: shape-shifting crayon frames that float around the paper
+  // {src:'video/f1.mp4', x:600,  y:-420},
+];
+const PRESS = {x:0, y:0, n:0, eye:{x:0,y:0}};
 const CRACK = [];                                        // from outside: a few crayon marks leaking through the gap, nothing more
 function buildCrack(){ const c=['#e8473d','#f4c430','#3a7bd5','#f27ab0','#4fb35a'];
   for (let i=0;i<6;i++){ const y=GAP.y0+18+i*(GAP.y1-GAP.y0-36)/5, x=WORLD+rnd(-2,10);
     CRACK.push({crack:true, col:c[i%c.length], w:rnd(3,5), alpha:.9, paths:wob(line(x,y,x+rnd(14,30),y+rnd(-10,10),3),2)}); } }
+const SHAPES = (()=>{                                       // star, heart, flower, cloud, blob: same number of points so one can melt into the next
+  const N=60;
+  const polar=f=>Array.from({length:N},(_,i)=>{ const a=i/N*6.283-Math.PI/2, r=f(a); return [Math.cos(a)*r, Math.sin(a)*r]; });
+  const heart=Array.from({length:N},(_,i)=>{ const t=i/N*6.283; return [16*Math.pow(Math.sin(t),3)/17, -(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))/17]; });
+  return [ polar(a=>.5+.5*Math.pow(Math.abs(Math.cos(a*2.5)),2.2)), heart, polar(a=>.72+.28*Math.abs(Math.sin(a*3))), polar(a=>.82+.12*Math.sin(a*5)+.06*Math.sin(a*9)), polar(a=>.9+.1*Math.sin(a*2)) ];
+})();
+function morph(phase, R, v){
+  const n=SHAPES.length, i=Math.floor(phase)%n, j=(i+1)%n, f=phase%1, e=f<.6?0:sstep(.6,1,f);   // hold a shape, then melt into the next
+  return SHAPES[i].map(([x,y],q)=>{ const [x2,y2]=SHAPES[j][q]; const w=1+Math.sin(q*1.3+v*2)*.03; return [lerp(x,x2,e)*R*w, lerp(y,y2,e)*R*w]; });
+}
 function drawDoodles(){
   const d=Math.min(devicePixelRatio||1,2);
   if (dcv.width!==Math.round(W*d)){ dcv.width=Math.round(W*d); dcv.height=Math.round(H*d); }
@@ -1222,6 +1270,19 @@ function drawDoodles(){
     const pts=o.paths[v]; dctx.strokeStyle=o.col; dctx.globalAlpha=o.alpha*.9*a; dctx.lineWidth=o.w*k;
     dctx.beginPath(); pts.forEach(([x,y],i)=> i?dctx.lineTo(x,y):dctx.moveTo(x,y)); dctx.stroke();
     dctx.globalAlpha=o.alpha*.35*a; dctx.lineWidth=o.w*k*.55; dctx.beginPath(); pts.forEach(([x,y],i)=> i?dctx.lineTo(x+1.6,y-1.2):dctx.moveTo(x+1.6,y-1.2)); dctx.stroke();   // waxy second pass
+  }
+  if (reveal>.01){
+    // the useless thing: every press makes one cat's big eye bigger
+    const er=9+Math.min(PRESS.n,120)*1.1; dctx.globalAlpha=reveal; dctx.fillStyle='#2b2b2b'; dctx.beginPath();
+    for (let j=0;j<=18;j++){ const a=j/18*6.283, rr=er*(1+Math.sin(a*3+v*2)*.06); j?dctx.lineTo(PRESS.eye.x+Math.cos(a)*rr,PRESS.eye.y+Math.sin(a)*rr*.85):dctx.moveTo(PRESS.eye.x+Math.cos(a)*rr,PRESS.eye.y+Math.sin(a)*rr*.85); }
+    dctx.fill(); if (er>14){ dctx.fillStyle='#fff'; dctx.beginPath(); dctx.arc(PRESS.eye.x-er*.3,PRESS.eye.y-er*.3,er*.22,0,6.283); dctx.fill(); }
+    // friends' films: inside a crayon shape that keeps turning into another shape
+    FRIENDS.forEach((F,i)=>{ if (!F.el || F.el.readyState<2) return;
+      const bob=Math.sin(t*.7+i*2)*14, fx=F.wx+Math.sin(t*.31+i)*22, fy=F.wy+bob, R=95*k;
+      const pts=morph(t*.33+i*1.7, R, v);
+      dctx.save(); dctx.globalAlpha=reveal; dctx.beginPath(); pts.forEach(([x,y],j)=> j?dctx.lineTo(fx+x,fy+y):dctx.moveTo(fx+x,fy+y)); dctx.closePath(); dctx.clip();
+      const vw=F.el.videoWidth||1, vh=F.el.videoHeight||1, sc2=Math.max(2*R/vw,2*R/vh); dctx.drawImage(F.el,fx-vw*sc2/2,fy-vh*sc2/2,vw*sc2,vh*sc2); dctx.restore();
+      dctx.globalAlpha=reveal*.95; dctx.strokeStyle=CRAYON[i%CRAYON.length]; dctx.lineWidth=5*k; dctx.beginPath(); pts.forEach(([x,y],j)=> j?dctx.lineTo(fx+x,fy+y):dctx.moveTo(fx+x,fy+y)); dctx.closePath(); dctx.stroke(); });
   }
   if (reveal>.01){                                          // on paper, you are drawn in crayon too
     const cols=['#e8473d','#f39a2b','#f4c430','#4fb35a','#3a7bd5','#8e5cc2'], R=me.r*1.3;
@@ -1250,6 +1311,14 @@ function buildSpaceUI(){
     else { a.href='#'; a.addEventListener('click',e=>{ e.preventDefault(); location.href='mai'+'lto:'+L.mail.join('@'); }); }
     holdStill(a); spUI.appendChild(a); spEls.push({el:a, link:L, kind:'link'});
   }
+  { const b=document.createElement('button'); b.className='sp-press'; b.textContent='按我'; b.setAttribute('aria-label','一個沒有用的按鈕');
+    try{ PRESS.n=+localStorage.getItem('useless')||0; }catch(e){}
+    const say=document.createElement('div'); say.className='sp-say';
+    const LINES={1:'？',3:'還按',6:'好了啦',10:'它真的沒有用',15:'你看那隻貓',20:'牠的眼睛',30:'你很閒',45:'Yvette 按了零次',60:'我也沒有按',80:'這個按鈕不會壞，你會',100:'好，你贏了',101:'（其實什麼都沒有）',150:'還在？',200:'喵'};
+    b.addEventListener('click',()=>{ PRESS.n++; try{ localStorage.setItem('useless',PRESS.n); }catch(e){}
+      const keys=Object.keys(LINES).map(Number).filter(k=>k<=PRESS.n); const line=LINES[Math.max(...keys)];
+      say.textContent=line+'　×'+PRESS.n; say.classList.add('on'); b.classList.remove('boing'); void b.offsetWidth; b.classList.add('boing'); });
+    spUI.appendChild(b); spEls.push({el:b, kind:'press'}); spUI.appendChild(say); spEls.push({el:say, kind:'say'}); }
   { const a=document.createElement('a'); a.className='sp-tag crayon'; a.textContent='給你的信'; a.href='#';
     a.addEventListener('click',e=>{ e.preventDefault(); $('#letter').classList.add('on'); });
     spUI.appendChild(a); spEls.push({el:a, kind:'letter'}); }
@@ -1266,9 +1335,9 @@ function buildSpaceUI(){
   for (const [el,c] of [['書',{x:0,y:0}], ...Object.entries(REG)]){
     const d=document.createElement('div'); d.className='sp-dot'; spUI.appendChild(d); spEls.push({el:d, x:c.x, y:c.y, kind:'dot'}); }
   const sp=$('#space');
-  sp.addEventListener('pointermove',e=>{ if (e.pointerType==='mouse'){ spIn.mouse=true; spIn.x=e.clientX; spIn.y=e.clientY; spIn.paused=!!e.target.closest('.sp-tag.on,.sp-list.on,.sp-book'); } else if (spIn.touch){ spIn.x=e.clientX; spIn.y=e.clientY; } });
+  sp.addEventListener('pointermove',e=>{ if (e.pointerType==='mouse'){ spIn.mouse=true; spIn.x=e.clientX; spIn.y=e.clientY; spIn.paused=!!e.target.closest('.sp-tag.on,.sp-list.on,.sp-book,.sp-press.on'); } else if (spIn.touch){ spIn.x=e.clientX; spIn.y=e.clientY; } });
   sp.addEventListener('pointerleave',e=>{ if (e.pointerType==='mouse') spIn.mouse=false; });
-  sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book,#sp-index')){ spIn.touch=true; spIn.x=spIn.ox=e.clientX; spIn.y=spIn.oy=e.clientY;
+  sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book,#sp-index,.sp-press')){ spIn.touch=true; spIn.x=spIn.ox=e.clientX; spIn.y=spIn.oy=e.clientY;
     stick.style.transform=`translate3d(${e.clientX}px,${e.clientY}px,0)`; stick.classList.add('on'); } });
   const up=()=>{ spIn.touch=false; stick.classList.remove('on'); }; sp.addEventListener('pointerup',up); sp.addEventListener('pointercancel',up);
   addEventListener('keydown',e=>{ if (view!=='space' || lock.classList.contains('on')) return; const k=e.key.length===1?e.key.toLowerCase():e.key;
@@ -1288,6 +1357,10 @@ function placeUI(){
         const lx=clamp(o.x-cam.x+W/2+150*Math.max(sc,.8), 16, W-o.el.offsetWidth-16), ly=clamp(o.y-cam.y+H/2-o.h/2, 64, Math.max(64,H-o.h-20));
         o.el.style.transform=`translate3d(${lx.toFixed(1)}px,${ly.toFixed(1)}px,0)`;
       } else place(o.el, o.x, o.y);
+    } else if (o.kind==='press' || o.kind==='say'){
+      const on = reveal>.5 && Math.hypot(me.x-PRESS.x, me.y-PRESS.y) < 520;
+      o.el.classList.toggle('on', o.kind==='press' ? on : on && o.el.textContent!=='');
+      if (o.kind==='press') place(o.el, PRESS.x, PRESS.y); else place(o.el, PRESS.x-70, PRESS.y+70);
     } else if (o.kind==='letter'){
       o.el.classList.toggle('on', reveal>.5 && Math.hypot(me.x-LETTER.x, me.y-LETTER.y) < 170); place(o.el, LETTER.x+30, LETTER.y-20);
     } else if (o.kind==='link'){
