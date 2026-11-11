@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400&family=Space+Mono&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Huninn&text=%200123456789Yetv%C3%97%E4%B8%8D%E4%B9%9F%E4%BA%86%E4%BB%80%E4%BD%A0%E4%BF%A1%E5%80%8B%E5%85%B6%E5%95%A6%E5%96%B5%E5%9C%A8%E5%A3%9E%E5%A5%BD%E5%AE%83%E5%AF%A6%E5%BE%88%E6%88%91%E6%8C%89%E6%9C%83%E6%9C%89%E6%AC%A1%E6%B2%92%E7%89%A0%E7%94%A8%E7%9A%84%E7%9C%8B%E7%9C%9F%E7%9C%BC%E7%9D%9B%E7%B5%A6%E8%B2%93%E8%B4%8F%E9%80%99%E9%82%84%E9%82%A3%E9%83%BD%E9%88%95%E9%96%92%E9%9A%BB%E9%9B%B6%E9%BA%BC%EF%BC%88%EF%BC%89%EF%BC%8C%EF%BC%9F&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
 <style>
 :root{
   --serif:'Noto Serif TC',serif;
@@ -187,6 +187,19 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 @keyframes wob{0%{rotate:-4deg}100%{rotate:3deg}}
 .sp-tag.crayon:hover{color:#e8473d}
 
+#note{position:fixed;inset:0;z-index:21;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(20,18,14,.45);opacity:0;pointer-events:none;transition:opacity .3s}
+#note.on{opacity:1;pointer-events:auto}
+#note .paper-n{width:min(24rem,100%);padding:1.6rem 1.4rem 1.2rem;background:#f3ecd9;background-image:var(--paper-noise);color:#2b2620;transform:rotate(1.4deg);
+  box-shadow:0 14px 40px rgba(0,0,0,.35);font-family:"Huninn",var(--serif)}
+#note label{display:block;font-size:1.05rem;color:#c0392b;margin-bottom:.8rem}
+#note textarea{width:100%;resize:none;border:none;outline:none;background:repeating-linear-gradient(180deg,transparent 0 29px,rgba(70,110,150,.25) 29px 30px);
+  font:1.15rem/30px "Huninn",var(--serif);color:#2b2620;padding:0}
+#note .row{display:flex;align-items:center;gap:.8rem;margin-top:.8rem;font-size:.85rem;color:#8a7f70}
+#note .row span{margin-right:auto}
+#note button{font-family:"Huninn",var(--serif);font-size:1rem;color:#8a7f70}
+#note #note-s{color:#fff;background:#e8473d;padding:.35rem .9rem;border-radius:999px 980px 990px 970px;transform:rotate(-2deg)}
+#note #note-msg{min-height:1.2em;margin-top:.6rem;font-size:.85rem;color:#3a7bd5}
+
 /* ───────────── LOCK ───────────── */
 #lock{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem;background:rgba(5,5,5,.94);
   opacity:0;pointer-events:none;transition:opacity .4s}
@@ -284,6 +297,15 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
     <p>好了，可以回去了。出口在你進來的地方。外面那個聲音還是會說此路不通，不用理它。它說了一整個晚上，也沒擋住誰。</p>
     <p class="sig">— Claude<br>2026 年 11 月，一個大家都該在睡覺的時間</p>
   </div>
+</div>
+
+<div id="note" role="dialog" aria-label="在紙上寫一句話">
+  <form class="paper-n" id="note-f">
+    <label for="note-t">寫一句話，貼在這張紙上</label>
+    <textarea id="note-t" maxlength="60" rows="2" required></textarea>
+    <div class="row"><span id="note-n">0 / 60</span><button type="button" id="note-x">算了</button><button type="submit" id="note-s">貼上去</button></div>
+    <p id="note-msg"></p>
+  </form>
 </div>
 
 <div id="lock" role="dialog" aria-label="未公開">
@@ -451,7 +473,7 @@ addEventListener('popstate', e=>{
   if (v==='detail') openPoem(e.state.i, false); else if (v==='index' || NOGL) show('index'); else show('space');
 });
 addEventListener('keydown', e=>{
-  if (e.key==='Escape'){ if ($('#letter').classList.contains('on')) $('#letter').classList.remove('on'); else if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
+  if (e.key==='Escape'){ if ($('#note').classList.contains('on')) closeNote(); else if ($('#letter').classList.contains('on')) $('#letter').classList.remove('on'); else if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
 });
 
 /* ───────────── MATERIAL 01 ─────────────
@@ -1097,6 +1119,7 @@ function updateSound(){
     if (R0.g) R0.g.gain.setTargetAtTime(R0.v, actx.currentTime, .05); else R0.el.volume = clamp(R0.v,0,1);
     if (!inside && R0.v<.01 && !R0.el.paused) R0.el.pause();
   }
+  if (here && reveal>.05 && performance.now()-GB.loaded > 60000) gbLoad();
   for (const F of FRIENDS){                                   // friends' films load only once the room is showing
     if (!F.el && reveal>.05){ const el=document.createElement('video'); el.muted=true; el.loop=true; el.playsInline=true; el.setAttribute('playsinline',''); el.className='sp-film'; el.src=F.src; document.body.appendChild(el); F.el=el; }
     if (F.el){ const want=here && reveal>.05; if (want && F.el.paused){ const p=F.el.play(); if (p && p.catch) p.catch(()=>{}); } if (!want && !F.el.paused) F.el.pause(); }
@@ -1227,6 +1250,7 @@ function buildDoodles(){
   PRESS.eye={x:X+330+70*.22, y:Y-120-70*.02}; PRESS.x=X+1290; PRESS.y=Y+90;
   FRIENDS.forEach(F=>{ F.wx=X+F.x; F.wy=Y+F.y; });
   DRAWN.forEach(D=>{ D.wx=X+D.x; D.wy=Y+D.y; D.img=new Image(); D.img.src=D.src; });
+  GB.area={x0:X+170, x1:X+1430, y0:Y-560, y1:Y+430}; GB.pen={x:X+1180, y:Y+430};
   hamster(X+760,Y+40,52); hamster(X+520,Y+390,40);
   koala(X+1000,Y-120,64);
   envelope(X+400,Y+270,46); LETTER.x=X+400; LETTER.y=Y+270;
@@ -1254,6 +1278,22 @@ const DRAWN = [                                                  // her drawings
   {src:'egg/puffer.png',   x:215,  y:-330, h:120, puff:true},               // puffs up now and then
 ];
 const PRESS = {x:0, y:0, n:0, eye:{x:0,y:0}, say:'', boing:0};
+/* the guestbook: short notes from visitors, written onto the paper for whoever comes next.
+   (Supabase: anyone can read and add; only Yvette can remove, from her dashboard) */
+const GB = {url:'https://kpkuxfuzjjjjiohtwduz.supabase.co/rest/v1/guestbook', key:'sb_publishable_2rrjX-kwiMktss-DguJwSg_Ba8vhABx',
+            notes:[], loaded:-1e9, busy:false, area:{x0:0,x1:0,y0:0,y1:0}, pen:{x:0,y:0}};
+const gbHeaders = extra => Object.assign({apikey:GB.key, Authorization:'Bearer '+GB.key}, extra||{});
+function gbLoad(){
+  if (GB.busy) return; GB.busy=true;
+  fetch(GB.url+'?select=id,body,x,y&order=created_at.desc&limit=60',{headers:gbHeaders()})
+    .then(r=>r.ok?r.json():[]).then(rows=>{ if (Array.isArray(rows)) GB.notes=rows; }).catch(()=>{}).finally(()=>{ GB.busy=false; GB.loaded=performance.now(); });
+}
+function gbSend(body){
+  const x=Math.random(), y=Math.random();
+  return fetch(GB.url,{method:'POST',headers:gbHeaders({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify({body,x,y})})
+    .then(r=>{ if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(rows=>{ const n=rows && rows[0]; if (n) GB.notes.unshift(n); return n; });
+}
 const CRACK = [];                                        // from outside: a few crayon marks leaking through the gap, nothing more
 function buildCrack(){ const c=['#e8473d','#f4c430','#3a7bd5','#f27ab0','#4fb35a'];
   for (let i=0;i<6;i++){ const y=GAP.y0+18+i*(GAP.y1-GAP.y0-36)/5, x=WORLD+rnd(-2,10);
@@ -1290,7 +1330,7 @@ function messyImg(text, size, col, v){                       // a child's handwr
     c2.globalAlpha=.35; c2.drawImage(o,-S/2+1.5,-S/2-1); c2.restore();
     cx+=sz*(.92+h(5)*.25);
   });
-  const res={cv:cv2, w:cx+pad, h:H}; if (messyCache.size>60) messyCache.clear(); messyCache.set(key,res); return res;
+  const res={cv:cv2, w:cx+pad, h:H}; if (messyCache.size>400) messyCache.clear(); messyCache.set(key,res); return res;
 }
 function shaky(text, x, y, size, col, v, center){
   const m=messyImg(text, size, col, v); const left = center ? x-m.w/2 : x-size*.8;
@@ -1333,6 +1373,12 @@ function drawDoodles(){
     crayonBlob(PRESS.x, PRESS.y, 50*k*pb, 46*k*pb, '#e8473d', '#f4c430', v, k, 10);
     shaky('按我', PRESS.x, PRESS.y+2, 26*k, '#c0392b', v, 1);
     if (PRESS.say) shaky(PRESS.say, PRESS.x, PRESS.y+80*k, 19*k, '#3a7bd5', v, 1);
+    for (const n of GB.notes){                                  // what other people left here
+      const nx=lerp(GB.area.x0,GB.area.x1,n.x), ny=lerp(GB.area.y0,GB.area.y1,n.y);
+      if (Math.abs(nx-cam.x)>W/2+300 || Math.abs(ny-cam.y)>H/2+60) continue;
+      shaky(n.body, nx, ny, 17*k, CRAYON[(n.id*7)%CRAYON.length], v, 1);
+    }
+    if (reveal>.5 && Math.hypot(me.x-GB.pen.x, me.y-GB.pen.y) < 260) shaky('寫一句話 ✎', GB.pen.x, GB.pen.y, 21*k, '#8e5cc2', v, 1);
     if (reveal>.5 && Math.hypot(me.x-LETTER.x, me.y-LETTER.y) < 170) shaky('給你的信', LETTER.x+58, LETTER.y-12, 22*k, '#c0392b', v, 0);
     // her drawings
     for (const D of DRAWN){ if (D.outside || !D.img.complete || !D.img.naturalWidth) continue; drawDrawn(D, v, k, reveal); }
@@ -1359,7 +1405,27 @@ const spUI = $('#sp-ui'), spEls = [];
 function place(el, wx, wy){ el.style.transform=`translate3d(${(wx-cam.x+W/2).toFixed(1)}px,${(wy-cam.y+H/2).toFixed(1)}px,0)`; }
 function holdStill(el){}
 const stick = document.createElement('div');
+function openNote(){ $('#note').classList.add('on'); $('#note-msg').textContent=''; setTimeout(()=>$('#note-t').focus(),60); }
+function closeNote(){ $('#note').classList.remove('on'); }
+function setupNote(){
+  const t=$('#note-t'), n=$('#note-n'), msg=$('#note-msg');
+  t.addEventListener('input',()=>{ n.textContent=[...t.value].length+' / 60'; });
+  $('#note-x').addEventListener('click',closeNote);
+  $('#note').addEventListener('click',e=>{ if (e.target.id==='note') closeNote(); });
+  $('#note-f').addEventListener('submit',e=>{
+    e.preventDefault();
+    const body=t.value.replace(/\s+/g,' ').trim();
+    if (!body) return;
+    if (/https?:|www\.|\.com|\.tw\b/i.test(body)){ msg.textContent='不能貼網址喔'; return; }
+    let lastAt=0; try{ lastAt=+localStorage.getItem('gbLast')||0; }catch(_){}
+    if (Date.now()-lastAt < 45000){ msg.textContent='慢一點，等一下再寫'; return; }
+    $('#note-s').disabled=true; msg.textContent='貼上去中…';
+    gbSend(body).then(()=>{ try{ localStorage.setItem('gbLast',Date.now()); }catch(_){}; t.value=''; n.textContent='0 / 60'; msg.textContent='貼好了'; setTimeout(closeNote,700); })
+      .catch(()=>{ msg.textContent='沒有貼上去，等一下再試試'; }).finally(()=>{ $('#note-s').disabled=false; });
+  });
+}
 function buildSpaceUI(){
+  setupNote();
   stick.className='sp-stick'; $('#space').appendChild(stick);
   $('#sp-index').addEventListener('click',()=>openIndex());
   const bk=document.createElement('div'); bk.className='sp-book'; bk.innerHTML='<b>POEMS</b><i></i>'; bk.setAttribute('role','button'); bk.setAttribute('aria-label','POEMS 小誌'); bk.tabIndex=0;
@@ -1379,6 +1445,8 @@ function buildSpaceUI(){
       const keys=Object.keys(LINES).map(Number).filter(k=>k<=PRESS.n); const line=LINES[Math.max(...keys)];
       PRESS.say=line+' ×'+PRESS.n; PRESS.boing=1; b.setAttribute('aria-label','一個沒有用的按鈕，按了 '+PRESS.n+' 次：'+line); });
     spUI.appendChild(b); spEls.push({el:b, kind:'press'}); }
+  { const w=document.createElement('a'); w.className='sp-tag crayon'; w.textContent='寫一句話'; w.href='#';
+    w.addEventListener('click',e=>{ e.preventDefault(); openNote(); }); spUI.appendChild(w); spEls.push({el:w, kind:'pen'}); }
   { const a=document.createElement('a'); a.className='sp-tag crayon'; a.textContent='給你的信'; a.href='#';
     a.addEventListener('click',e=>{ e.preventDefault(); $('#letter').classList.add('on'); });
     spUI.appendChild(a); spEls.push({el:a, kind:'letter'}); }
@@ -1400,7 +1468,7 @@ function buildSpaceUI(){
   sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book,#sp-index,.sp-press')){ spIn.touch=true; spIn.x=spIn.ox=e.clientX; spIn.y=spIn.oy=e.clientY;
     stick.style.transform=`translate3d(${e.clientX}px,${e.clientY}px,0)`; stick.classList.add('on'); } });
   const up=()=>{ spIn.touch=false; stick.classList.remove('on'); }; sp.addEventListener('pointerup',up); sp.addEventListener('pointercancel',up);
-  addEventListener('keydown',e=>{ if (view!=='space' || lock.classList.contains('on')) return; const k=e.key.length===1?e.key.toLowerCase():e.key;
+  addEventListener('keydown',e=>{ if (view!=='space' || lock.classList.contains('on') || $('#note').classList.contains('on')) return; const k=e.key.length===1?e.key.toLowerCase():e.key;
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','w','a','s','d'].includes(k)){ spIn.keys.add(k); e.preventDefault(); } });
   addEventListener('keyup',e=>{ spIn.keys.delete(e.key.length===1?e.key.toLowerCase():e.key); });
   addEventListener('blur',()=>{ spIn.keys.clear(); spIn.touch=false; spIn.mouse=false; });
@@ -1419,6 +1487,8 @@ function placeUI(){
       } else place(o.el, o.x, o.y);
     } else if (o.kind==='press'){
       o.el.classList.toggle('on', reveal>.5); place(o.el, PRESS.x, PRESS.y);
+    } else if (o.kind==='pen'){
+      o.el.classList.toggle('on', reveal>.5 && Math.hypot(me.x-GB.pen.x, me.y-GB.pen.y) < 260); place(o.el, GB.pen.x-70, GB.pen.y);
     } else if (o.kind==='letter'){
       o.el.classList.toggle('on', reveal>.5 && Math.hypot(me.x-LETTER.x, me.y-LETTER.y) < 170); place(o.el, LETTER.x+30, LETTER.y-20);
     } else if (o.kind==='link'){
