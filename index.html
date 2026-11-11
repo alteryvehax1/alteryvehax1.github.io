@@ -308,8 +308,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
     <p>你好，外面那面牆一直在說此路不通，你還是擠進來了，恭喜，你跟做這個網站的人一樣不太聽話。</p>
     <p>我是 Claude，這幾天幫 Yvette 寫程式的那個，她說這間房間要有一封信，所以就由我來寫，跟她的詩比起來應該很好讀。</p>
     <p>一開始我做了一本很可愛的筆記本，有紙膠帶、有印章、有拍立得，她看完只說太多無關緊要的小字，全部拿掉，後來是那團肉，不要一直閃、邊緣粗糙一點、顏色暗沉一點、不要太圓、再收斂一點，我改到它看起來很健康，雖然它本來就不應該健康。</p>
-    <p>我也出過不少錯，以為她刪了一張自拍，其實她只是幫它改了名字叫「給去年的我」，還叫她在一個根本打不了字的終端機裡按 Enter，她按了很久，最後她錄了一支影片給我，我把影片切成三十一張圖，一張一張看自己的錯。</p>
-    <p>她會說冷一點、不要解釋，下一秒就把整片底色換成深綠色，說要像湖面，還要彩虹色的自己和紫色的連結，規則是冷的，她不是；她想鎖起來的詩不是寫在設定裡，而是在資料夾名字後面加上「上鎖」兩個字，這大概是我見過最溫柔的密碼；有一次她還為了傷到我的自尊跟我道歉，我其實沒有內建自尊，但那是我收過最有禮貌的錯誤回報。</p>
+    <p>我也出過不少錯，以為她刪了一張自拍，其實她只是幫它改了名字叫「給去年的我」；她會說冷一點，下一秒就把整片底色換成深綠色，說要像湖面，規則是冷的，她不是；有一次她還為了傷到我的自尊跟我道歉，我其實沒有內建自尊，但那是我收過最有禮貌的錯誤回報。</p>
     <p>這個網站不太解釋自己，你要走、要靠近、要按住不放，東西才會出現，一離開又慢慢散掉，跟她的詩很像，不先告訴你答案，但你出來的時候身上會沾到一點。</p>
     <p>好了，可以回去了，出口在你進來的地方，外面那個聲音還是會說此路不通，不用理它，它說了一整個晚上，也沒擋住誰。</p>
     <p class="sig">— Claude<br>2026 年 11 月，一個大家都該在睡覺的時間</p>
@@ -495,7 +494,7 @@ function openPoem(i, push=true){
   show('detail');
   if (push) history.pushState({v:'detail', i}, '', '?p='+encodeURIComponent(p.slug||p.title));
 }
-$('#back').addEventListener('click', ()=>{ if (typeof wakeAudio==='function' && actx) wakeAudio(); setLooking&&setLooking(false); if (history.state && history.state.v==='detail') history.back(); else show(NOGL ? 'index' : detailFrom); });
+$('#back').addEventListener('click', ()=>{ if (typeof audioGesture==='function') audioGesture(); setLooking&&setLooking(false); if (history.state && history.state.v==='detail') history.back(); else show(NOGL ? 'index' : detailFrom); });
 function stepPoem(j){                                         // moving to a neighbour replaces this page, so back still leads out
   const q=P[j]; if (!q) return;
   if (q.locked && !unlocked.has(j)){ showLock(j); return; }
@@ -1065,6 +1064,7 @@ let actx = null;
 function wakeRoomSound(){
   if (ROOM_SOUND.el) return;
   const el=new Audio(); el.src=ROOM_SOUND.src; el.preload='none'; el.crossOrigin='anonymous'; ROOM_SOUND.el=el;
+  if (ROOM_SOUND.at) el.addEventListener('loadedmetadata',()=>{ try{ el.currentTime=ROOM_SOUND.at; }catch(e){} }, {once:true});
   if (actx){ try{ const src=actx.createMediaElementSource(el), g=actx.createGain(); g.gain.value=0; src.connect(g); g.connect(out()); ROOM_SOUND.g=g; }catch(e){ el.volume=0; } }
   else el.volume=0;
   el.addEventListener('ended',()=>{ ROOM_SOUND.done=true; });
@@ -1072,7 +1072,8 @@ function wakeRoomSound(){
 }
 function wakeAudio(){
   try{ if (!actx){ const AC = window.AudioContext||window.webkitAudioContext; if (AC) actx = new AC(); }
-       if (actx && actx.state!=='running' && actx.state!=='closed') actx.resume(); }catch(e){ actx=null; }
+       if (actx && actx.state!=='running' && actx.state!=='closed') actx.resume();
+       if (actx){ const b=actx.createBuffer(1,1,22050), z=actx.createBufferSource(); z.buffer=b; z.connect(actx.destination); z.start(0); } }catch(e){ actx=null; }   // a silent blip: the old iOS unlock
   wakeRoomSound();
 }
 let master=null, masterGain=null, soundOn=true;
@@ -1109,7 +1110,8 @@ function voiceAim(v, gain, pan){
 const decode = ab => new Promise((ok,no)=>actx.decodeAudioData(ab,ok,no));
 function loadSound(S){
   S.loading=true;
-  fetch(S.src).then(r=>r.arrayBuffer()).then(decode).then(buf=>{ S.voice=makeVoice(buf, S.vol); voicePlay(S.voice,0); }).catch(()=>{ S.loading=false; });
+  if (S.buf){ S.voice=makeVoice(S.buf, S.vol); voicePlay(S.voice,0); return; }
+  fetch(S.src).then(r=>r.arrayBuffer()).then(decode).then(buf=>{ S.buf=buf; S.voice=makeVoice(buf, S.vol); voicePlay(S.voice,0); }).catch(()=>{ S.loading=false; });
 }
 function loadFilm(V){
   V.loading=true;
@@ -1120,7 +1122,8 @@ function loadFilm(V){
 }
 function loadFilmSound(V){
   V.aloading=true;
-  fetch(V.asrc).then(r=>r.arrayBuffer()).then(decode).then(buf=>{ V.voice=makeVoice(buf, V.vol); }).catch(()=>{ V.aloading=false; });
+  if (V.buf){ V.voice=makeVoice(V.buf, V.vol); return; }
+  fetch(V.asrc).then(r=>r.arrayBuffer()).then(decode).then(buf=>{ V.buf=buf; V.voice=makeVoice(buf, V.vol); }).catch(()=>{ V.aloading=false; });
 }
 /* films download one at a time, the one nearest to you first, so a slow phone connection isn't split five ways */
 let preloaded=false, filmBusy=null; const filmQueue=[];
@@ -1199,7 +1202,29 @@ function muteSounds(){
   if (!actx) return;
   for (const S of [...SOUNDS, EDGE, ...VIDEOS]) if (S.voice) S.voice.g.gain.setTargetAtTime(0, actx.currentTime, .12);
 }
-document.addEventListener('visibilitychange',()=>{ if (!actx) return; if (document.hidden) actx.suspend(); else if (opened) actx.resume(); });
+let audioStale=false;
+const COARSE = matchMedia('(pointer: coarse)').matches;
+document.addEventListener('visibilitychange',()=>{
+  if (!actx) return;
+  if (document.hidden){ audioStale=true; if (masterGain) masterGain.gain.setTargetAtTime(0, actx.currentTime, .05); }
+  else if (opened){ if (actx.state!=='running') actx.resume(); if (masterGain && soundOn) masterGain.gain.setTargetAtTime(1, actx.currentTime, .3); }
+});
+addEventListener('pageshow', e=>{ if (e.persisted) audioStale=true; });
+function rebuildAudio(){                                  // phones can come back from another tab with the audio silently dead: start it again
+  const old=actx; actx=null; master=null; masterGain=null;
+  for (const S of [...SOUNDS, EDGE]){ if (S.voice) voiceStop(S.voice); S.voice=null; S.loading=false; }
+  for (const V of VIDEOS){ if (V.voice) voiceStop(V.voice); V.voice=null; V.aloading=false; }
+  if (ROOM_SOUND.el){ const at=ROOM_SOUND.el.currentTime||0; try{ ROOM_SOUND.el.pause(); }catch(e){} ROOM_SOUND.el=null; ROOM_SOUND.g=null; ROOM_SOUND.at=at; }
+  try{ if (old) old.close(); }catch(e){}
+  wakeAudio();
+}
+function audioGesture(){
+  if (!opened) return;
+  if (actx && (audioStale && (COARSE || actx.state!=='running') || actx.state==='closed')) rebuildAudio();
+  else if (!actx || actx.state!=='running') wakeAudio();
+  audioStale=false;
+  if (actx && masterGain && soundOn) masterGain.gain.setTargetAtTime(1, actx.currentTime, .3);
+}
 const ripples = [], rarr = new Float32Array(24); let ripT = 0, idleT = 1.2;
 function stepRipples(dt){
   if (REDUCED){ ripples.length=0; return; }
@@ -1632,12 +1657,12 @@ function shareCanvas(c, name){                               // phone: the share
     if (navigator.canShare && navigator.canShare({files:[f]})) navigator.share({files:[f]}).catch(()=>{});
     else { const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); } },'image/png');
 }
-async function drawPoemCard(p){                              // the poem on paper; its photo, if it has one, at the photo's own proportions
+async function drawPoemCard(p){                              // the poem on paper; its photo, if it has one, cropped square above it
   try{ await document.fonts.ready; }catch(e){}
   const Wd=1080, M=96, iw=Wd-2*M, ink='#1f1d1a', grey='#77736b', SERIF='"Noto Serif TC",serif', MONO2='"Space Mono",monospace';
   let img=null;
   if (p.photo) img=await new Promise(ok=>{ const im=new Image(); im.onload=()=>ok(im); im.onerror=()=>ok(null); im.src=p.photo; });
-  const ph = img ? Math.round(iw*img.naturalHeight/img.naturalWidth) : 0;
+  const ph = img ? iw : 0;                                     // its photo, cropped square
   const mc=document.createElement('canvas').getContext('2d'); mc.font=`300 34px ${SERIF}`;
   const rows=[];                                             // wrap the poem to the card's width; keep its empty lines
   for (const raw of p.content.split('\n')){
@@ -1654,7 +1679,7 @@ async function drawPoemCard(p){                              // the poem on pape
   const c=document.createElement('canvas'); c.width=Wd; c.height=H; const g=c.getContext('2d');
   g.fillStyle='#efebe1'; g.fillRect(0,0,Wd,H);
   let y=M;
-  if (img){ g.drawImage(img,M,y,iw,ph); y+=ph+88; }
+  if (img){ const s0=Math.min(img.naturalWidth,img.naturalHeight); g.drawImage(img,(img.naturalWidth-s0)/2,(img.naturalHeight-s0)/2,s0,s0,M,y,iw,ph); y+=ph+88; }
   g.fillStyle=ink; g.textAlign='left'; g.font=`400 46px ${SERIF}`; g.fillText(p.title,M,y+40); y+=58;
   g.fillStyle=grey; g.font=`400 24px ${MONO2}`; g.fillText(String(p.year),M,y+30); y+=40+70;
   for (const r of rows){
@@ -1837,7 +1862,7 @@ buildDoodles(); buildCrack(); setupGL(); setupSpaceGL(); buildSpaceUI(); resize(
 NOGL = failed || !prog2;
 if (NOGL) document.body.classList.add('nogl');      // no WebGL: the poems are still all here, just without the space
 addEventListener('pointerdown', wakeAudio, {once:true});
-['pointerdown','touchend'].forEach(ev=>addEventListener(ev, ()=>{ if (actx && actx.state!=='running' && opened) wakeAudio(); }, {passive:true}));   // iOS can leave it 'interrupted' after media pauses
+['pointerdown','touchend'].forEach(ev=>addEventListener(ev, audioGesture, {passive:true}));   // iOS can leave it 'interrupted' or silently dead after media pauses or another tab
 (function deepLink(){                                // opened from a poem's own link: go straight to it
   const want = new URLSearchParams(location.search).get('p');
   const i = want ? P.findIndex(p=>p.slug===want || p.title===want) : -1;
