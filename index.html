@@ -807,7 +807,7 @@ function stepSpace(dt){
       ax+=(tx-b.x)*7; ay+=(slot-b.y)*7;
       b.vx+=ax*dt; b.vy+=ay*dt; const k=Math.exp(-dt*4.5); b.vx*=k; b.vy*=k;
     } else if (b.type==='video'){
-      const c = clamp(1-md/(560*audioScale()), 0, 1);
+      const c = clamp(1-md/560, 0, 1);
       const tx=b.cx+Math.sin(t*.23+b.seed*6)*14, ty=b.cy+Math.cos(t*.19+b.seed*5)*14;
       ax+=(tx-b.x)*1.6; ay+=(ty-b.y)*1.6;
       if (md<380*sc){ const f=10*(1-md/(380*sc)); ax+=mdx/md*f; ay+=mdy/md*f; }
@@ -958,8 +958,7 @@ function loadFilm(V){
     const el=document.createElement('video'); el.muted=true; el.loop=true; el.playsInline=true; el.setAttribute('playsinline','');
     el.className='sp-film'; el.src=URL.createObjectURL(new Blob([ab],{type:'video/mp4'}));
     el.addEventListener('loadeddata',()=>{ V.ready=true; },{once:true});
-    document.body.appendChild(el); V.el=el;
-    if (actx) decode(ab.slice(0)).then(buf=>{ V.voice=makeVoice(buf, V.vol); }).catch(()=>{});
+    document.body.appendChild(el); V.el=el; V.ab=ab;
   }).catch(()=>{ V.loading=false; });
 }
 const audioScale = () => clamp(Math.min(W,H)/800, .5, 1);
@@ -967,9 +966,10 @@ function updateSound(){
   const here = view==='space', A = audioScale();
   for (const V of VIDEOS){                                   // films load when you are near, play only when you are close
     const d=Math.hypot(V.x-me.x, V.y-me.y);
-    if (!V.loading && d<1300*A && here) loadFilm(V);
+    if (!V.loading && d<1300 && here) loadFilm(V);
     if (!V.el) continue;
-    const open = here && d<560*A;
+    const open = here && d<560;
+    if (actx && V.ab && !V.voice && !V.decoding){ V.decoding=true; decode(V.ab.slice(0)).then(buf=>{ V.voice=makeVoice(buf, V.vol); }).catch(()=>{}); }
     if (open && V.el.paused){ const p=V.el.play(); if (p && p.catch) p.catch(()=>{}); }
     if (!open && !V.el.paused){ V.el.pause(); }
     if (actx && V.voice){
@@ -1023,7 +1023,7 @@ function drawSpace(){
   sarr.fill(0);
   const sx=x=>(x-cam.x+W/2)/PX, sy=y=>(H-(y-cam.y+H/2))/PX;
   let film=null, fd=1e9;
-  for (const V of VIDEOS){ const d=Math.hypot(V.x-me.x,V.y-me.y); if (V.el && V.ready && !V.el.paused && d<fd && d<560*audioScale()){ film=V; fd=d; } }
+  for (const V of VIDEOS){ const d=Math.hypot(V.x-me.x,V.y-me.y); if (V.el && V.ready && !V.el.paused && d<fd && d<560){ film=V; fd=d; } }
   near.forEach((b,i)=>{ sarr[i*4]=sx(b.x); sarr[i*4+1]=sy(b.y); sarr[i*4+2]=b.r/PX; sarr[i*4+3]=(film && b===film.body) ? 6 : b.k; });
   sarr[47*4]=sx(me.x); sarr[47*4+1]=sy(me.y); sarr[47*4+2]=me.r/PX; sarr[47*4+3]=7;
   gl.useProgram(prog2);
