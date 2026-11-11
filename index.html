@@ -1574,47 +1574,45 @@ function drawReceipt(){
   const L=86, R=RWd-86, C=RWd/2; let y=170;
   const text=(s,x,yy,font,col,align)=>{ g.font=font; g.fillStyle=col||ink; g.textAlign=align||'left'; g.fillText(s,x,yy); };
   const rule=yy=>{ g.strokeStyle=ink; g.setLineDash([9,7]); g.lineWidth=2; g.beginPath(); g.moveTo(L,yy); g.lineTo(R,yy); g.stroke(); g.setLineDash([]); };
-  const F=`400 36px ${MONO}`, ROW=56;
-  text('超優惠',C,y,`800 132px ${SANS}`,ink,'center'); y+=86;
-  text('小誌 Vol.3',C,y,`400 40px ${SANS}`,ink,'center'); y+=104;
+  const F=`400 34px ${MONO}`, ROW=50, MAXH=1920;           // one phone screen, portrait; the collage gives way first
+  text('超優惠',C,y,`800 116px ${SANS}`,ink,'center'); y+=78;
+  text('小誌 Vol.3',C,y,`400 38px ${SANS}`,ink,'center'); y+=92;
   const d=new Date(), z=n=>String(n).padStart(2,'0'), wk='日一二三四五六'[d.getDay()];
-  text(`單號 #${VISIT.no}`,L,y,F); y+=50;
-  text(`${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())} (${wk}) ${z(d.getHours())}:${z(d.getMinutes())}`,L,y,F); y+=30;
-  rule(y); y+=52; text('#',L,y,F); text('品項',L+110,y,F); text('數量',R,y,F,ink,'right'); y+=26; rule(y); y+=56;
-  const totalPhotos=P.filter(p=>p.photo).length;
-  const items=[['詩',VISIT.poems.length,P.length],['照片',VISIT.photos.length,totalPhotos],['聲音',VISIT.sounds.length,SOUNDS.length],['影片',VISIT.films.length,VIDEOS.length],
-               ['連結',VISIT.links.length,LINKS.length],['信',VISIT.letter?1:0,1],['留言',VISIT.notes,0],['沒有用的按鈕',VISIT.presses,-1]];
-  items.forEach(([k,n,of],i)=>{ text(z(i+1),L,y,F); text(k,L+110,y,F); text(of>0?`${n}/${of}`:of<0?`×${n}`:`${n}`,R,y,F,ink,'right'); y+=ROW; });
-  y-=30; rule(y); y+=54;
-  const got=VISIT.poems.length+VISIT.photos.length+VISIT.sounds.length+VISIT.films.length+VISIT.links.length+(VISIT.letter?1:0)+VISIT.notes;
-  text('品項數:',L,y,F); text(String(items.filter(([,n])=>n>0).length),R,y,F,ink,'right'); y+=ROW;
-  text('合計:',L,y,F); text(`${got} 件`,R,y,F,ink,'right'); y+=26; rule(y); y+=56;
-  const mins=Math.max(1,Math.round((Date.now()-VISIT.start)/60000));
-  text(`步數: ${Math.round(VISIT.dist/100)}`,L,y,F); y+=ROW;
-  text(`停留: ${mins} 分鐘`,L,y,F); y+=ROW;
-  text(`牆: ${VISIT.secret ? SECRET_FOUND : SECRET_MISSED}`,L,y,F); y+=28; rule(y); y+=44;
-  // the route, in ink
-  const mw=R-L, mh=560, WX0=-WORLD, WX1=VISIT.secret?SECRET.x1:WORLD, WY0=Math.min(-WORLD,VISIT.secret?SECRET.y0:0), WY1=Math.max(WORLD,VISIT.secret?SECRET.y1:0);
-  const sx=Math.min(mw/(WX1-WX0), mh/(WY1-WY0)), ox=L+(mw-(WX1-WX0)*sx)/2, oy=y;
+  text(`#${VISIT.no}`,L,y,F); text(`${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())} (${wk}) ${z(d.getHours())}:${z(d.getMinutes())}`,R,y,F,ink,'right'); y+=30;
+  rule(y); y+=58;
+  // left: what you found; right: where you went
+  const totalPhotos=P.filter(p=>p.photo).length, mins=Math.max(1,Math.round((Date.now()-VISIT.start)/60000));
+  const rows=[['詩',`${VISIT.poems.length}/${P.length}`],['照片',`${VISIT.photos.length}/${totalPhotos}`],['聲音',`${VISIT.sounds.length}/${SOUNDS.length}`],['影片',`${VISIT.films.length}/${VIDEOS.length}`],
+              ['連結',`${VISIT.links.length}/${LINKS.length}`],['步數',`${Math.round(VISIT.dist/100)}`],['停留',`${mins} 分鐘`]];
+  const colR=L+440, top=y;
+  rows.forEach(([k,v])=>{ text(k,L,y,F); text(v,colR,y,F,ink,'right'); y+=ROW; });
+  const leftBottom=y-ROW+14;
+  const mx0=colR+70, mw=R-mx0, mh=rows.length*ROW-10, my0=top-34;
+  const WX0=-WORLD, WX1=VISIT.secret?SECRET.x1:WORLD, WY0=Math.min(-WORLD,VISIT.secret?SECRET.y0:0), WY1=Math.max(WORLD,VISIT.secret?SECRET.y1:0);
+  const sx=Math.min(mw/(WX1-WX0), mh/(WY1-WY0)), ox=mx0+(mw-(WX1-WX0)*sx)/2, oy=my0+(mh-(WY1-WY0)*sx)/2;
   const toP=(x,yy)=>[ox+(x-WX0)*sx, oy+(yy-WY0)*sx];
   g.strokeStyle=ink; g.lineWidth=2; g.strokeRect(...toP(-WORLD,-WORLD), WORLD*2*sx, WORLD*2*sx);
-  if (VISIT.secret){ const [a,b]=toP(SECRET.x0,SECRET.y0); g.setLineDash([7,6]); g.strokeRect(a,b,(SECRET.x1-SECRET.x0)*sx,(SECRET.y1-SECRET.y0)*sx); g.setLineDash([]); }
-  for (const [k2,c2] of Object.entries(REG)){ const [a,b]=toP(c2.x,c2.y); g.strokeStyle=grey; g.lineWidth=3; g.beginPath(); g.arc(a,b,13,0,6.283); g.stroke(); text(k2,a,b+50,`400 28px ${SANS}`,grey,'center'); }
-  { const [a,b]=toP(0,0); g.fillStyle=ink; g.fillRect(a-8,b-11,16,22); }
-  if (VISIT.path.length>1){ g.strokeStyle=ink; g.lineWidth=4; g.lineJoin='round'; g.lineCap='round'; g.beginPath(); VISIT.path.forEach(([x,yy],i)=>{ const [a,b]=toP(x,yy); i?g.lineTo(a,b):g.moveTo(a,b); }); g.stroke();
-    const [ex,ey]=toP(...VISIT.path[VISIT.path.length-1]); g.fillStyle=ink; g.beginPath(); g.arc(ex,ey,9,0,6.283); g.fill(); }
-  y=oy+(WY1-WY0)*sx+44; rule(y); y+=64;
-  // the collage poem
-  const lines=collage();
-  text('本次拼貼詩',C,y,`400 30px ${SANS}`,grey,'center'); y+=66;
-  if (!lines.length){ text('（本次未選購任何詩）',C,y,`400 36px ${SANS}`,grey,'center'); y+=60; }
-  else for (const l of lines){ text(l,C,y,`400 38px ${SANS}`,ink,'center'); y+=62; }
-  y+=6; rule(y); y+=78;
-  text(THANKS,C,y,`400 38px ${SANS}`,ink,'center'); y+=46;
+  if (VISIT.secret){ const [a,b]=toP(SECRET.x0,SECRET.y0); g.setLineDash([6,5]); g.strokeRect(a,b,(SECRET.x1-SECRET.x0)*sx,(SECRET.y1-SECRET.y0)*sx); g.setLineDash([]); }
+  for (const [k2,c2] of Object.entries(REG)){ const [a,b]=toP(c2.x,c2.y); g.strokeStyle=grey; g.lineWidth=2.5; g.beginPath(); g.arc(a,b,8,0,6.283); g.stroke(); text(k2,a,b+32,`400 20px ${SANS}`,grey,'center'); }
+  { const [a,b]=toP(0,0); g.fillStyle=ink; g.fillRect(a-5,b-7,10,14); }
+  if (VISIT.path.length>1){ g.strokeStyle=ink; g.lineWidth=3; g.lineJoin='round'; g.lineCap='round'; g.beginPath(); VISIT.path.forEach(([x,yy],i)=>{ const [a,b]=toP(x,yy); i?g.lineTo(a,b):g.moveTo(a,b); }); g.stroke();
+    const [ex,ey]=toP(...VISIT.path[VISIT.path.length-1]); g.fillStyle=ink; g.beginPath(); g.arc(ex,ey,6,0,6.283); g.fill(); }
+  y=Math.max(leftBottom, my0+mh)+30; rule(y); y+=58;
+  text(`牆: ${VISIT.secret ? SECRET_FOUND : SECRET_MISSED}`,L,y,F); y+=ROW;
+  if (VISIT.secret){ text(`信 ${VISIT.letter?1:0}/1  留言 ${VISIT.notes}  沒有用的按鈕 ×${VISIT.presses}`,L,y,F); y+=ROW; }
+  y-=22; rule(y); y+=60;
+  // the collage poem: as many of its lines as the screen still has room for
+  const TAIL=6+72+42+100+54+80, room=MAXH-y-56-TAIL;
+  const lines=collage().slice(0, Math.max(3, Math.min(10, Math.floor(room/52))));
+  text('本次拼貼詩',C,y,`400 28px ${SANS}`,grey,'center'); y+=56;
+  if (!lines.length){ text('（本次未選購任何詩）',C,y,`400 34px ${SANS}`,grey,'center'); y+=52; }
+  else for (const l of lines){ text(l,C,y,`400 34px ${SANS}`,ink,'center'); y+=52; }
+  y+=6; rule(y); y+=72;
+  text(THANKS,C,y,`400 34px ${SANS}`,ink,'center'); y+=42;
   // barcode from the receipt number
   let h=hashStr(String(VISIT.no)+VISIT.poems.join(',')); let bx=L+40; const by=y;
-  while (bx<R-40){ h=Math.imul(h^(h>>>15),2246822507)>>>0; const w=2+(h%4)*2; g.fillStyle=ink; g.fillRect(bx,by,w,150); h=Math.imul(h^(h>>>13),1274126177)>>>0; bx+=w+2+(h%3)*3; }
-  y+=150+56; igLine(g, C, y, `400 34px ${MONO}`, ink, 34); y+=90;
+  while (bx<R-40){ h=Math.imul(h^(h>>>15),2246822507)>>>0; const w=2+(h%4)*2; g.fillStyle=ink; g.fillRect(bx,by,w,100); h=Math.imul(h^(h>>>13),1274126177)>>>0; bx+=w+2+(h%3)*3; }
+  y+=100+54; igLine(g, C, y, `400 30px ${MONO}`, ink, 30); y+=80;
 
   const H=y, c=document.createElement('canvas'); c.width=RWd; c.height=H; const o=c.getContext('2d');
   o.drawImage(c0,0,0,RWd,H,0,0,RWd,H);
