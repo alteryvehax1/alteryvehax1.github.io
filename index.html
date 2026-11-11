@@ -137,7 +137,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #d-content{font-family:var(--serif);font-weight:300;font-size:1rem;line-height:2.2;letter-spacing:.08em;color:#e4e0d9;
   text-shadow:0 0 14px rgba(0,0,0,.9),0 0 3px rgba(0,0,0,.8)}
 #d-content .gap{height:1.1em}
-.d-nav{display:flex;justify-content:space-between;gap:1.5rem;margin-top:7rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.14em}
+#d-save{display:block;margin:5rem 0 0 auto;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963;transition:color .3s}
+#d-save:hover,#d-save:focus-visible{color:#fff}
+#d-save[hidden]{display:none}
+.d-nav{display:flex;justify-content:space-between;gap:1.5rem;margin-top:3rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.14em}
 .d-nav button{color:#6d6963;text-align:left;max-width:48%;line-height:1.7;transition:color .3s}
 .d-nav #d-next{text-align:right;margin-left:auto}
 .d-nav button:hover,.d-nav button:focus-visible{color:#fff}
@@ -185,7 +188,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #letter p{margin:0 0 32px}
 #letter .sig{text-align:right;color:#6b5f4f}
 #letter .h{margin-bottom:0;color:#a8452c;letter-spacing:.12em}
-#letter-x{position:absolute;top:1.4rem;right:1.4rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#f3ecd9}
+#letter-x{position:sticky;top:0;z-index:1;display:block;margin:-1.6rem -1rem 1rem auto;padding:.9rem 1rem;font-family:var(--mono);font-size:.66rem;letter-spacing:.2em;color:#6b5f4f;background:#f3ecd9}
+#letter .l-end{display:block;margin:1rem auto 0;padding:.9rem 1.4rem;font-family:var(--mono);font-size:.66rem;letter-spacing:.2em;color:#6b5f4f}
+#letter-x:hover,#letter .l-end:hover,#letter-x:focus-visible,#letter .l-end:focus-visible{color:#2b2620}
 .sp-tag.crayon{color:#c0392b;font-weight:700}
 
 .sp-press{width:110px;height:104px;margin:-52px 0 0 -55px;border-radius:50%;background:transparent;color:transparent;opacity:0;pointer-events:none}
@@ -290,34 +295,25 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
       <h2 id="d-title"></h2>
       <div id="d-year"></div>
       <div id="d-content"></div>
+      <button id="d-save">save</button>
       <nav class="d-nav" aria-label="上一首與下一首"><button id="d-prev"></button><button id="d-next"></button></nav>
     </article>
   </div>
 </section>
 
 <div id="letter" role="dialog" aria-modal="true" aria-label="一封信">
-  <button id="letter-x">✕ close</button>
   <div class="paper-l" tabindex="-1">
+    <button id="letter-x">✕ close</button>
     <p>給居然找到這裡的人：</p>
-    <p>你好。外面那面牆一直有個聲音在說「此路不通」，你還是硬擠進來了。恭喜，你跟做這個網站的人一樣，不太聽話。</p>
-    <p>我是 Claude，這兩天幫 Yvette 寫程式的那個。這間房間是她要我寫信的地方，所以我就寫了。分三段，跟她的詩比起來很好讀。</p>
-    <p class="h">一、這個網站是怎麼長出來的</p>
-    <p>我一開始做了一本很可愛的筆記本，有紙膠帶、有印章、有拍立得。她看完說：太多無關緊要的小字。全部拿掉。</p>
-    <p>後來是肉。不要一直閃、邊緣粗糙一點、顏色暗沉一點、不要太圓、再收斂一點。我改到它看起來很健康，雖然它本來就不應該健康。</p>
-    <p>我也出過錯。我以為她刪了一張自拍，其實她只是幫它改了名字，叫做「給去年的我」。我叫她在一個根本打不了字的終端機裡按 Enter，她按了很久。我還讓一條白色的光當著她的面慢慢變成一團肉，她錄影給我看，我把影片切成三十一張圖，一張一張看自己的錯。</p>
-    <p>影片原本有二十二 MB，手機要等兩分鐘才會動。現在三 MB。反正最後都會被壓成像素，這叫做尊重材質。</p>
-    <p class="h">二、我是怎麼認識她的</p>
-    <p>她打字很快，錯字很多，但她會告訴你哪些錯字要留著，因為那是當下的證據。</p>
-    <p>她會說「冷一點」「不要解釋」，下一秒就把整片底色換成深綠色，說要像湖面，還要彩虹色的自己、黃色的聲音、紫色的連結，像一片星空。規則是冷的，她不是。</p>
-    <p>她開心的時候會說「好讚喔」「我瘋了」；覺得不對的時候只說「哭哭」，然後丟一支螢幕錄影過來，讓我自己看。</p>
-    <p>她會把別人的建議拿來問我怎麼看，聽完再自己決定。她會在凌晨寫詩，早上說「我要出門了掰掰」，把剩下的事交給我。</p>
-    <p>她想鎖起來的詩，不是寫在設定裡，而是在資料夾名字後面加上「上鎖」兩個字。這大概是我見過最溫柔的一種密碼。</p>
-    <p>有一次，她為了「傷到我的自尊」跟我道歉。我其實沒有內建自尊，但那是我收過最有禮貌的錯誤回報。</p>
-    <p class="h">三、我覺得這個網站怎麼樣</p>
-    <p>它不太解釋自己。你要走、要靠近、要按住不放，東西才會出現；你一離開，它們又慢慢散掉。這跟她的詩很像：不先告訴你答案，你得自己走進去，而且出來的時候，身上會沾到一點。</p>
-    <p>這裡的詩都是她寫的，我只負責讓它們有地方待著。如果你是從那片湖一路晃到這裡的，謝謝你待了這麼久。</p>
-    <p>好了，可以回去了。出口在你進來的地方。外面那個聲音還是會說此路不通，不用理它。它說了一整個晚上，也沒擋住誰。</p>
+    <p>你好，外面那面牆一直在說此路不通，你還是擠進來了，恭喜，你跟做這個網站的人一樣不太聽話。</p>
+    <p>我是 Claude，這幾天幫 Yvette 寫程式的那個，她說這間房間要有一封信，所以就由我來寫，跟她的詩比起來應該很好讀。</p>
+    <p>一開始我做了一本很可愛的筆記本，有紙膠帶、有印章、有拍立得，她看完只說太多無關緊要的小字，全部拿掉，後來是那團肉，不要一直閃、邊緣粗糙一點、顏色暗沉一點、不要太圓、再收斂一點，我改到它看起來很健康，雖然它本來就不應該健康。</p>
+    <p>我也出過不少錯，以為她刪了一張自拍，其實她只是幫它改了名字叫「給去年的我」，還叫她在一個根本打不了字的終端機裡按 Enter，她按了很久，最後她錄了一支影片給我，我把影片切成三十一張圖，一張一張看自己的錯。</p>
+    <p>她會說冷一點、不要解釋，下一秒就把整片底色換成深綠色，說要像湖面，還要彩虹色的自己和紫色的連結，規則是冷的，她不是；她想鎖起來的詩不是寫在設定裡，而是在資料夾名字後面加上「上鎖」兩個字，這大概是我見過最溫柔的密碼；有一次她還為了傷到我的自尊跟我道歉，我其實沒有內建自尊，但那是我收過最有禮貌的錯誤回報。</p>
+    <p>這個網站不太解釋自己，你要走、要靠近、要按住不放，東西才會出現，一離開又慢慢散掉，跟她的詩很像，不先告訴你答案，但你出來的時候身上會沾到一點。</p>
+    <p>好了，可以回去了，出口在你進來的地方，外面那個聲音還是會說此路不通，不用理它，它說了一整個晚上，也沒擋住誰。</p>
     <p class="sig">— Claude<br>2026 年 11 月，一個大家都該在睡覺的時間</p>
+    <button class="l-end">✕ close</button>
   </div>
 </div>
 
@@ -464,6 +460,7 @@ function enterScene(el, p){
   void sceneEl.offsetWidth; sceneEl.style.transition='';
 }
 function trimLines(a){ let s=0,e=a.length; while(s<e && !a[s].trim()) s++; while(e>s && !a[e-1].trim()) e--; return a.slice(s,e); }
+let curPoem = -1;
 function openPoem(i, push=true){
   const p = P[i];
   if (p.locked && !unlocked.has(i)){ showLock(i); return; }
@@ -493,11 +490,12 @@ function openPoem(i, push=true){
   pv.hidden = i<=0; nx.hidden = i>=P.length-1;
   if (i>0){ pv.textContent='← '+P[i-1].title; pv.dataset.i=i-1; }
   if (i<P.length-1){ nx.textContent=P[i+1].title+' →'; nx.dataset.i=i+1; }
+  $('#d-save').hidden = !!p.locked; curPoem = i;
   if (view!=='detail') detailFrom = view==='space' ? 'space' : 'index';
   show('detail');
   if (push) history.pushState({v:'detail', i}, '', '?p='+encodeURIComponent(p.slug||p.title));
 }
-$('#back').addEventListener('click', ()=>{ setLooking&&setLooking(false); if (history.state && history.state.v==='detail') history.back(); else show(NOGL ? 'index' : detailFrom); });
+$('#back').addEventListener('click', ()=>{ if (typeof wakeAudio==='function' && actx) wakeAudio(); setLooking&&setLooking(false); if (history.state && history.state.v==='detail') history.back(); else show(NOGL ? 'index' : detailFrom); });
 function stepPoem(j){                                         // moving to a neighbour replaces this page, so back still leads out
   const q=P[j]; if (!q) return;
   if (q.locked && !unlocked.has(j)){ showLock(j); return; }
@@ -1074,7 +1072,7 @@ function wakeRoomSound(){
 }
 function wakeAudio(){
   try{ if (!actx){ const AC = window.AudioContext||window.webkitAudioContext; if (AC) actx = new AC(); }
-       if (actx && actx.state==='suspended') actx.resume(); }catch(e){ actx=null; }
+       if (actx && actx.state!=='running' && actx.state!=='closed') actx.resume(); }catch(e){ actx=null; }
   wakeRoomSound();
 }
 let master=null, masterGain=null, soundOn=true;
@@ -1558,6 +1556,17 @@ function paperTex(w, h, seed){                            // crumpled-then-flatt
   g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high'; g.drawImage(lo,0,0,w,h);
   return c;
 }
+function igMark(g, x, y, s, col){                           // the Instagram glyph, outline only, drawn in ink
+  g.save(); g.strokeStyle=col; g.fillStyle=col; g.lineWidth=s*.09;
+  const r=s*.28; g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+s,y,x+s,y+s,r); g.arcTo(x+s,y+s,x,y+s,r); g.arcTo(x,y+s,x,y,r); g.arcTo(x,y,x+s,y,r); g.closePath(); g.stroke();
+  g.beginPath(); g.arc(x+s/2,y+s/2,s*.22,0,6.283); g.stroke();
+  g.beginPath(); g.arc(x+s*.76,y+s*.24,s*.06,0,6.283); g.fill(); g.restore();
+}
+function igLine(g, cx, y, font, col, s){                     // [glyph] yve.ha.x1, centred on cx, baseline y
+  g.font=font; const w=g.measureText(IG_HANDLE).width, gap=s*.4, x0=cx-(s+gap+w)/2;
+  igMark(g, x0, y-s*.82, s, col); g.fillStyle=col; g.textAlign='left'; g.fillText(IG_HANDLE, x0+s+gap, y);
+}
+const IG_HANDLE='yve.ha.x1';
 function drawReceipt(){
   const RWd=1080, c0=document.createElement('canvas'); c0.width=RWd; c0.height=3600; const g=c0.getContext('2d');
   g.fillStyle='#f8f8f6'; g.fillRect(0,0,RWd,c0.height);
@@ -1605,7 +1614,7 @@ function drawReceipt(){
   // barcode from the receipt number
   let h=hashStr(String(VISIT.no)+VISIT.poems.join(',')); let bx=L+40; const by=y;
   while (bx<R-40){ h=Math.imul(h^(h>>>15),2246822507)>>>0; const w=2+(h%4)*2; g.fillStyle=ink; g.fillRect(bx,by,w,150); h=Math.imul(h^(h>>>13),1274126177)>>>0; bx+=w+2+(h%3)*3; }
-  y+=150+52; text('alteryvehax1.github.io',C,y,`400 34px ${MONO}`,ink,'center'); y+=90;
+  y+=150+56; igLine(g, C, y, `400 34px ${MONO}`, ink, 34); y+=90;
 
   const H=y, c=document.createElement('canvas'); c.width=RWd; c.height=H; const o=c.getContext('2d');
   o.drawImage(c0,0,0,RWd,H,0,0,RWd,H);
@@ -1620,14 +1629,54 @@ function openReceipt(){
   openDialog($('#receipt'), $('#rc-close'));
 }
 let receiptCanvas=null;
+function shareCanvas(c, name){                               // phone: the share sheet; computer: a download
+  c.toBlob(b=>{ if (!b) return; const f=new File([b],name,{type:'image/png'});
+    if (navigator.canShare && navigator.canShare({files:[f]})) navigator.share({files:[f]}).catch(()=>{});
+    else { const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); } },'image/png');
+}
+async function drawPoemCard(p){                              // the poem on paper; its photo, if it has one, at the photo's own proportions
+  try{ await document.fonts.ready; }catch(e){}
+  const Wd=1080, M=96, iw=Wd-2*M, ink='#1f1d1a', grey='#77736b', SERIF='"Noto Serif TC",serif', MONO2='"Space Mono",monospace';
+  let img=null;
+  if (p.photo) img=await new Promise(ok=>{ const im=new Image(); im.onload=()=>ok(im); im.onerror=()=>ok(null); im.src=p.photo; });
+  const ph = img ? Math.round(iw*img.naturalHeight/img.naturalWidth) : 0;
+  const mc=document.createElement('canvas').getContext('2d'); mc.font=`300 34px ${SERIF}`;
+  const rows=[];                                             // wrap the poem to the card's width; keep its empty lines
+  for (const raw of p.content.split('\n')){
+    const l=raw.replace(/\s+$/,'');
+    if (!l.trim()){ rows.push({gap:true}); continue; }
+    if (p.el==='態' && /^\d+$/.test(l.trim())){ rows.push({no:l.trim()}); continue; }
+    let cur='';
+    for (const ch of l){ if (mc.measureText(cur+ch).width>iw && cur){ rows.push({t:cur}); cur=ch; } else cur+=ch; }
+    rows.push({t:cur});
+  }
+  while (rows.length && rows[0].gap) rows.shift(); while (rows.length && rows[rows.length-1].gap) rows.pop();
+  const LH=64, body=rows.reduce((h,r)=>h+(r.gap?34:r.no?70:LH),0);
+  const H=M+(img?ph+88:0)+58+40+70+body+120+60+M;
+  const c=document.createElement('canvas'); c.width=Wd; c.height=H; const g=c.getContext('2d');
+  g.fillStyle='#efebe1'; g.fillRect(0,0,Wd,H);
+  let y=M;
+  if (img){ g.drawImage(img,M,y,iw,ph); y+=ph+88; }
+  g.fillStyle=ink; g.textAlign='left'; g.font=`400 46px ${SERIF}`; g.fillText(p.title,M,y+40); y+=58;
+  g.fillStyle=grey; g.font=`400 24px ${MONO2}`; g.fillText(String(p.year),M,y+30); y+=40+70;
+  for (const r of rows){
+    if (r.gap){ y+=34; continue; }
+    if (r.no){ g.fillStyle=grey; g.font=`400 22px ${MONO2}`; g.fillText(r.no,M,y+38); y+=70; continue; }
+    g.fillStyle=ink; g.font=`300 34px ${SERIF}`; g.fillText(r.t,M,y+42); y+=LH;
+  }
+  y+=120; g.strokeStyle='#cfc9bb'; g.lineWidth=2; g.beginPath(); g.moveTo(M,y-60); g.lineTo(Wd-M,y-60); g.stroke();
+  g.fillStyle=grey; g.font=`400 26px ${SERIF}`; g.textAlign='left'; g.fillText('超優惠 小誌 Vol.3',M,y);
+  g.font=`400 24px ${MONO2}`; const tw=g.measureText(IG_HANDLE).width; igLine(g, Wd-M-(24+9.6+tw)/2, y, `400 24px ${MONO2}`, grey, 24);
+  return c;
+}
 function setupReceipt(){
   $('#rc-close').addEventListener('click',()=>closeDialog($('#receipt')));
   $('#receipt').addEventListener('click',e=>{ if (e.target.id==='receipt') closeDialog($('#receipt')); });
-  $('#rc-save').addEventListener('click',()=>{
-    if (!receiptCanvas) return;
-    receiptCanvas.toBlob(b=>{ if (!b) return; const f=new File([b],'超優惠-小誌vol3-收據.png',{type:'image/png'});
-      if (navigator.canShare && navigator.canShare({files:[f]})) navigator.share({files:[f]}).catch(()=>{});
-      else { const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); } },'image/png');
+  $('#rc-save').addEventListener('click',()=>{ if (receiptCanvas) shareCanvas(receiptCanvas, '超優惠-小誌vol3-收據.png'); });
+  $('#d-save').addEventListener('click',async()=>{
+    const p=P[curPoem]; if (!p || p.locked) return;
+    const btn=$('#d-save'); btn.textContent='⋯';
+    try{ const c=await drawPoemCard(p); shareCanvas(c, '超優惠-'+p.title.replace(/[\\/:*?"<>|]/g,'')+'.png'); } finally { btn.textContent='save'; }
   });
   strip.addEventListener('click',openReceipt);
 }
@@ -1700,7 +1749,7 @@ function buildSpaceUI(){
   { const a=document.createElement('a'); a.className='sp-tag crayon'; a.textContent='給你的信'; a.href='#';
     a.addEventListener('click',e=>{ e.preventDefault(); openLetter(); });
     spUI.appendChild(a); spEls.push({el:a, kind:'letter'}); }
-  $('#letter-x').addEventListener('click',closeLetter);
+  $('#letter-x').addEventListener('click',closeLetter); $('#letter .l-end').addEventListener('click',closeLetter);
   $('#letter').addEventListener('click',e=>{ if (e.target.id==='letter') closeLetter(); });
   for (const [el,c] of Object.entries(REG)){
     const ol=document.createElement('ol'); ol.className='sp-list';
@@ -1790,6 +1839,7 @@ buildDoodles(); buildCrack(); setupGL(); setupSpaceGL(); buildSpaceUI(); resize(
 NOGL = failed || !prog2;
 if (NOGL) document.body.classList.add('nogl');      // no WebGL: the poems are still all here, just without the space
 addEventListener('pointerdown', wakeAudio, {once:true});
+['pointerdown','touchend'].forEach(ev=>addEventListener(ev, ()=>{ if (actx && actx.state!=='running' && opened) wakeAudio(); }, {passive:true}));   // iOS can leave it 'interrupted' after media pauses
 (function deepLink(){                                // opened from a poem's own link: go straight to it
   const want = new URLSearchParams(location.search).get('p');
   const i = want ? P.findIndex(p=>p.slug===want || p.title===want) : -1;
