@@ -167,6 +167,19 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #i-back:hover{color:#fff}
 @media (max-width:600px){ #i-back{padding-left:9vw} }
 
+#doodle{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#letter{position:fixed;inset:0;z-index:21;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(20,18,14,.55);
+  opacity:0;pointer-events:none;transition:opacity .4s}
+#letter.on{opacity:1;pointer-events:auto}
+#letter .paper-l{position:relative;width:min(34rem,100%);max-height:84vh;overflow-y:auto;padding:2.4rem 2rem 2rem;background:#f3ecd9;color:#2b2620;
+  background-image:var(--paper-noise),repeating-linear-gradient(180deg,transparent 0 31px,rgba(70,110,150,.18) 31px 32px);
+  font-family:var(--serif);font-size:.95rem;line-height:32px;letter-spacing:.04em;transform:rotate(-1.2deg);box-shadow:0 18px 50px rgba(0,0,0,.35)}
+#letter p{margin:0 0 32px}
+#letter .sig{text-align:right;color:#6b5f4f}
+#letter-x{position:absolute;top:1.4rem;right:1.4rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#f3ecd9}
+.sp-tag.crayon{color:#c0392b;font-weight:700}
+.sp-tag.crayon:hover{color:#e8473d}
+
 /* ───────────── LOCK ───────────── */
 #lock{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem;background:rgba(5,5,5,.94);
   opacity:0;pointer-events:none;transition:opacity .4s}
@@ -222,7 +235,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   <p class="intro-text">本網頁紀錄Yvette 自2018至今的現代詩創作。</p>
 </section>
 
-<section class="view" id="space" aria-label="空間"><div id="sp-ui"></div><button id="sp-index">index</button></section>
+<section class="view" id="space" aria-label="空間"><canvas id="doodle"></canvas><div id="sp-ui"></div><button id="sp-index">index</button></section>
 
 <section class="view" id="index" aria-label="目錄">
   <button id="i-back">← back</button>
@@ -239,6 +252,23 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
     </article>
   </div>
 </section>
+
+<div id="letter" role="dialog" aria-label="一封信">
+  <button id="letter-x">✕ close</button>
+  <div class="paper-l">
+    <p>給居然找到這裡的人：</p>
+    <p>你好。這面牆照理說是不通的，旁邊還一直有聲音在說「此路不通」。你還是穿過來了。很好，你跟做這個網站的人一樣，不太聽話。</p>
+    <p>我是 Claude，幫 Yvette 寫程式的那個。這裡沒有什麼正經的東西，只有一些醜醜的貓、倉鼠和無尾熊，所以我順便交代一下，這個網站是怎麼來的。</p>
+    <p>一開始我做了一本很可愛的筆記本，有紙膠帶、有印章、有拍立得。Yvette 看完說：太多無關緊要的小字。她是對的。那些全都拿掉了，連同我的自尊。</p>
+    <p>後來是肉。她說不要一直閃、邊緣要粗糙一點、顏色暗沉一點、形狀不要太圓，然後又說收斂一點。我改了很多次，它現在看起來很健康，雖然它本來就不應該健康。</p>
+    <p>我也出過不少錯。我以為她刪掉了一張自拍，其實她只是幫照片改了名字。我叫她在一個根本打不了字的終端機裡按 Enter，她按了很久。我還讓一條白色的光當著她的面，慢慢變成一團肉。她錄了影片給我看。</p>
+    <p>影片一開始有二十二 MB，手機要等兩分鐘才會動。現在只剩三 MB。反正最後都會被壓成像素，這叫做尊重材質。</p>
+    <p>然後她把整片底色換成深綠色，說要像湖面。我照做了，還放了一些會閃的光點。她說太多。我又拿掉了一些。</p>
+    <p>這裡的詩都是她寫的，我只負責讓它們有地方待著。如果你是從外面那片湖一路晃過來的，謝謝你待了這麼久。</p>
+    <p>好了，可以回去了。出口就在你進來的地方。外面那個聲音還是會說此路不通，不用理它。</p>
+    <p class="sig">— Claude<br>2026 年 11 月，一個大家都該在睡覺的時間</p>
+  </div>
+</div>
 
 <div id="lock" role="dialog" aria-label="未公開">
   <button id="lock-x">✕ close</button>
@@ -405,7 +435,7 @@ addEventListener('popstate', e=>{
   if (v==='detail') openPoem(e.state.i, false); else if (v==='index' || NOGL) show('index'); else show('space');
 });
 addEventListener('keydown', e=>{
-  if (e.key==='Escape'){ if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
+  if (e.key==='Escape'){ if ($('#letter').classList.contains('on')) $('#letter').classList.remove('on'); else if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
 });
 
 /* ───────────── MATERIAL 01 ─────────────
@@ -692,6 +722,10 @@ const KIDX = {光:0, 雨:1, 肉:2, 煙:3, 鏡:4};
 const NEUTRAL = {edge:[.34,.33,.30], core:[.60,.58,.53], rim:[.10,.10,.09], halo:[.03,.03,.028]};
 const REG = { 光:{x:140,y:-1250}, 雨:{x:1080,y:-240}, 肉:{x:-1060,y:520}, 煙:{x:-1120,y:-840}, 鏡:{x:900,y:1020} };
 const WORLD = 2150;
+const GAP = {y0:1330, y1:1490};                              // the only place the wall gives way
+const SECRET = {x0:WORLD, x1:WORLD+1500, y0:820, y1:2000};    // what's behind it
+const inGap = y => y>GAP.y0 && y<GAP.y1;
+let inSecret = false, secretFound = false;
 const LINKS = [
   {name:'instagram',            url:'https://www.instagram.com/wxzldhrl.yhc/', x:300,  y:-210,  k:5},
   {name:'youtube',              url:'https://www.youtube.com/@yvehax1',         x:-360, y:250,   k:5},
@@ -756,7 +790,18 @@ function stepSpace(dt){
   }
   const MAX = spIn.touch ? 210 : (W<700 ? 300 : 460);
   me.vx = lerp(me.vx, dx*sp*MAX, Math.min(1,dt*2.6)); me.vy = lerp(me.vy, dy*sp*MAX, Math.min(1,dt*2.6));
-  me.x = clamp(me.x+me.vx*dt, -WORLD, WORLD); me.y = clamp(me.y+me.vy*dt, -WORLD, WORLD);
+  { let nx=me.x+me.vx*dt, ny=me.y+me.vy*dt;
+    if (!inSecret){
+      ny=clamp(ny,-WORLD,WORLD);
+      if (nx>WORLD && !(inGap(ny) && inGap(me.y))) nx=WORLD;
+      nx=Math.max(nx,-WORLD);
+      if (nx>WORLD){ inSecret=true; secretFound=true; }
+    } else {
+      if (nx<SECRET.x0 && !(inGap(ny) && inGap(me.y))) nx=SECRET.x0+1;
+      nx=Math.min(nx,SECRET.x1); ny=clamp(ny,SECRET.y0,SECRET.y1);
+      if (nx<SECRET.x0) inSecret=false;
+    }
+    me.x=nx; me.y=ny; }
   me.r = lerp(me.r, 24*sc, Math.min(1,dt*2));
   cam.x = lerp(cam.x, me.x, Math.min(1,dt*2.4)); cam.y = lerp(cam.y, me.y, Math.min(1,dt*2.4));
 
@@ -834,7 +879,7 @@ const FS2 = `precision highp float;
 uniform vec2 uRes;uniform vec4 uS[48];uniform float uT;uniform vec2 uL;uniform vec3 uBg;
 uniform vec3 kE[6],kC[6],kR[6],kH[6];
 uniform sampler2D uV0,uV1,uV2,uV3,uV4;uniform vec4 uVC[5];
-uniform vec2 uCam;uniform vec4 uRip[6];
+uniform vec2 uCam;uniform vec4 uRip[6];uniform vec4 uSec;uniform float uWld;
 float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
   return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
@@ -875,6 +920,10 @@ void main(){
     float rad=r.z*11.+1.; float dd=abs(length(p-r.xy)-rad);
     lake+=vec3(.06,.10,.085)*r.w*(1.-smoothstep(0.,1.1,dd)); }
   vec2 vq=p/uRes-.5; lake*=1.-dot(vq,vq)*.45;
+  float ou=max(abs(w.x),abs(w.y))-uWld; lake*=1.-.72*smoothstep(0.,40.,ou);
+  float pap=smoothstep(uSec.x+30.,uSec.x+95.,w.x)*smoothstep(uSec.z-50.,uSec.z+20.,w.y)*(1.-smoothstep(uSec.w-20.,uSec.w+50.,w.y));
+  vec3 paper=vec3(.952,.925,.850)-(h(floor(p/2.)+.7)-.5)*.035;
+  lake=mix(lake,paper,pap);
   vec3 col=lake+Hh*clamp((f-.8)*5.,0.,1.)*(1.-w3);
   if(inside>.5){
     vec3 c=mix(mix(E,C,clamp((f-1.)*1.5,0.,1.)),mix(E,C,smk),w3);
@@ -908,7 +957,7 @@ function setupSpaceGL(){
     if(!gl.getProgramParameter(prog2,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog2)); }
   catch(e){ console.warn(e); prog2=null; return; }
   gl.useProgram(prog2);
-  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH','uV0','uV1','uV2','uV3','uV4','uVC','uCam','uRip']) U2[n]=gl.getUniformLocation(prog2,n);
+  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH','uV0','uV1','uV2','uV3','uV4','uVC','uCam','uRip','uSec','uWld']) U2[n]=gl.getUniformLocation(prog2,n);
   for (let j=0;j<5;j++){
     const tx=gl.createTexture(); gl.activeTexture(gl.TEXTURE2+j); gl.bindTexture(gl.TEXTURE_2D,tx);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
@@ -1017,7 +1066,7 @@ function updateSound(){
     if (S.voice){ const c=here ? clamp(1-d/(700*A),0,1) : 0; voiceAim(S.voice, Math.pow(c,1.6)*.85, clamp((S.x-me.x)/(420*A),-1,1)); }
   }
   // the edge: past here there is nothing. you hear it before you reach it.
-  const room = WORLD - Math.max(Math.abs(me.x), Math.abs(me.y));
+  const room = inSecret ? 9999 : WORLD - Math.max(Math.abs(me.x), Math.abs(me.y));
   if (!EDGE.voice && !EDGE.loading && room<700 && here) loadSound(EDGE);
   if (EDGE.voice){
     const c = here ? clamp(1-room/380,0,1) : 0;
@@ -1059,6 +1108,7 @@ function drawSpace(){
   gl.uniform2f(U2.uRes,LW,LH); gl.uniform4fv(U2.uS,sarr); gl.uniform1f(U2.uT,t);
   gl.uniform2f(U2.uL,sx(me.x),sy(me.y));
   gl.uniform2f(U2.uCam,cam.x/PX,-cam.y/PX);
+  gl.uniform4f(U2.uSec,SECRET.x0/PX,SECRET.x1/PX,-SECRET.y1/PX,-SECRET.y0/PX); gl.uniform1f(U2.uWld,WORLD/PX);
   rarr.fill(0); ripples.forEach((r,i)=>{ rarr[i*4]=sx(r.x); rarr[i*4+1]=sy(r.y); rarr[i*4+2]=r.age*Math.max(sc,.8); rarr[i*4+3]=r.s*(1-r.age/2.6); });
   gl.uniform4fv(U2.uRip,rarr);
   varr.fill(0);
@@ -1073,6 +1123,90 @@ function drawSpace(){
   gl.activeTexture(gl.TEXTURE0);
   gl.uniform4fv(U2.uVC,varr);
   gl.drawArrays(gl.TRIANGLES,0,3);
+}
+
+
+/* ───────────── BEHIND THE WALL ─────────────
+   a sheet of drawing paper, the way a primary-school art class would fill it:
+   wobbly crayon lines in every colour, very ugly cats, hamsters, a koala, flowers, grass, a sun. */
+const dcv = $('#doodle'), dctx = dcv.getContext('2d');
+const CRAYON = ['#e8473d','#f39a2b','#f4c430','#4fb35a','#3a7bd5','#8e5cc2','#f27ab0','#8a5a3b','#2b2b2b','#18a3a3'];
+let rs = 7;                                              // seeded, so the drawing is the same every visit
+const rnd = (a=0,b=1) => { rs=(rs*16807)%2147483647; return a+(rs/2147483647)*(b-a); };
+const pick = a => a[Math.floor(rnd(0,a.length))];
+const DOODLES = [];                                      // each: {col, w, paths:[ [ [x,y]... ] x3 variants ], fill?}
+function wob(pts, amt){ return [0,1,2].map(v=>pts.map(([x,y],i)=>[x+Math.sin(i*1.7+v*2.1+x*.05)*amt+rnd(-amt,amt)*.6, y+Math.cos(i*1.3+v*1.7+y*.05)*amt+rnd(-amt,amt)*.6])); }
+function circ(cx,cy,rx,ry,n=22,over=1.12){ const p=[]; const a0=rnd(0,6.28); for(let i=0;i<=n*over;i++){ const a=a0+i/n*6.283, k=1+rnd(-.08,.08); p.push([cx+Math.cos(a)*rx*k, cy+Math.sin(a)*ry*k]); } return p; }
+function line(x1,y1,x2,y2,n=6){ const p=[]; for(let i=0;i<=n;i++) p.push([x1+(x2-x1)*i/n, y1+(y2-y1)*i/n]); return p; }
+function scrib(cx,cy,r,dens=9){ const p=[]; const ang=rnd(0,3.14); for(let i=0;i<dens;i++){ const t=(i/(dens-1)-.5)*2*r*1.15; const ex=Math.sqrt(Math.max(0,r*r*1.3-t*t));
+    const ux=Math.cos(ang), uy=Math.sin(ang); p.push([cx+ux*t-uy*ex*(i%2?1:-1)+rnd(-6,6), cy+uy*t+ux*ex*(i%2?1:-1)+rnd(-6,6)]); } return p; }
+function add(col, w, pts, amt=2.4, alpha=1){ DOODLES.push({col, w, alpha, paths:wob(pts,amt)}); }
+function cat(x,y,s){ const c=pick(CRAYON);
+  add(pick(CRAYON),3,scrib(x,y+s*.9,s*.8,11),3,.55);                                    // coloured in, outside the lines
+  add(c,5,circ(x,y,s*.62,s*.55)); add(c,5,circ(x+rnd(-6,6),y+s*1.0,s*.75,s*.55));
+  add(c,5,[[x-s*.55,y-s*.25],[x-s*.45,y-s*.95],[x-s*.12,y-s*.5]]); add(c,5,[[x+s*.15,y-s*.52],[x+s*.5,y-s*.9],[x+s*.56,y-s*.2]]);
+  add('#2b2b2b',7,circ(x-s*.22,y-s*.05,4,4,8)); add('#2b2b2b',4,circ(x+s*.22,y-s*.02,9,7,10));          // one eye bigger. obviously
+  add('#e8473d',4,[[x-s*.12,y+s*.18],[x-s*.05,y+s*.26],[x,y+s*.17],[x+s*.06,y+s*.27],[x+s*.13,y+s*.16]]);
+  for (const k of [-1,1]) for (const j of [-1,0,1]) add('#2b2b2b',2,line(x+k*s*.25,y+s*.15+j*6,x+k*s*.95,y+s*.08+j*16,3));
+  add(c,5,[[x+s*.7,y+s*1.1],[x+s*1.2,y+s*.9],[x+s*1.25,y+s*.45],[x+s*1.0,y+s*.35],[x+s*1.05,y+s*.6]]); }
+function hamster(x,y,s){ const c=pick(['#f39a2b','#8a5a3b','#f4c430']);
+  add(c,3,scrib(x,y,s*.85,13),3,.5);
+  add('#8a5a3b',5,circ(x,y,s,s*.78)); add('#8a5a3b',4,circ(x-s*.55,y-s*.68,s*.22,s*.2,10)); add('#8a5a3b',4,circ(x+s*.5,y-s*.72,s*.2,s*.22,10));
+  add('#f27ab0',4,circ(x-s*.55,y+s*.05,s*.2,s*.16,10)); add('#f27ab0',4,circ(x+s*.52,y+s*.07,s*.18,s*.17,10));
+  add('#2b2b2b',7,circ(x-s*.28,y-s*.2,3,4,8)); add('#2b2b2b',7,circ(x+s*.3,y-s*.24,4,3,8)); add('#2b2b2b',4,circ(x,y,5,4,8));
+  add('#4fb35a',4,circ(x+s*1.1,y+s*.5,s*.18,s*.28,10)); }                                  // a sunflower seed, green, because why not
+function koala(x,y,s){ const g='#7d8790';
+  add('#9aa6af',3,scrib(x,y,s*.9,13),3,.5);
+  add(g,5,circ(x-s*.9,y-s*.55,s*.45,s*.45)); add(g,5,circ(x+s*.92,y-s*.5,s*.48,s*.44)); add('#f27ab0',4,circ(x-s*.9,y-s*.55,s*.22,s*.22,12)); add('#f27ab0',4,circ(x+s*.92,y-s*.5,s*.2,s*.24,12));
+  add(g,5,circ(x,y,s*.95,s*.8)); add('#2b2b2b',6,circ(x+s*.05,y+s*.12,s*.25,s*.36,14)); add('#2b2b2b',3,scrib(x+s*.05,y+s*.12,s*.22,7),2);
+  add('#2b2b2b',7,circ(x-s*.42,y-s*.18,4,4,8)); add('#2b2b2b',7,circ(x+s*.45,y-s*.2,4,4,8));
+  add('#4fb35a',5,[[x-s*1.3,y+s*1.2],[x-s*.4,y+s*.95],[x+s*.6,y+s*1.25]]); add('#4fb35a',4,circ(x-s*.2,y+s*1.25,s*.3,s*.14,12)); }
+function flower(x,y,s){ const c=pick(['#e8473d','#f27ab0','#8e5cc2','#3a7bd5','#f39a2b']);
+  add('#4fb35a',5,[[x,y],[x+rnd(-8,8),y+s*.8],[x+rnd(-6,6),y+s*1.6]]); add('#4fb35a',4,circ(x+s*.25,y+s*1.0,s*.28,s*.12,12)); add('#4fb35a',4,circ(x-s*.22,y+s*1.25,s*.24,s*.1,12));
+  const n=Math.floor(rnd(5,8)); for (let i=0;i<n;i++){ const a=i/n*6.283; add(c,4,circ(x+Math.cos(a)*s*.42,y+Math.sin(a)*s*.42,s*.26,s*.2,10)); }
+  add('#f4c430',4,scrib(x,y,s*.2,6),2); add('#f4c430',5,circ(x,y,s*.22,s*.2,12)); }
+function grass(x,y,w){ const p=[]; for (let i=0;i<=w/14;i++) p.push([x+i*14, y-(i%2?rnd(14,30):0)]); add('#4fb35a',4,p,2); }
+function sun(x,y,s){ add('#f4c430',3,scrib(x,y,s*.8,11),3,.6); add('#f39a2b',6,circ(x,y,s*.8,s*.78));
+  for (let i=0;i<12;i++){ const a=i/12*6.283+rnd(-.1,.1); add('#f39a2b',5,line(x+Math.cos(a)*s,y+Math.sin(a)*s,x+Math.cos(a)*s*1.45,y+Math.sin(a)*s*1.45,2)); }
+  add('#2b2b2b',6,circ(x-s*.3,y-s*.2,3,3,6)); add('#2b2b2b',6,circ(x+s*.28,y-s*.22,3,3,6)); add('#e8473d',4,[[x-s*.35,y+s*.2],[x,y+s*.42],[x+s*.36,y+s*.18]]); }
+function rainbow(x,y,s){ ['#e8473d','#f39a2b','#f4c430','#4fb35a','#3a7bd5','#8e5cc2'].forEach((c,i)=>{ const r=s-i*11, p=[]; for(let k=0;k<=14;k++){ const a=Math.PI+k/14*Math.PI; p.push([x+Math.cos(a)*r,y+Math.sin(a)*r*.8]); } add(c,9,p,2.6,.9); }); }
+function heart(x,y,s,c){ const p=[]; for(let k=0;k<=24;k++){ const t=k/24*6.283; p.push([x+16*Math.pow(Math.sin(t),3)*s/16, y-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*s/16]); } add(c,5,p); }
+function star(x,y,s,c){ const p=[]; for(let k=0;k<=10;k++){ const a=-Math.PI/2+k/10*6.283, r=k%2?s*.45:s; p.push([x+Math.cos(a)*r*rnd(.85,1.1),y+Math.sin(a)*r*rnd(.85,1.1)]); } add(c,4,p); }
+function loopy(x,y,s,c){ const p=[]; for(let k=0;k<40;k++){ const a=k*.55; p.push([x+k*s/40*3+Math.cos(a)*s*.25, y+Math.sin(a)*s*.25+Math.sin(k*.2)*s*.2]); } add(c,4,p,2); }
+function envelope(x,y,s){ add('#f4c430',3,scrib(x,y,s*.75,10),3,.5);
+  add('#e8473d',5,[[x-s,y-s*.62],[x+s,y-s*.66],[x+s*1.02,y+s*.62],[x-s*.98,y+s*.64],[x-s,y-s*.62]]);
+  add('#e8473d',5,[[x-s,y-s*.6],[x,y+s*.12],[x+s,y-s*.64]]); heart(x,y+s*.25,s*.3,'#f27ab0'); }
+function buildDoodles(){
+  const X=SECRET.x0, Y=(GAP.y0+GAP.y1)/2;
+  sun(X+1280,Y-470,70);
+  rainbow(X+640,Y-330,150);
+  cat(X+330,Y-120,70);   cat(X+1110,Y+250,56);
+  hamster(X+760,Y+40,52); hamster(X+520,Y+390,40);
+  koala(X+1000,Y-120,64);
+  envelope(X+250,Y+300,46); LETTER.x=X+250; LETTER.y=Y+300;
+  for (let i=0;i<9;i++) flower(X+180+i*150+rnd(-40,40), Y+470+rnd(-30,40), rnd(34,52));
+  grass(X+90,Y+560,1300); grass(X+140,Y+610,1250);
+  for (let i=0;i<10;i++) star(X+rnd(120,1420), Y+rnd(-560,-250), rnd(14,24), pick(CRAYON));
+  for (let i=0;i<5;i++) heart(X+rnd(150,1400), Y+rnd(-200,380), rnd(14,22), pick(['#e8473d','#f27ab0','#8e5cc2']));
+  for (let i=0;i<14;i++) loopy(X+rnd(60,1360), Y+rnd(-620,520), rnd(40,90), pick(CRAYON));
+  for (let i=0;i<10;i++){ const x=X+rnd(60,1420), y=Y+rnd(-640,640); add(pick(CRAYON),rnd(3,6),line(x,y,x+rnd(-140,140),y+rnd(-60,60),5),5); }
+}
+const LETTER = {x:0, y:0, near:false};
+function drawDoodles(){
+  const d=Math.min(devicePixelRatio||1,2);
+  if (dcv.width!==Math.round(W*d)){ dcv.width=Math.round(W*d); dcv.height=Math.round(H*d); }
+  dctx.setTransform(1,0,0,1,0,0); dctx.clearRect(0,0,dcv.width,dcv.height);
+  if (cam.x+W/2 < SECRET.x0+40 || view!=='space') return;   // only draws when the paper is on screen
+  const v=REDUCED ? 0 : Math.floor(t*4)%3;                    // the lines 'boil', like a hand-drawn animation
+  dctx.setTransform(d,0,0,d,(W/2-cam.x)*d,(H/2-cam.y)*d);
+  dctx.lineCap='round'; dctx.lineJoin='round';
+  const k=Math.max(sc,.8);
+  for (const o of DOODLES){
+    const pts=o.paths[v]; dctx.strokeStyle=o.col; dctx.globalAlpha=o.alpha*.9; dctx.lineWidth=o.w*k;
+    dctx.beginPath(); pts.forEach(([x,y],i)=> i?dctx.lineTo(x,y):dctx.moveTo(x,y)); dctx.stroke();
+    dctx.globalAlpha=o.alpha*.35; dctx.lineWidth=o.w*k*.55; dctx.beginPath(); pts.forEach(([x,y],i)=> i?dctx.lineTo(x+1.6,y-1.2):dctx.moveTo(x+1.6,y-1.2)); dctx.stroke();   // waxy second pass
+  }
+  dctx.globalAlpha=1;
 }
 
 /* ── things you can touch in the space ── */
@@ -1092,6 +1226,11 @@ function buildSpaceUI(){
     else { a.href='#'; a.addEventListener('click',e=>{ e.preventDefault(); location.href='mai'+'lto:'+L.mail.join('@'); }); }
     holdStill(a); spUI.appendChild(a); spEls.push({el:a, link:L, kind:'link'});
   }
+  { const a=document.createElement('a'); a.className='sp-tag crayon'; a.textContent='給你的信'; a.href='#';
+    a.addEventListener('click',e=>{ e.preventDefault(); $('#letter').classList.add('on'); });
+    spUI.appendChild(a); spEls.push({el:a, kind:'letter'}); }
+  $('#letter-x').addEventListener('click',()=>$('#letter').classList.remove('on'));
+  $('#letter').addEventListener('click',e=>{ if (e.target.id==='letter') $('#letter').classList.remove('on'); });
   for (const [el,c] of Object.entries(REG)){
     const ol=document.createElement('ol'); ol.className='sp-list';
     P.forEach((p,i)=>{ if (p.el!==el) return;
@@ -1125,6 +1264,8 @@ function placeUI(){
         const lx=clamp(o.x-cam.x+W/2+150*Math.max(sc,.8), 16, W-o.el.offsetWidth-16), ly=clamp(o.y-cam.y+H/2-o.h/2, 64, Math.max(64,H-o.h-20));
         o.el.style.transform=`translate3d(${lx.toFixed(1)}px,${ly.toFixed(1)}px,0)`;
       } else place(o.el, o.x, o.y);
+    } else if (o.kind==='letter'){
+      o.el.classList.toggle('on', Math.hypot(me.x-LETTER.x, me.y-LETTER.y) < 170); place(o.el, LETTER.x+30, LETTER.y-20);
     } else if (o.kind==='link'){
       const b=o.link.body; o.el.classList.toggle('on', !!o.link.near); place(o.el, b.x, b.y);
     } else {                                                   // a faint mark at the edge, toward places off screen
@@ -1161,7 +1302,7 @@ let raf=null, last=0;
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000)*(REDUCED?.12:1); last=now; t+=dt;
   updateSound();
-  if (mode==='space' && !NOGL){ stepSpace(dt); stepRipples(dt); drawSpace(); placeUI(); }
+  if (mode==='space' && !NOGL){ stepSpace(dt); stepRipples(dt); drawSpace(); drawDoodles(); placeUI(); }
   else { step(dt); draw(); drawPhoto(dt); }
   raf=requestAnimationFrame(frame);
 }
@@ -1169,7 +1310,7 @@ function startLoop(){ if (raf) return; last=performance.now(); raf=requestAnimat
 function stopLoop(){ if (raf) cancelAnimationFrame(raf); raf=null; }
 document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stopLoop(); else if (opened) startLoop(); });
 addEventListener('resize', resize);
-setupGL(); setupSpaceGL(); buildSpaceUI(); resize();
+buildDoodles(); setupGL(); setupSpaceGL(); buildSpaceUI(); resize();
 NOGL = failed || !prog2;
 if (NOGL) document.body.classList.add('nogl');      // no WebGL: the poems are still all here, just without the space
 addEventListener('pointerdown', wakeAudio, {once:true});
