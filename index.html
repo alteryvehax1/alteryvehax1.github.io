@@ -970,11 +970,21 @@ function loadFilmSound(V){
   V.aloading=true;
   fetch(V.asrc).then(r=>r.arrayBuffer()).then(decode).then(buf=>{ V.voice=makeVoice(buf, V.vol); }).catch(()=>{ V.aloading=false; });
 }
-let preloaded=false;
-function preloadAll(){                      // on arriving: small sounds at once, films one after another from nearest
+/* films download one at a time, the one nearest to you first, so a slow phone connection isn't split five ways */
+let preloaded=false, filmBusy=null; const filmQueue=[];
+function pumpFilms(){
+  if (filmBusy || !filmQueue.length) return;
+  filmQueue.sort((a,b)=>Math.hypot(a.x-me.x,a.y-me.y)-Math.hypot(b.x-me.x,b.y-me.y));
+  const V=filmQueue.shift(); filmBusy=V; loadFilm(V);
+  const next=()=>{ if (filmBusy!==V) return; filmBusy=null; pumpFilms(); };
+  V.el.addEventListener('canplaythrough',next,{once:true});
+  V.el.addEventListener('error',next,{once:true});
+  setTimeout(next, 9000);                    // don't let one stuck film hold up the rest
+}
+function preloadAll(){
   if (preloaded) return; preloaded=true;
-  const order=[...VIDEOS].sort((a,b)=>Math.hypot(a.x-me.x,a.y-me.y)-Math.hypot(b.x-me.x,b.y-me.y));
-  order.forEach((V,k)=>setTimeout(()=>{ if (!V.loading) loadFilm(V); }, 300+k*1400));
+  for (const V of VIDEOS) if (!V.loading) filmQueue.push(V);
+  pumpFilms();
 }
 const audioScale = () => clamp(Math.min(W,H)/800, .5, 1);
 function updateSound(){
@@ -983,7 +993,6 @@ function updateSound(){
   const viewR = Math.hypot(W,H)*.6 + 260;
   for (const V of VIDEOS){                                   // films are always there; in view they play (silent); close by, you hear them
     const d=Math.hypot(V.x-me.x, V.y-me.y);
-    if (!V.loading && d<1600 && here) loadFilm(V);
     if (!V.el) continue;
     V.shown = V.ready;
     V.inView = here && Math.hypot(V.x-cam.x, V.y-cam.y) < viewR;
