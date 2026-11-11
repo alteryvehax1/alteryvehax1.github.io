@@ -20,6 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400&family=Space+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&text=%200123456789Yetv%C3%97%E4%B8%8D%E4%B9%9F%E4%BA%86%E4%BB%80%E4%BD%A0%E4%BF%A1%E5%80%8B%E5%85%B6%E5%95%A6%E5%96%B5%E5%9C%A8%E5%A3%9E%E5%A5%BD%E5%AE%83%E5%AF%A6%E5%BE%88%E6%88%91%E6%8C%89%E6%9C%83%E6%9C%89%E6%AC%A1%E6%B2%92%E7%89%A0%E7%94%A8%E7%9A%84%E7%9C%8B%E7%9C%9F%E7%9C%BC%E7%9D%9B%E7%B5%A6%E8%B2%93%E8%B4%8F%E9%80%99%E9%82%84%E9%82%A3%E9%83%BD%E9%88%95%E9%96%92%E9%9A%BB%E9%9B%B6%E9%BA%BC%EF%BC%88%EF%BC%89%EF%BC%8C%EF%BC%9F&display=swap" rel="stylesheet">
 <style>
 :root{
   --serif:'Noto Serif TC',serif;
@@ -179,15 +180,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #letter .h{margin-bottom:0;color:#a8452c;letter-spacing:.12em}
 #letter-x{position:absolute;top:1.4rem;right:1.4rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#f3ecd9}
 .sp-tag.crayon{color:#c0392b;font-weight:700}
-.sp-press{width:96px;height:96px;margin:-48px 0 0 -48px;border-radius:50% 46% 52% 48%;border:5px solid #e8473d;background:rgba(244,196,48,.75);
-  color:#c0392b;font:700 1.15rem/1 'Chalkboard SE','Comic Sans MS','Marker Felt',cursive;opacity:0;pointer-events:none;transition:opacity .5s;
-  animation:wob .5s steps(2) infinite}
+
+.sp-press{width:110px;height:104px;margin:-52px 0 0 -55px;border-radius:50%;background:transparent;color:transparent;opacity:0;pointer-events:none}
 .sp-press.on{opacity:1;pointer-events:auto;cursor:pointer}
-.sp-press.boing{animation:boing .35s ease}
+.sp-tag.crayon{font-family:"LXGW WenKai TC","Kaiti TC",serif;font-size:1.05rem;letter-spacing:.05em;animation:wob .5s steps(2) infinite}
 @keyframes wob{0%{rotate:-4deg}100%{rotate:3deg}}
-@keyframes boing{0%{scale:1}30%{scale:.82}70%{scale:1.12}100%{scale:1}}
-.sp-say{white-space:nowrap;font:700 1rem/1.4 'Chalkboard SE','Comic Sans MS','Marker Felt',cursive;color:#3a7bd5;rotate:-3deg;opacity:0;transition:opacity .4s;pointer-events:none}
-.sp-say.on{opacity:1}
 .sp-tag.crayon:hover{color:#e8473d}
 
 /* ───────────── LOCK ───────────── */
@@ -821,6 +818,7 @@ function stepSpace(dt){
       if (nx<SECRET.x0) inSecret=false;
     }
     me.x=nx; me.y=ny; }
+  if (PRESS.boing>0) PRESS.boing=Math.max(0,PRESS.boing-dt*3);
   reveal = lerp(reveal, inSecret ? 1 : 0, Math.min(1, dt*(inSecret ? 1.6 : 3)));   // the paper only shows itself once you're through
   me.r = lerp(me.r, 24*sc, Math.min(1,dt*2));
   cam.x = lerp(cam.x, me.x, Math.min(1,dt*2.4)); cam.y = lerp(cam.y, me.y, Math.min(1,dt*2.4));
@@ -941,7 +939,7 @@ void main(){
     lake+=vec3(.06,.10,.085)*r.w*(1.-smoothstep(0.,1.1,dd)); }
   vec2 vq=p/uRes-.5; lake*=1.-dot(vq,vq)*.45;
   float ou=max(abs(w.x),abs(w.y))-uWld; lake*=1.-.72*smoothstep(0.,40.,ou);
-  float pap=smoothstep(uSec.x+30.,uSec.x+95.,w.x)*smoothstep(uSec.z-50.,uSec.z+20.,w.y)*(1.-smoothstep(uSec.w-20.,uSec.w+50.,w.y));
+  float pap=smoothstep(uSec.x+8.,uSec.x+40.,w.x)*smoothstep(uSec.z-50.,uSec.z+20.,w.y)*(1.-smoothstep(uSec.w-20.,uSec.w+50.,w.y));
   vec3 paper=vec3(.952,.925,.850)-(h(floor(p/2.)+.7)-.5)*.035;
   lake=mix(lake,paper,pap*uRev);
   vec3 col=lake+Hh*clamp((f-.8)*5.,0.,1.)*(1.-w3);
@@ -998,14 +996,16 @@ function setupSpaceGL(){
 let actx = null;
 function wakeRoomSound(){
   if (ROOM_SOUND.el) return;
-  const el=new Audio(); el.src=ROOM_SOUND.src; el.preload='none'; el.volume=0; ROOM_SOUND.el=el;
+  const el=new Audio(); el.src=ROOM_SOUND.src; el.preload='none'; el.crossOrigin='anonymous'; ROOM_SOUND.el=el;
+  if (actx){ try{ const src=actx.createMediaElementSource(el), g=actx.createGain(); g.gain.value=0; src.connect(g); g.connect(out()); ROOM_SOUND.g=g; }catch(e){ el.volume=0; } }
+  else el.volume=0;
   el.addEventListener('ended',()=>{ ROOM_SOUND.done=true; });
   const p=el.play(); if (p && p.then) p.then(()=>el.pause()).catch(()=>{}); else el.pause();
 }
 function wakeAudio(){
-  wakeRoomSound();
   try{ if (!actx){ const AC = window.AudioContext||window.webkitAudioContext; if (AC) actx = new AC(); }
        if (actx && actx.state==='suspended') actx.resume(); }catch(e){ actx=null; }
+  wakeRoomSound();
 }
 let master=null;
 function out(){
@@ -1093,7 +1093,8 @@ function updateSound(){
     if (inside && R0.el.paused){ const p=R0.el.play(); if (p && p.catch) p.catch(()=>{}); }
     const d=R0.el.duration||1e9, left=d-R0.el.currentTime, tail=clamp(left/8,0,1);
     const target = inside ? R0.vol*tail : 0;
-    R0.v = lerp(R0.v||0, target, .06); R0.el.volume = clamp(R0.v,0,1);
+    R0.v = lerp(R0.v||0, target, .06);
+    if (R0.g) R0.g.gain.setTargetAtTime(R0.v, actx.currentTime, .05); else R0.el.volume = clamp(R0.v,0,1);
     if (!inside && R0.v<.01 && !R0.el.paused) R0.el.pause();
   }
   for (const F of FRIENDS){                                   // friends' films load only once the room is showing
@@ -1116,7 +1117,7 @@ function updateSound(){
   }
 }
 function muteSounds(){
-  if (ROOM_SOUND.el && !ROOM_SOUND.el.paused){ ROOM_SOUND.el.pause(); ROOM_SOUND.v=0; }
+  if (ROOM_SOUND.el && !ROOM_SOUND.el.paused){ if (ROOM_SOUND.g) ROOM_SOUND.g.gain.setTargetAtTime(0, actx.currentTime, .15); ROOM_SOUND.v=0; setTimeout(()=>{ if (view!=='space') ROOM_SOUND.el.pause(); }, 600); }
   for (const V of VIDEOS) if (V.el && !V.el.paused) V.el.pause();
   if (!actx) return;
   for (const S of [...SOUNDS, EDGE, ...VIDEOS]) if (S.voice) S.voice.g.gain.setTargetAtTime(0, actx.currentTime, .12);
@@ -1225,9 +1226,10 @@ function buildDoodles(){
   cat(X+330,Y-120,70);   cat(X+1110,Y+250,56);
   PRESS.eye={x:X+330+70*.22, y:Y-120-70*.02}; PRESS.x=X+1290; PRESS.y=Y+90;
   FRIENDS.forEach(F=>{ F.wx=X+F.x; F.wy=Y+F.y; });
+  DRAWN.forEach(D=>{ D.wx=X+D.x; D.wy=Y+D.y; D.img=new Image(); D.img.src=D.src; });
   hamster(X+760,Y+40,52); hamster(X+520,Y+390,40);
   koala(X+1000,Y-120,64);
-  envelope(X+250,Y+300,46); LETTER.x=X+250; LETTER.y=Y+300;
+  envelope(X+400,Y+270,46); LETTER.x=X+400; LETTER.y=Y+270;
   for (let i=0;i<9;i++) flower(X+180+i*150+rnd(-40,40), Y+470+rnd(-30,40), rnd(34,52));
   grass(X+90,Y+560,1300); grass(X+140,Y+610,1250);
   for (let i=0;i<10;i++) star(X+rnd(120,1420), Y+rnd(-560,-250), rnd(14,24), pick(CRAYON));
@@ -1237,10 +1239,20 @@ function buildDoodles(){
 }
 const LETTER = {x:0, y:0, near:false};
 const ROOM_SOUND = {src:'audio/room.m4a', vol:.8, done:false};   // plays once while you're in the room, fades out at its end, never repeats
-const FRIENDS = [                                                // friends' clips: shape-shifting crayon frames that float around the paper
-  // {src:'video/f1.mp4', x:600,  y:-420},
+const FRIENDS = [                                                // her own clips: shape-shifting crayon frames that float around the paper
+  {src:'egg/f1.mp4', x:420,  y:-470},     // ducks
+  {src:'egg/f2.mp4', x:900,  y:-420},     // water buffalo
+  {src:'egg/f3.mp4', x:1340, y:-170},     // a window
+  {src:'egg/f4.mp4', x:650,  y:210},      // sunset, driving
 ];
-const PRESS = {x:0, y:0, n:0, eye:{x:0,y:0}};
+const DRAWN = [                                                  // her drawings, cut out of the paper (h = height in the world)
+  {src:'egg/noway.png',    x:-130, y:-160, h:150, outside:true},  // stands on the lake, by the gap
+  {src:'egg/claude.png',   x:300,  y:110,  h:150},
+  {src:'egg/yvette.png',   x:1420, y:340,  h:175},
+  {src:'egg/catghost.png', x:880,  y:330,  h:145, float:true},
+  {src:'egg/capybara.png', x:450,  y:-250, h:110, race:true, span:900},   // racing, of course
+];
+const PRESS = {x:0, y:0, n:0, eye:{x:0,y:0}, say:'', boing:0};
 const CRACK = [];                                        // from outside: a few crayon marks leaking through the gap, nothing more
 function buildCrack(){ const c=['#e8473d','#f4c430','#3a7bd5','#f27ab0','#4fb35a'];
   for (let i=0;i<6;i++){ const y=GAP.y0+18+i*(GAP.y1-GAP.y0-36)/5, x=WORLD+rnd(-2,10);
@@ -1255,15 +1267,40 @@ function morph(phase, R, v){
   const n=SHAPES.length, i=Math.floor(phase)%n, j=(i+1)%n, f=phase%1, e=f<.6?0:sstep(.6,1,f);   // hold a shape, then melt into the next
   return SHAPES[i].map(([x,y],q)=>{ const [x2,y2]=SHAPES[j][q]; const w=1+Math.sin(q*1.3+v*2)*.03; return [lerp(x,x2,e)*R*w, lerp(y,y2,e)*R*w]; });
 }
+function crayonBlob(x,y,rx,ry,line,fill,v,k,wid){        // a wobbly closed crayon shape, coloured in with zigzags that miss the edges
+  const pts=[]; for (let j=0;j<=26;j++){ const a=j/24*6.283+v*.4, w=1+Math.sin(a*3+v*2.3)*.07+Math.sin(a*5+v)*.04; pts.push([x+Math.cos(a)*rx*w, y+Math.sin(a)*ry*w]); }
+  dctx.save(); dctx.globalAlpha*=.55; dctx.strokeStyle=fill; dctx.lineWidth=3*k; dctx.beginPath();
+  for (let j=0;j<14;j++){ const tt=(j/13-.5)*2, xx=x+tt*rx*1.05, h=Math.sqrt(Math.max(0,1-tt*tt))*ry*1.08+((j+v)%3-1)*3; j%2?dctx.lineTo(xx+3,y-h):dctx.lineTo(xx-3,y+h); }
+  dctx.stroke(); dctx.restore();
+  dctx.strokeStyle=line; dctx.lineWidth=wid*k*.6; dctx.beginPath(); pts.forEach(([a,b],j)=> j?dctx.lineTo(a,b):dctx.moveTo(a,b)); dctx.stroke();
+}
+function shaky(text, x, y, size, col, v, center){          // handwriting that can't keep still: every character leans its own way
+  dctx.save(); dctx.font=`${size}px "LXGW WenKai TC","Kaiti TC","BiauKai",serif`; dctx.textBaseline='middle';
+  const chars=[...text], ws=chars.map(c=>dctx.measureText(c).width), total=ws.reduce((a,b)=>a+b,0)+chars.length*size*.08;
+  let cx = center ? x-total/2 : x;
+  chars.forEach((c,i)=>{ const h=Math.sin(i*12.9898+v*4.1)*43758.5453; const r=(h-Math.floor(h)-.5);
+    dctx.save(); dctx.translate(cx+ws[i]/2, y+r*size*.18); dctx.rotate(r*.32); dctx.scale(1+r*.12,1-r*.1);
+    dctx.fillStyle=col; dctx.fillText(c,-ws[i]/2,0); dctx.globalAlpha*=.35; dctx.fillText(c,-ws[i]/2+1.2,-1);
+    dctx.restore(); cx+=ws[i]+size*.08; });
+  dctx.restore();
+}
+function drawDrawn(D, v, k, alpha){
+  let x=D.wx, y=D.wy, flip=1;
+  if (D.float) y+=Math.sin(t*.9)*16;
+  if (D.race){ const span=D.span||900, ph=(t*95)%(span*2), go=ph<span; x=D.wx+(go?ph:span*2-ph); flip=go?1:-1; y+=Math.abs(Math.sin(t*9))*-7; }
+  const h=D.h*k, w=h*D.img.naturalWidth/D.img.naturalHeight, rot=Math.sin(v*2.1+D.wx)*.035;
+  dctx.save(); dctx.globalAlpha=alpha; dctx.translate(x,y); dctx.rotate(rot); dctx.scale(flip,1); dctx.drawImage(D.img,-w/2,-h/2,w,h); dctx.restore();
+}
 function drawDoodles(){
   const d=Math.min(devicePixelRatio||1,2);
   if (dcv.width!==Math.round(W*d)){ dcv.width=Math.round(W*d); dcv.height=Math.round(H*d); }
   dctx.setTransform(1,0,0,1,0,0); dctx.clearRect(0,0,dcv.width,dcv.height);
-  if (cam.x+W/2 < SECRET.x0-40 || view!=='space') return;   // only draws when the wall is on screen
+  if (cam.x+W/2 < SECRET.x0-320 || view!=='space') return;   // only draws when the wall is on screen
   const v=REDUCED ? 0 : Math.floor(t*4)%3;                    // the lines 'boil', like a hand-drawn animation
   dctx.setTransform(d,0,0,d,(W/2-cam.x)*d,(H/2-cam.y)*d);
   dctx.lineCap='round'; dctx.lineJoin='round';
   const k=Math.max(sc,.8);
+  for (const D of DRAWN) if (D.outside && D.img.complete && D.img.naturalWidth) drawDrawn(D, v, k, 1);   // the sign is on this side of the wall
   const list = reveal>.01 ? CRACK.concat(DOODLES) : CRACK;
   for (const o of list){
     const a = o.crack ? 1 : reveal;
@@ -1272,10 +1309,17 @@ function drawDoodles(){
     dctx.globalAlpha=o.alpha*.35*a; dctx.lineWidth=o.w*k*.55; dctx.beginPath(); pts.forEach(([x,y],i)=> i?dctx.lineTo(x+1.6,y-1.2):dctx.moveTo(x+1.6,y-1.2)); dctx.stroke();   // waxy second pass
   }
   if (reveal>.01){
-    // the useless thing: every press makes one cat's big eye bigger
-    const er=9+Math.min(PRESS.n,120)*1.1; dctx.globalAlpha=reveal; dctx.fillStyle='#2b2b2b'; dctx.beginPath();
-    for (let j=0;j<=18;j++){ const a=j/18*6.283, rr=er*(1+Math.sin(a*3+v*2)*.06); j?dctx.lineTo(PRESS.eye.x+Math.cos(a)*rr,PRESS.eye.y+Math.sin(a)*rr*.85):dctx.moveTo(PRESS.eye.x+Math.cos(a)*rr,PRESS.eye.y+Math.sin(a)*rr*.85); }
-    dctx.fill(); if (er>14){ dctx.fillStyle='#fff'; dctx.beginPath(); dctx.arc(PRESS.eye.x-er*.3,PRESS.eye.y-er*.3,er*.22,0,6.283); dctx.fill(); }
+    // the useless thing: every press makes one cat's big eye bigger — coloured in with crayon, like the rest
+    const er=9+Math.min(PRESS.n,120)*1.1; dctx.globalAlpha=reveal*.9;
+    crayonBlob(PRESS.eye.x, PRESS.eye.y, er, er*.85, '#2b2b2b', '#2b2b2b', v, k, 7);
+    if (er>14){ dctx.fillStyle='#f3ecd9'; dctx.beginPath(); dctx.arc(PRESS.eye.x-er*.32,PRESS.eye.y-er*.3,er*.2,0,6.283); dctx.fill(); }
+    // the button itself: a wobbly crayon circle, coloured in outside the lines, and its words, written shakily
+    dctx.globalAlpha=reveal; const pb=PRESS.boing>0 ? 1-Math.sin(PRESS.boing*Math.PI)*.18 : 1;
+    crayonBlob(PRESS.x, PRESS.y, 50*k*pb, 46*k*pb, '#e8473d', '#f4c430', v, k, 10);
+    shaky('按我', PRESS.x, PRESS.y+2, 26*k, '#c0392b', v, 1);
+    if (PRESS.say) shaky(PRESS.say, PRESS.x, PRESS.y+80*k, 19*k, '#3a7bd5', v, 1);
+    // her drawings
+    for (const D of DRAWN){ if (D.outside || !D.img.complete || !D.img.naturalWidth) continue; drawDrawn(D, v, k, reveal); }
     // friends' films: inside a crayon shape that keeps turning into another shape
     FRIENDS.forEach((F,i)=>{ if (!F.el || F.el.readyState<2) return;
       const bob=Math.sin(t*.7+i*2)*14, fx=F.wx+Math.sin(t*.31+i)*22, fy=F.wy+bob, R=95*k;
@@ -1313,12 +1357,12 @@ function buildSpaceUI(){
   }
   { const b=document.createElement('button'); b.className='sp-press'; b.textContent='按我'; b.setAttribute('aria-label','一個沒有用的按鈕');
     try{ PRESS.n=+localStorage.getItem('useless')||0; }catch(e){}
-    const say=document.createElement('div'); say.className='sp-say';
+
     const LINES={1:'？',3:'還按',6:'好了啦',10:'它真的沒有用',15:'你看那隻貓',20:'牠的眼睛',30:'你很閒',45:'Yvette 按了零次',60:'我也沒有按',80:'這個按鈕不會壞，你會',100:'好，你贏了',101:'（其實什麼都沒有）',150:'還在？',200:'喵'};
     b.addEventListener('click',()=>{ PRESS.n++; try{ localStorage.setItem('useless',PRESS.n); }catch(e){}
       const keys=Object.keys(LINES).map(Number).filter(k=>k<=PRESS.n); const line=LINES[Math.max(...keys)];
-      say.textContent=line+'　×'+PRESS.n; say.classList.add('on'); b.classList.remove('boing'); void b.offsetWidth; b.classList.add('boing'); });
-    spUI.appendChild(b); spEls.push({el:b, kind:'press'}); spUI.appendChild(say); spEls.push({el:say, kind:'say'}); }
+      PRESS.say=line+' ×'+PRESS.n; PRESS.boing=1; b.setAttribute('aria-label','一個沒有用的按鈕，按了 '+PRESS.n+' 次：'+line); });
+    spUI.appendChild(b); spEls.push({el:b, kind:'press'}); }
   { const a=document.createElement('a'); a.className='sp-tag crayon'; a.textContent='給你的信'; a.href='#';
     a.addEventListener('click',e=>{ e.preventDefault(); $('#letter').classList.add('on'); });
     spUI.appendChild(a); spEls.push({el:a, kind:'letter'}); }
@@ -1357,10 +1401,8 @@ function placeUI(){
         const lx=clamp(o.x-cam.x+W/2+150*Math.max(sc,.8), 16, W-o.el.offsetWidth-16), ly=clamp(o.y-cam.y+H/2-o.h/2, 64, Math.max(64,H-o.h-20));
         o.el.style.transform=`translate3d(${lx.toFixed(1)}px,${ly.toFixed(1)}px,0)`;
       } else place(o.el, o.x, o.y);
-    } else if (o.kind==='press' || o.kind==='say'){
-      const on = reveal>.5 && Math.hypot(me.x-PRESS.x, me.y-PRESS.y) < 520;
-      o.el.classList.toggle('on', o.kind==='press' ? on : on && o.el.textContent!=='');
-      if (o.kind==='press') place(o.el, PRESS.x, PRESS.y); else place(o.el, PRESS.x-70, PRESS.y+70);
+    } else if (o.kind==='press'){
+      o.el.classList.toggle('on', reveal>.5); place(o.el, PRESS.x, PRESS.y);
     } else if (o.kind==='letter'){
       o.el.classList.toggle('on', reveal>.5 && Math.hypot(me.x-LETTER.x, me.y-LETTER.y) < 170); place(o.el, LETTER.x+30, LETTER.y-20);
     } else if (o.kind==='link'){
