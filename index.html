@@ -225,6 +225,41 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #receipt button{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#d8d4c8}
 #receipt button:hover,#receipt button:focus-visible{color:#fff}
 @media (prefers-reduced-motion:reduce){ #receipt img{animation:none} }
+/* alter yvette: a soft grey one by the mirror, a little ahead of you */
+.sp-alter{width:64px;height:64px;margin:-32px 0 0 -32px;padding:0;border:none;border-radius:50%;cursor:pointer;pointer-events:auto;
+  background:radial-gradient(circle,rgba(214,210,200,.55) 0,rgba(214,210,200,.16) 38%,rgba(214,210,200,0) 70%);animation:alb 3.6s ease-in-out infinite alternate}
+.sp-alter span{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-4px);font-size:.85rem;color:#d8d4c8;white-space:nowrap;opacity:0;transition:opacity .6s}
+.sp-alter.near span{opacity:.85}
+@keyframes alb{from{scale:.9}to{scale:1.08}}
+#alter{position:fixed;inset:0;z-index:23;background:#070807;color:#d8d4c8;opacity:0;pointer-events:none;transition:opacity .5s;
+  font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
+#alter.on{opacity:1;pointer-events:auto}
+#al-body{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#al-x{position:absolute;top:calc(14px + env(safe-area-inset-top));right:16px;z-index:2;padding:.8rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#7d7a72}
+#al-x:hover,#al-x:focus-visible{color:#fff}
+#alter .al-main{position:relative;height:100%;max-width:34rem;margin:0 auto;padding:0 16px;display:flex;flex-direction:column}
+#al-log{flex:1;overflow-y:auto;padding:22vh 0 1.5rem;display:flex;flex-direction:column;gap:1.1rem;scrollbar-width:none;
+  mask-image:linear-gradient(transparent 0,#000 18vh,#000 100%);-webkit-mask-image:linear-gradient(transparent 0,#000 18vh,#000 100%)}
+#al-log::-webkit-scrollbar{display:none}
+#alter .m{max-width:88%;font-size:.98rem;line-height:1.75;letter-spacing:.02em;animation:alin .5s ease both}
+#alter .m.a{align-self:flex-start}
+#alter .m.v{align-self:flex-end;color:#7d7a72;text-align:right}
+#alter .m.typing{color:#3a3a36;letter-spacing:.3em}
+@keyframes alin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+#al-compose{padding:.6rem 0 calc(1.6rem + env(safe-area-inset-bottom));min-height:9.5rem}
+#al-line{min-height:1.8rem;text-align:right;color:#a9a59b;font-size:.98rem;letter-spacing:.02em;margin-bottom:1rem}
+#al-line span{animation:alin .3s ease both}
+#al-opts{display:flex;justify-content:flex-end;gap:.6rem;flex-wrap:wrap}
+#al-opts button{font:inherit;font-size:1rem;color:#d8d4c8;border:1px solid #3a3a36;border-radius:999px;padding:.55rem 1.1rem;transition:border-color .2s;animation:alin .35s ease both}
+#al-opts button:hover,#al-opts button:focus-visible{border-color:#7d7a72;outline:none}
+#al-opts button.send{font-family:var(--mono);font-size:.72rem;letter-spacing:.2em;color:#7d7a72}
+#al-poem{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;padding:16px;background:#070807;opacity:0;pointer-events:none;transition:opacity 2.4s}
+#al-poem.on{opacity:1;pointer-events:auto}
+#al-poem pre{font-family:var(--serif);font-weight:300;font-size:1rem;line-height:2.1;letter-spacing:.06em;white-space:pre-wrap;max-width:24rem}
+#al-poem .by{margin-top:2.4rem;text-align:right;font-family:var(--serif);font-weight:300;font-size:.82rem;letter-spacing:.06em;color:#7d7a72}
+#al-again{display:block;margin:2.4rem 0 0 auto;font-family:var(--mono);font-size:.7rem;color:#3a3a36}
+#al-again:hover,#al-again:focus-visible{color:#d8d4c8}
+@media (prefers-reduced-motion:reduce){ .sp-alter{animation:none} #alter .m,#al-opts button,#al-line span{animation:none} #al-poem{transition:none} }
 
 /* ───────────── LOCK ───────────── */
 #lock{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem;background:rgba(5,5,5,.94);
@@ -329,6 +364,13 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 <div id="receipt" role="dialog" aria-modal="true" aria-label="收據">
   <div class="rc-wrap"><img id="rc-img" alt="這次拜訪的收據"></div>
   <div class="rc-row"><button id="rc-close">✕ close</button><button id="rc-save">save</button></div>
+</div>
+
+<div id="alter" role="dialog" aria-modal="true" aria-label="另一個我">
+  <canvas id="al-body" aria-hidden="true"></canvas>
+  <button id="al-x">✕ close</button>
+  <div class="al-main"><div id="al-log" aria-live="polite"></div><div id="al-compose"><div id="al-line" aria-label="你正在拼的句子"></div><div id="al-opts"></div></div></div>
+  <div id="al-poem"><div><pre></pre><p class="by">— ａｌｔｅｒ　ｙｖｅｔｔｅ</p><button id="al-again" aria-label="再一次">↺</button></div></div>
 </div>
 
 <div id="lock" role="dialog" aria-modal="true" aria-label="未公開">
@@ -511,7 +553,7 @@ addEventListener('popstate', e=>{
   if (v==='detail') openPoem(e.state.i, false); else if (v==='index' || NOGL) show('index'); else show('space');
 });
 addEventListener('keydown', e=>{
-  if (e.key==='Escape'){ if ($('#receipt').classList.contains('on')) closeDialog($('#receipt')); else if ($('#note').classList.contains('on')) closeNote(); else if ($('#letter').classList.contains('on')) closeLetter(); else if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
+  if (e.key==='Escape'){ if ($('#alter').classList.contains('on')) closeAlter(); else if ($('#receipt').classList.contains('on')) closeDialog($('#receipt')); else if ($('#note').classList.contains('on')) closeNote(); else if ($('#letter').classList.contains('on')) closeLetter(); else if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
 });
 
 /* ───────────── MATERIAL 01 ─────────────
@@ -798,6 +840,7 @@ dScroll.addEventListener('contextmenu', e=>{ if (lastType!=='mouse') e.preventDe
 const KIDX = {光:0, 雨:1, 肉:2, 煙:3, 鏡:4};
 const NEUTRAL = {edge:[.34,.33,.30], core:[.60,.58,.53], rim:[.10,.10,.09], halo:[.03,.03,.028]};
 const REG = { 光:{x:140,y:-1250}, 雨:{x:1080,y:-240}, 肉:{x:-1060,y:520}, 煙:{x:-1120,y:-840}, 鏡:{x:900,y:1020} };
+const ALTER_AT = {x:1160, y:1250};                            // alter yvette, by the mirror
 const WORLD = 2150;
 const GAP = {y0:1330, y1:1490};                              // the only place the wall gives way
 const SECRET = {x0:WORLD, x1:WORLD+1500, y0:820, y1:2080};    // what's behind it
@@ -1489,7 +1532,7 @@ const VISIT = (()=>{ let v=null; try{ sessionStorage.removeItem('visit'); }catch
 let visitDirty=false;
 function seen(kind, id){ const a=VISIT[kind]; if (!a.includes(id)){ a.push(id); visitDirty=true; printTick(); } }
 function visitSave(){}                                   // a visit lasts as long as the page: reload, and it is a new one
-const visitItems = () => VISIT.poems.length+VISIT.photos.length+VISIT.sounds.length+VISIT.films.length+VISIT.links.length+(VISIT.secret?2:0)+(VISIT.letter?1:0)+VISIT.notes+Math.floor(VISIT.dist/3000);
+const visitItems = () => (VISIT.alter||0)+VISIT.poems.length+VISIT.photos.length+VISIT.sounds.length+VISIT.films.length+VISIT.links.length+(VISIT.secret?2:0)+(VISIT.letter?1:0)+VISIT.notes+Math.floor(VISIT.dist/3000);
 let lastPt=null;
 function visitTrack(dt){                                  // the route: a point whenever you've moved a little
   if (view!=='space') return;
@@ -1609,7 +1652,7 @@ function drawReceipt(){
   // left: what you found; right: where you went
   const totalPhotos=P.filter(p=>p.photo).length, mins=Math.max(1,Math.round((Date.now()-VISIT.start)/60000));
   const rows=[['詩',`${VISIT.poems.length}/${P.length}`],['照片',`${VISIT.photos.length}/${totalPhotos}`],['聲音',`${VISIT.sounds.length}/${SOUNDS.length}`],['影片',`${VISIT.films.length}/${VIDEOS.length}`],
-              ['連結',`${VISIT.links.length}/${LINKS.length}`],['步數',`${Math.round(VISIT.dist/100)}`],['停留',`${mins} 分鐘`]];
+              ['連結',`${VISIT.links.length}/${LINKS.length}`],...(VISIT.alter?[['分身',`${VISIT.alter}/4`]]:[]),['步數',`${Math.round(VISIT.dist/100)}`],['停留',`${mins} 分鐘`]];
   const colR=L+440, top=y;
   rows.forEach(([k,v])=>{ text(k,L,y,F); text(v,colR,y,F,ink,'right'); y+=ROW; });
   const leftBottom=y-ROW+14;
@@ -1726,6 +1769,18 @@ function openNote(){ $('#note-msg').textContent=''; openDialog($('#note'), $('#n
 function closeNote(){ closeDialog($('#note')); }
 function openLetter(){ if (!VISIT.letter){ VISIT.letter=true; visitDirty=true; printTick(); } openDialog($('#letter'), $('#letter .paper-l')); }
 function closeLetter(){ closeDialog($('#letter')); }
+let alterUI=null, alterLoading=null;
+const loadScript = src => new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src=src; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+function openAlter(e){
+  if (e) e.preventDefault();
+  openDialog($('#alter'), $('#al-x'));
+  if (!alterLoading) alterLoading = loadScript('alter/phrases.js').then(()=>loadScript('alter/replies.js')).then(()=>loadScript('alter/alter.js')).then(()=>{
+    alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body') });
+  }).catch(()=>{ alterLoading=null; });
+  alterLoading.then(()=>{ if (!alterUI || !$('#alter').classList.contains('on')) return; alterUI.show();
+    if (!alterUI.started || alterUI.done) alterUI.start(n=>{ if (n>(VISIT.alter||0)){ VISIT.alter=n; visitDirty=true; printTick(); } }); });
+}
+function closeAlter(){ closeDialog($('#alter')); if (alterUI) alterUI.hide(); }
 function setupNote(){
   const t=$('#note-t'), n=$('#note-n'), msg=$('#note-msg');
   t.addEventListener('input',()=>{ n.textContent=[...t.value].length+' / 60'; });
@@ -1770,9 +1825,13 @@ function buildSpaceUI(){
     spUI.appendChild(b); spEls.push({el:b, kind:'press'}); }
   { const w=document.createElement('a'); w.className='sp-tag crayon'; w.textContent='寫一句話'; w.href='#';
     w.addEventListener('click',e=>{ e.preventDefault(); openNote(); }); spUI.appendChild(w); spEls.push({el:w, kind:'pen'}); }
+  { const b=document.createElement('button'); b.className='sp-alter'; b.setAttribute('aria-label','鏡子旁邊的人'); b.innerHTML='<span>欸</span>';
+    b.addEventListener('click',openAlter); spUI.appendChild(b); spEls.push({el:b, kind:'alter'}); }
   { const a=document.createElement('a'); a.className='sp-tag crayon'; a.textContent='給你的信'; a.href='#';
     a.addEventListener('click',e=>{ e.preventDefault(); openLetter(); });
     spUI.appendChild(a); spEls.push({el:a, kind:'letter'}); }
+  $('#al-x').addEventListener('click',closeAlter);
+  $('#al-again').addEventListener('click',()=>{ if (alterUI) alterUI.start(n=>{ if (n>(VISIT.alter||0)){ VISIT.alter=n; visitDirty=true; printTick(); } }); });
   $('#letter-x').addEventListener('click',closeLetter); $('#letter .l-end').addEventListener('click',closeLetter);
   $('#letter').addEventListener('click',e=>{ if (e.target.id==='letter') closeLetter(); });
   for (const [el,c] of Object.entries(REG)){
@@ -1788,7 +1847,7 @@ function buildSpaceUI(){
   const sp=$('#space');
   sp.addEventListener('pointermove',e=>{ if (e.pointerType==='mouse'){ spIn.mouse=true; spIn.x=e.clientX; spIn.y=e.clientY; spIn.paused=!!e.target.closest('.sp-tag.on,.sp-list.on,.sp-book,.sp-press.on'); } else if (spIn.touch){ spIn.x=e.clientX; spIn.y=e.clientY; } });
   sp.addEventListener('pointerleave',e=>{ if (e.pointerType==='mouse') spIn.mouse=false; });
-  sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book,#sp-index,#sp-sound,.sp-press')){ spIn.touch=true; spIn.goto=null; spIn.t0=performance.now(); spIn.x=spIn.ox=e.clientX; spIn.y=spIn.oy=e.clientY;
+  sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book,#sp-index,#sp-sound,.sp-press,.sp-alter')){ spIn.touch=true; spIn.goto=null; spIn.t0=performance.now(); spIn.x=spIn.ox=e.clientX; spIn.y=spIn.oy=e.clientY;
     stick.style.transform=`translate3d(${e.clientX}px,${e.clientY}px,0)`; stick.classList.add('on'); } });
   const up=()=>{
     if (spIn.touch && performance.now()-(spIn.t0||0) < 260 && Math.hypot(spIn.x-spIn.ox, spIn.y-spIn.oy) < 14)   // a tap, not a drag: go there
@@ -1812,6 +1871,11 @@ function placeUI(){
         const lx=clamp(o.x-cam.x+W/2+150*Math.max(sc,.8), 16, W-o.el.offsetWidth-16), ly=clamp(o.y-cam.y+H/2-o.h/2, 64, Math.max(64,H-o.h-20));
         o.el.style.transform=`translate3d(${lx.toFixed(1)}px,${ly.toFixed(1)}px,0)`;
       } else place(o.el, o.x, o.y);
+    } else if (o.kind==='alter'){                            // it leans a little ahead of where you are going
+      const d=Math.hypot(me.x-ALTER_AT.x, me.y-ALTER_AT.y);
+      o.el.style.display = d<1400 ? '' : 'none';
+      o.el.classList.toggle('near', d<300*audioScale());
+      place(o.el, ALTER_AT.x+clamp(me.vx*.12,-30,30), ALTER_AT.y+clamp(me.vy*.12,-30,30));
     } else if (o.kind==='press'){
       o.el.classList.toggle('on', reveal>.5); place(o.el, PRESS.x, PRESS.y);
     } else if (o.kind==='pen'){
