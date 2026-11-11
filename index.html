@@ -3,7 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POEMS</title>
+<title>POEMS — Yvette</title>
+<meta name="description" content="本網頁紀錄Yvette 自2018至今的現代詩創作。">
+<meta name="theme-color" content="#0b0a09">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://alteryvehax1.github.io/">
+<meta property="og:title" content="POEMS — Yvette">
+<meta property="og:description" content="本網頁紀錄Yvette 自2018至今的現代詩創作。">
+<meta property="og:image" content="https://alteryvehax1.github.io/share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://alteryvehax1.github.io/share.jpg">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400&family=Space+Mono&display=swap" rel="stylesheet">
@@ -74,7 +87,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .b-shadow{position:absolute;left:-10%;right:-25%;bottom:-48px;height:36px;border-radius:50%;
   background:radial-gradient(ellipse at center,rgba(0,0,0,.65),transparent 70%);filter:blur(6px);animation:shadow 5s ease-in-out infinite alternate}
 @keyframes shadow{from{transform:scale(1);opacity:.9}to{transform:scale(.9);opacity:.6}}
-.intro-text{position:absolute;bottom:13vh;left:16px;right:16px;text-align:center;font-family:var(--serif);font-size:.85rem;letter-spacing:.12em;color:#7a7268;
+.intro-text{position:absolute;top:min(calc(50% + 232px),calc(100% - 44px));left:16px;right:16px;text-align:center;font-family:var(--serif);font-size:.85rem;letter-spacing:.12em;color:#7a7268;
   opacity:0;animation:fadeUp 1.6s ease forwards .6s}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 #intro.opening{cursor:default}
@@ -106,7 +119,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .yr ol{list-style:none}
 .it{display:block;font-family:var(--serif);font-weight:300;font-size:.98rem;letter-spacing:.1em;line-height:2.5rem;color:#a8a49d;
   cursor:pointer;transition:color .35s;-webkit-tap-highlight-color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.it:hover,.it:focus-visible{color:#fff;outline:none}
+.it:hover,.it:focus-visible{color:#fff}
+.it:focus-visible,.sp-tag:focus-visible,.sp-book:focus-visible,button:focus-visible,#intro:focus-visible{outline:1px dotted rgba(232,225,207,.45);outline-offset:4px}
+.nogl #i-back{visibility:hidden}
 .it.locked{color:#55524d}
 .it.locked:hover{color:#8a8680}
 
@@ -142,6 +157,12 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sp-list .it{font-size:.86rem;line-height:2.05rem}
 .sp-dot{width:3px;height:3px;margin:-1.5px 0 0 -1.5px;background:#6d6963;opacity:0;transition:opacity .6s}
 .sp-dot.on{opacity:.8}
+.sp-stick{position:absolute;left:0;top:0;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:1px solid rgba(232,225,207,.28);
+  opacity:0;transition:opacity .25s;pointer-events:none}
+.sp-stick.on{opacity:1}
+#sp-index{position:absolute;top:0;left:0;z-index:2;padding:2.2rem 8vw 1rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:rgba(232,225,207,.45);transition:color .3s}
+#sp-index:hover,#sp-index:focus-visible{color:#fff}
+@media (max-width:600px){ #sp-index{padding-left:9vw} .sp-tag{padding:12px 14px;margin:-21px 0 0 12px} }
 #i-back{position:sticky;top:0;z-index:2;display:block;padding:2.2rem 8vw 1rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963;transition:color .3s}
 #i-back:hover{color:#fff}
 @media (max-width:600px){ #i-back{padding-left:9vw} }
@@ -161,6 +182,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 @media (max-width:600px){
   :root{--bw:160px;--bh:228px;--bt:24px}
+  .intro-text{top:min(calc(50% + 205px),calc(100% - 44px))}
   .list{padding:14vh 9vw 30vh}
   .yr{grid-template-columns:1fr;margin-bottom:3.4rem}
   .yr .y{line-height:2rem;margin-bottom:.4rem}
@@ -176,7 +198,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 <div id="scene"><canvas id="mat"></canvas><canvas id="ph"></canvas></div>
 
-<section class="view active" id="intro" aria-label="封面">
+<section class="view active" id="intro" aria-label="打開 POEMS" role="button" tabindex="0">
   <div id="stage">
     <div class="b-shadow"></div>
     <div id="floater">
@@ -200,7 +222,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   <p class="intro-text">本網頁紀錄Yvette 自2018至今的現代詩創作。</p>
 </section>
 
-<section class="view" id="space" aria-label="空間"><div id="sp-ui"></div></section>
+<section class="view" id="space" aria-label="空間"><div id="sp-ui"></div><button id="sp-index">index</button></section>
 
 <section class="view" id="index" aria-label="目錄">
   <button id="i-back">← back</button>
@@ -234,6 +256,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 const P = window.POEMS;
 const $ = s => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let NOGL = false;
 // 〈都是一種狀態〉每一段的狀態，依段落順序
 const STATE_SECTIONS = ['鏡','煙','光','肉','雨','鏡','肉','煙','光','肉','光','煙'];
 
@@ -270,7 +293,7 @@ intro.addEventListener('pointerleave', () => { if(!opened){ book.style.removePro
 function openBook(){
   if (opened) return; opened = true; wakeAudio();
   book.style.removeProperty('--rx'); book.style.removeProperty('--ry');
-  const go = () => { show('space'); history.replaceState({v:'space'}, ''); startLoop(); };
+  const go = () => { const base = NOGL ? 'index' : 'space'; show(base); history.replaceState({v:base}, '', location.pathname); startLoop(); };
   if (REDUCED){ go(); return; }
   intro.classList.add('opening');
   setTimeout(()=>intro.classList.add('zoom'), 1500);
@@ -291,7 +314,7 @@ addEventListener('keydown', e => { if (!opened && (e.key==='Enter'||e.key===' ')
       const li = document.createElement('li');
       li.className = 'it' + (p.locked?' locked':''); li.tabIndex = 0; li.textContent = p.title;
       li.addEventListener('click', ()=>openPoem(i));
-      li.addEventListener('keydown', e=>{ if(e.key==='Enter') openPoem(i); });
+      li.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openPoem(i); } });
       li.addEventListener('pointerenter', e=>{ if (e.pointerType!=='mouse' || view!=='index') return; preview(p); });
       ol.appendChild(li);
     });
@@ -370,16 +393,16 @@ function openPoem(i, push=true){
   $('#d-scroll').scrollTop = 0;
   if (view!=='detail') detailFrom = view==='space' ? 'space' : 'index';
   show('detail');
-  if (push) history.pushState({v:'detail', i}, '');
+  if (push) history.pushState({v:'detail', i}, '', '?p='+encodeURIComponent(p.title));
 }
-$('#back').addEventListener('click', ()=>{ setLooking&&setLooking(false); if (history.state && history.state.v==='detail') history.back(); else show(detailFrom); });
-function openIndex(){ show('index'); history.pushState({v:'index'}, ''); }
-$('#i-back').addEventListener('click', ()=>{ if (history.state && history.state.v==='index') history.back(); else show('space'); });
+$('#back').addEventListener('click', ()=>{ setLooking&&setLooking(false); if (history.state && history.state.v==='detail') history.back(); else show(NOGL ? 'index' : detailFrom); });
+function openIndex(){ show('index'); history.pushState({v:'index'}, '', location.pathname); }
+$('#i-back').addEventListener('click', ()=>{ if (NOGL) return; if (history.state && history.state.v==='index') history.back(); else show('space'); });
 addEventListener('popstate', e=>{
   if (!opened) return;
   if (lock.classList.contains('on')) hideLock();
   const v = e.state && e.state.v;
-  if (v==='detail') openPoem(e.state.i, false); else if (v==='index') show('index'); else show('space');
+  if (v==='detail') openPoem(e.state.i, false); else if (v==='index' || NOGL) show('index'); else show('space');
 });
 addEventListener('keydown', e=>{
   if (e.key==='Escape'){ if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
@@ -724,7 +747,10 @@ function stepSpace(dt){
     if (spIn.keys.has('ArrowLeft')||spIn.keys.has('a')) dx-=1; if (spIn.keys.has('ArrowRight')||spIn.keys.has('d')) dx+=1;
     if (spIn.keys.has('ArrowUp')||spIn.keys.has('w')) dy-=1;   if (spIn.keys.has('ArrowDown')||spIn.keys.has('s')) dy+=1;
     const l=Math.hypot(dx,dy)||1; dx/=l; dy/=l; sp=dx||dy ? 1 : 0;
-  } else if ((spIn.mouse || spIn.touch) && !spIn.paused){
+  } else if (spIn.touch){
+    const vx=spIn.x-spIn.ox, vy=spIn.y-spIn.oy, l=Math.hypot(vx,vy);
+    if (l>8){ dx=vx/l; dy=vy/l; sp=clamp((l-8)/80,0,1); }
+  } else if (spIn.mouse && !spIn.paused){
     const tx=spIn.x - W/2 + cam.x, ty=spIn.y - H/2 + cam.y, d=Math.hypot(tx-me.x, ty-me.y);
     if (d>1){ dx=(tx-me.x)/d; dy=(ty-me.y)/d; sp=clamp((d-36)/240,0,1); }
   }
@@ -781,14 +807,14 @@ function stepSpace(dt){
       ax+=(tx-b.x)*7; ay+=(slot-b.y)*7;
       b.vx+=ax*dt; b.vy+=ay*dt; const k=Math.exp(-dt*4.5); b.vx*=k; b.vy*=k;
     } else if (b.type==='video'){
-      const c = clamp(1-md/560, 0, 1);
+      const c = clamp(1-md/(560*audioScale()), 0, 1);
       const tx=b.cx+Math.sin(t*.23+b.seed*6)*14, ty=b.cy+Math.cos(t*.19+b.seed*5)*14;
       ax+=(tx-b.x)*1.6; ay+=(ty-b.y)*1.6;
       if (md<380*sc){ const f=10*(1-md/(380*sc)); ax+=mdx/md*f; ay+=mdy/md*f; }
       tr=(46 + 112*sstep(0,1,c))*Math.max(sc,.75); grow=1.6;
       b.vx+=ax*dt; b.vy+=ay*dt; const k=Math.exp(-dt*2.2); b.vx*=k; b.vy*=k;
     } else if (b.type==='sound'){
-      const c = clamp(1-md/700, 0, 1);
+      const c = clamp(1-md/(700*audioScale()), 0, 1);
       b.x = b.cx + Math.sin(t*.37+b.seed*6)*5; b.y = b.cy + Math.cos(t*.29+b.seed*4)*5;
       tr = (3 + 11*c*c + Math.sin(t*1.3+b.seed*6)*1.2*(.3+c)) * Math.max(sc,.8);
     } else {                                        // link
@@ -844,7 +870,7 @@ void main(){
   float ln=abs(vn(w*.03+vec2(uT*.05,-uT*.035)+vn(w*.012)*2.)-.5);
   lake+=vec3(.040,.070,.058)*step(b4(p+3.)*.9,1.-smoothstep(.0,.028,ln))*.45;
   vec2 cell=floor(w/5.); float hh=h(cell+.37);
-  if(hh>.988){ float tw=pow(max(0.,sin(uT*(.8+hh*1.6)+hh*90.)),10.); if(distance(fract(w/5.),vec2(.5))<.35) lake+=vec3(.70,.74,.52)*tw*.55; }
+  if(hh>.9955){ float tw=pow(max(0.,sin(uT*(.8+hh*1.6)+hh*90.)),10.); if(distance(fract(w/5.),vec2(.5))<.35) lake+=vec3(.70,.74,.52)*tw*.55; }
   for(int i=0;i<6;i++){ vec4 r=uRip[i]; if(r.w<=0.) continue;
     float rad=r.z*11.+1.; float dd=abs(length(p-r.xy)-rad);
     lake+=vec3(.06,.10,.085)*r.w*(1.-smoothstep(0.,1.1,dd)); }
@@ -936,13 +962,14 @@ function loadFilm(V){
     if (actx) decode(ab.slice(0)).then(buf=>{ V.voice=makeVoice(buf, V.vol); }).catch(()=>{});
   }).catch(()=>{ V.loading=false; });
 }
+const audioScale = () => clamp(Math.min(W,H)/800, .5, 1);
 function updateSound(){
-  const here = view==='space';
+  const here = view==='space', A = audioScale();
   for (const V of VIDEOS){                                   // films load when you are near, play only when you are close
     const d=Math.hypot(V.x-me.x, V.y-me.y);
-    if (!V.loading && d<1300 && here) loadFilm(V);
+    if (!V.loading && d<1300*A && here) loadFilm(V);
     if (!V.el) continue;
-    const open = here && d<560;
+    const open = here && d<560*A;
     if (open && V.el.paused){ const p=V.el.play(); if (p && p.catch) p.catch(()=>{}); }
     if (!open && !V.el.paused){ V.el.pause(); }
     if (actx && V.voice){
@@ -950,15 +977,15 @@ function updateSound(){
         const dur=V.voice.buf.duration, want=V.el.currentTime % dur;
         const at=(V.voice.off + actx.currentTime - V.voice.at) % dur;
         if (!V.voice.src || Math.min(Math.abs(at-want), dur-Math.abs(at-want)) > .2) voicePlay(V.voice, want);
-        const c=clamp(1-d/560,0,1); voiceAim(V.voice, Math.pow(c,1.4)*.9, clamp((V.x-me.x)/420,-1,1));
+        const c=clamp(1-d/(560*A),0,1); voiceAim(V.voice, Math.pow(c,1.4)*.9, clamp((V.x-me.x)/(420*A),-1,1));
       } else if (V.voice.src){ voiceAim(V.voice,0,0); if (!open) setTimeout(()=>{ if (V.el.paused) voiceStop(V.voice); }, 600); }
     }
   }
   if (!actx) return;
   for (const S of SOUNDS){
     const d=Math.hypot(S.x-me.x, S.y-me.y);
-    if (!S.voice && !S.loading && d<1150 && here) loadSound(S);
-    if (S.voice){ const c=here ? clamp(1-d/700,0,1) : 0; voiceAim(S.voice, Math.pow(c,1.6)*.85, clamp((S.x-me.x)/420,-1,1)); }
+    if (!S.voice && !S.loading && d<1150*A && here) loadSound(S);
+    if (S.voice){ const c=here ? clamp(1-d/(700*A),0,1) : 0; voiceAim(S.voice, Math.pow(c,1.6)*.85, clamp((S.x-me.x)/(420*A),-1,1)); }
   }
   // the edge: past here there is nothing. you hear it before you reach it.
   const room = WORLD - Math.max(Math.abs(me.x), Math.abs(me.y));
@@ -975,11 +1002,14 @@ function muteSounds(){
   for (const S of [...SOUNDS, EDGE, ...VIDEOS]) if (S.voice) S.voice.g.gain.setTargetAtTime(0, actx.currentTime, .12);
 }
 document.addEventListener('visibilitychange',()=>{ if (!actx) return; if (document.hidden) actx.suspend(); else if (opened) actx.resume(); });
-const ripples = [], rarr = new Float32Array(24); let ripT = 0;
+const ripples = [], rarr = new Float32Array(24); let ripT = 0, idleT = 1.2;
 function stepRipples(dt){
+  if (REDUCED){ ripples.length=0; return; }
   for (const r of ripples) r.age += dt;
   while (ripples.length && ripples[0].age > 2.6) ripples.shift();
   const sp = Math.hypot(me.vx, me.vy);
+  if (sp > 60) spIn.moved = true;
+  if (!spIn.moved && view==='space'){ idleT -= dt; if (idleT<=0){ ripples.push({x:me.x, y:me.y, age:0, s:.85}); if (ripples.length>6) ripples.shift(); idleT = 2.2; } }
   ripT -= dt;
   if (sp > 70 && ripT <= 0){ ripples.push({x:me.x, y:me.y, age:0, s:Math.min(1, sp/360)}); if (ripples.length>6) ripples.shift(); ripT = .42; }
 }
@@ -993,7 +1023,7 @@ function drawSpace(){
   sarr.fill(0);
   const sx=x=>(x-cam.x+W/2)/PX, sy=y=>(H-(y-cam.y+H/2))/PX;
   let film=null, fd=1e9;
-  for (const V of VIDEOS){ const d=Math.hypot(V.x-me.x,V.y-me.y); if (V.el && V.ready && !V.el.paused && d<fd && d<560){ film=V; fd=d; } }
+  for (const V of VIDEOS){ const d=Math.hypot(V.x-me.x,V.y-me.y); if (V.el && V.ready && !V.el.paused && d<fd && d<560*audioScale()){ film=V; fd=d; } }
   near.forEach((b,i)=>{ sarr[i*4]=sx(b.x); sarr[i*4+1]=sy(b.y); sarr[i*4+2]=b.r/PX; sarr[i*4+3]=(film && b===film.body) ? 6 : b.k; });
   sarr[47*4]=sx(me.x); sarr[47*4+1]=sy(me.y); sarr[47*4+2]=me.r/PX; sarr[47*4+3]=7;
   gl.useProgram(prog2);
@@ -1017,8 +1047,12 @@ function drawSpace(){
 const spUI = $('#sp-ui'), spEls = [];
 function place(el, wx, wy){ el.style.transform=`translate3d(${(wx-cam.x+W/2).toFixed(1)}px,${(wy-cam.y+H/2).toFixed(1)}px,0)`; }
 function holdStill(el){}
+const stick = document.createElement('div');
 function buildSpaceUI(){
-  const bk=document.createElement('div'); bk.className='sp-book'; bk.innerHTML='<b>POEMS</b><i></i>'; bk.setAttribute('role','button'); bk.setAttribute('aria-label','POEMS 小誌');
+  stick.className='sp-stick'; $('#space').appendChild(stick);
+  $('#sp-index').addEventListener('click',()=>openIndex());
+  const bk=document.createElement('div'); bk.className='sp-book'; bk.innerHTML='<b>POEMS</b><i></i>'; bk.setAttribute('role','button'); bk.setAttribute('aria-label','POEMS 小誌'); bk.tabIndex=0;
+  bk.addEventListener('keydown',e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); openIndex(); } });
   bk.addEventListener('click',()=>openIndex()); holdStill(bk); spUI.appendChild(bk); spEls.push({el:bk, x:0, y:0, kind:'book'});
   for (const L of LINKS){
     const a=document.createElement('a'); a.className='sp-tag'; a.textContent=L.name;
@@ -1030,7 +1064,7 @@ function buildSpaceUI(){
     const ol=document.createElement('ol'); ol.className='sp-list';
     P.forEach((p,i)=>{ if (p.el!==el) return;
       const li=document.createElement('li'); li.className='it'+(p.locked?' locked':''); li.textContent=p.title; li.tabIndex=0;
-      li.addEventListener('click',()=>openPoem(i)); li.addEventListener('keydown',e=>{ if (e.key==='Enter') openPoem(i); });
+      li.addEventListener('click',()=>openPoem(i)); li.addEventListener('keydown',e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); openPoem(i); } });
       ol.appendChild(li); });
     holdStill(ol); spUI.appendChild(ol); spEls.push({el:ol, x:c.x, y:c.y, kind:'list'});
   }
@@ -1039,8 +1073,9 @@ function buildSpaceUI(){
   const sp=$('#space');
   sp.addEventListener('pointermove',e=>{ if (e.pointerType==='mouse'){ spIn.mouse=true; spIn.x=e.clientX; spIn.y=e.clientY; spIn.paused=!!e.target.closest('.sp-tag.on,.sp-list.on,.sp-book'); } else if (spIn.touch){ spIn.x=e.clientX; spIn.y=e.clientY; } });
   sp.addEventListener('pointerleave',e=>{ if (e.pointerType==='mouse') spIn.mouse=false; });
-  sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book')){ spIn.touch=true; spIn.x=e.clientX; spIn.y=e.clientY; } });
-  const up=()=>{ spIn.touch=false; }; sp.addEventListener('pointerup',up); sp.addEventListener('pointercancel',up);
+  sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book,#sp-index')){ spIn.touch=true; spIn.x=spIn.ox=e.clientX; spIn.y=spIn.oy=e.clientY;
+    stick.style.transform=`translate3d(${e.clientX}px,${e.clientY}px,0)`; stick.classList.add('on'); } });
+  const up=()=>{ spIn.touch=false; stick.classList.remove('on'); }; sp.addEventListener('pointerup',up); sp.addEventListener('pointercancel',up);
   addEventListener('keydown',e=>{ if (view!=='space' || lock.classList.contains('on')) return; const k=e.key.length===1?e.key.toLowerCase():e.key;
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','w','a','s','d'].includes(k)){ spIn.keys.add(k); e.preventDefault(); } });
   addEventListener('keyup',e=>{ spIn.keys.delete(e.key.length===1?e.key.toLowerCase():e.key); });
@@ -1092,17 +1127,28 @@ function resize(){
 }
 let raf=null, last=0;
 function frame(now){
-  const dt=Math.min(.05,(now-last)/1000)*(REDUCED?.35:1); last=now; t+=dt;
+  const dt=Math.min(.05,(now-last)/1000)*(REDUCED?.12:1); last=now; t+=dt;
   updateSound();
-  if (mode==='space'){ stepSpace(dt); stepRipples(dt); drawSpace(); placeUI(); }
+  if (mode==='space' && !NOGL){ stepSpace(dt); stepRipples(dt); drawSpace(); placeUI(); }
   else { step(dt); draw(); drawPhoto(dt); }
   raf=requestAnimationFrame(frame);
 }
-function startLoop(){ if (raf||failed) return; last=performance.now(); raf=requestAnimationFrame(frame); }
+function startLoop(){ if (raf) return; last=performance.now(); raf=requestAnimationFrame(frame); }
 function stopLoop(){ if (raf) cancelAnimationFrame(raf); raf=null; }
 document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stopLoop(); else if (opened) startLoop(); });
 addEventListener('resize', resize);
 setupGL(); setupSpaceGL(); buildSpaceUI(); resize();
+NOGL = failed || !prog2;
+if (NOGL) document.body.classList.add('nogl');      // no WebGL: the poems are still all here, just without the space
+addEventListener('pointerdown', wakeAudio, {once:true});
+(function deepLink(){                                // opened from a poem's own link: go straight to it
+  const want = new URLSearchParams(location.search).get('p');
+  const i = want ? P.findIndex(p=>p.title===want) : -1;
+  if (i<0) return;
+  opened = true; const base = NOGL ? 'index' : 'space';
+  intro.classList.remove('active'); show(base); history.replaceState({v:base}, '', location.pathname); startLoop();
+  openPoem(i);
+})();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ if (state==='鏡') drawReflection(); });
 })();
 </script>
