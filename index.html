@@ -207,11 +207,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #note #note-s{color:#fff;background:#e8473d;padding:.35rem .9rem;border-radius:999px 980px 990px 970px;transform:rotate(-2deg)}
 #note #note-msg{min-height:1.2em;margin-top:.6rem;font-size:.85rem;color:#3a7bd5}
 
-.sp-strip{width:26px;height:0;margin:27px 0 0 -13px;padding:0;border:none;cursor:pointer;pointer-events:auto;transform-origin:top center;
-  background:#f6f4ee repeating-linear-gradient(180deg,transparent 0 6px,rgba(43,42,39,.28) 6px 7px,transparent 7px 11px);
-  clip-path:polygon(0 0,100% 0,100% calc(100% - 4px),85% 100%,70% calc(100% - 4px),55% 100%,40% calc(100% - 4px),25% 100%,10% calc(100% - 4px),0 100%);
-  box-shadow:0 4px 10px rgba(0,0,0,.35);transition:height .6s cubic-bezier(.3,1.4,.6,1);animation:sway 3.2s ease-in-out infinite alternate}
-@keyframes sway{from{rotate:-3deg}to{rotate:3deg}}
+.sp-strip{width:64px;height:0;margin:27px 0 0 -32px;padding:0;border:none;background:none;cursor:pointer;pointer-events:auto;overflow:visible;display:none}
+.sp-strip canvas{position:absolute;left:0;top:0;width:64px;height:200px;pointer-events:none}
 #receipt{position:fixed;inset:0;z-index:22;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:16px;background:rgba(5,5,5,.82);
   opacity:0;pointer-events:none;transition:opacity .35s}
 #receipt.on{opacity:1;pointer-events:auto}
@@ -221,7 +218,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #receipt .rc-row{display:flex;gap:2rem}
 #receipt button{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#d8d4c8}
 #receipt button:hover,#receipt button:focus-visible{color:#fff}
-@media (prefers-reduced-motion:reduce){ .sp-strip{animation:none;transition:none} #receipt img{animation:none} }
+@media (prefers-reduced-motion:reduce){ #receipt img{animation:none} }
 
 /* ───────────── LOCK ───────────── */
 #lock{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem;background:rgba(5,5,5,.94);
@@ -1486,6 +1483,43 @@ function printTick(){                                     // a receipt printer, 
 /* the strip, hanging out of the book */
 const strip=document.createElement('button'); strip.className='sp-strip'; strip.setAttribute('aria-label','撕下收據');
 function stripLen(){ const n=visitItems()-VISIT.torn; return n<=0 ? 0 : Math.min(150, 14+n*9); }
+const SW=64, SH=200, sdpr=Math.min(2,devicePixelRatio||1), SC=document.createElement('canvas'); SC.width=SW*sdpr; SC.height=SH*sdpr; strip.appendChild(SC);
+const sg=SC.getContext('2d');
+const grain=(()=>{ const c=document.createElement('canvas'); c.width=c.height=48; const g=c.getContext('2d'), im=g.createImageData(48,48);
+  for (let i=0;i<im.data.length;i+=4){ const v=Math.random(); im.data[i]=im.data[i+1]=im.data[i+2]=v<.5?60:255; im.data[i+3]=Math.random()*26; } g.putImageData(im,0,0); return c; })();
+let stripShown=0, stripClock=0, stripPrev=0;
+function stripRow(i){ let h=hashStr('r'+i+'.'+VISIT.no), x=0; const m=[]; const n=2+h%4;
+  for (let k=0;k<n;k++){ h=Math.imul(h^(h>>>13),2246822507)>>>0; const w=2+h%6; if (x+w>15) break; m.push([x,w]); x+=w+2; } return m; }
+function feedStrip(){                                      // the paper comes out a few pixels at a time, like a printer feeding
+  const now=performance.now(), dt=Math.min(.1,(now-(stripPrev||now))/1000); stripPrev=now;
+  const want=stripLen();
+  if (want<stripShown || REDUCED) stripShown=want;
+  else if (want>stripShown){ stripClock+=dt; if (stripClock>.06){ stripClock=0; stripShown=Math.min(want, stripShown+3); } }
+  return stripShown;
+}
+function drawStrip(){
+  const L=stripShown, g=sg; g.setTransform(sdpr,0,0,sdpr,0,0); g.clearRect(0,0,SW,SH); if (L<1) return;
+  const cx=SW/2, w=20, N=Math.max(2,Math.ceil(L/2)), pts=[];
+  for (let i=0;i<=N;i++){ const sv=i/N*L, f=Math.pow(sv/150,1.4);           // pinned at the slot, loose at the end
+    pts.push([cx + f*(7*Math.sin(t*1.1+sv*.04) + 2.5*Math.sin(t*2.6+sv*.11)), sv, Math.cos(t*.8+sv*.05)*Math.min(1,f*1.6)]); }
+  const xAt=sv=>pts[Math.min(N,Math.round(sv/L*N))][0];
+  g.beginPath(); pts.forEach(([x,y],i)=>i?g.lineTo(x-w/2,y):g.moveTo(x-w/2,y));
+  const [ex,ey]=pts[N]; for (let k=1;k<=6;k++) g.lineTo(ex-w/2+k*w/6, ey+(k%2?3.5:0)+((k*7+VISIT.torn)%3));
+  for (let i=N;i>=0;i--) g.lineTo(pts[i][0]+w/2,pts[i][1]); g.closePath();
+  g.save(); g.shadowColor='rgba(0,0,0,.45)'; g.shadowBlur=7; g.shadowOffsetX=4; g.shadowOffsetY=5; g.fillStyle='#efece3'; g.fill(); g.restore();
+  g.save(); g.clip();
+  for (let i=0;i<N;i++){ const [x,y,sh]=pts[i], [x2,y2]=pts[i+1];                 // the paper twisting in the wind
+    g.fillStyle = sh>0 ? `rgba(255,255,255,${(sh*.55).toFixed(3)})` : `rgba(45,38,26,${(-sh*.22).toFixed(3)})`;
+    g.beginPath(); g.moveTo(x-w/2-2,y); g.lineTo(x+w/2+2,y); g.lineTo(x2+w/2+2,y2+.7); g.lineTo(x2-w/2-2,y2+.7); g.fill(); }
+  g.globalAlpha=.9; g.fillStyle=g.createPattern(grain,'repeat'); g.fillRect(0,0,SW,SH); g.globalAlpha=1;
+  const n=visitItems()-VISIT.torn;
+  for (let i=0;i<n;i++){ const sv=L-(14+i*9)+8; if (sv<6) continue; if (sv>L-6) break;     // a printed line per thing found, newest at the slot
+    const x0=xAt(sv)-w/2+3; g.fillStyle='rgba(43,42,39,.5)'; for (const [mx,mw] of stripRow(i)) g.fillRect(x0+mx, sv, mw, 1.6); }
+  let gr=g.createLinearGradient(0,0,0,13); gr.addColorStop(0,'rgba(0,0,0,.55)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,SW,13);   // out of the dark of the book
+  if (L>30){ gr=g.createLinearGradient(0,L-9,0,L+4); gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(45,38,26,.28)'); g.fillStyle=gr; g.fillRect(0,L-9,SW,14); }  // the end curling a little
+  g.restore();
+  g.strokeStyle='rgba(43,42,39,.16)'; g.lineWidth=1; g.beginPath(); pts.forEach(([x,y],i)=>i?g.lineTo(x+w/2-.5,y):g.moveTo(x+w/2-.5,y)); g.stroke();
+}
 
 /* the receipt itself, drawn so it can be saved as one image (IG story size) */
 const RW=1080, RH=1920;
@@ -1497,6 +1531,26 @@ function collage(){                                       // up to ten lines, ea
   const want=Math.min(10, Math.max(3, read.length)), out2=[]; let k=0, guard=0;
   while (out2.length<want && guard++<200){ const pool=pools[k%pools.length]; k++; if (!pool.length) continue; const j=Math.floor(rnd2()*pool.length); const l=pool.splice(j,1)[0]; out2.push(l); if (pools.every(p=>!p.length)) break; }
   return out2;
+}
+function crumple(g, w, h, seed){                         // folds, creases and grain over the printed paper
+  let sd=(seed>>>0)%2147483646+1; const r=()=>{ sd=(sd*16807)%2147483647; return sd/2147483647; };
+  g.save(); g.beginPath(); g.rect(0,0,w,h); g.clip();
+  for (let i=0;i<24;i++){ const x=r()*w, y=r()*h, a=r()*Math.PI, dx=Math.cos(a), dy=Math.sin(a), B=5000;   // big soft facets
+    g.fillStyle = i%2 ? 'rgba(255,255,255,.045)' : 'rgba(70,58,40,.03)';
+    g.beginPath(); g.moveTo(x-dx*B,y-dy*B); g.lineTo(x+dx*B,y+dy*B); g.lineTo(x+dx*B-dy*B,y+dy*B+dx*B); g.lineTo(x-dx*B-dy*B,y-dy*B+dx*B); g.fill(); }
+  for (let i=0;i<30;i++){ const x=r()*w, y=r()*h, a=r()*Math.PI, len=180+r()*520, sh=22+r()*46, k=.5+r()*.7;   // creases
+    g.save(); g.translate(x,y); g.rotate(a);
+    let gr=g.createLinearGradient(0,0,0,sh); gr.addColorStop(0,`rgba(60,50,34,${(.075*k).toFixed(3)})`); gr.addColorStop(1,'rgba(60,50,34,0)');
+    g.fillStyle=gr; g.beginPath(); g.moveTo(-len/2,0); g.bezierCurveTo(-len/4,sh,len/4,sh,len/2,0); g.closePath(); g.fill();
+    gr=g.createLinearGradient(0,0,0,-sh); gr.addColorStop(0,`rgba(255,255,255,${(.22*k).toFixed(3)})`); gr.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=gr; g.beginPath(); g.moveTo(-len/2,0); g.bezierCurveTo(-len/4,-sh*.8,len/4,-sh*.8,len/2,0); g.closePath(); g.fill();
+    g.strokeStyle=`rgba(60,50,34,${(.085*k).toFixed(3)})`; g.lineWidth=1; g.beginPath(); g.moveTo(-len/2,0);
+    for (let q=1;q<=4;q++) g.lineTo(-len/2+len*q/4, (r()-.5)*3); g.stroke(); g.restore(); }
+  const vg=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.75); vg.addColorStop(0,'rgba(120,100,60,0)'); vg.addColorStop(1,'rgba(120,100,60,.08)');
+  g.fillStyle=vg; g.fillRect(0,0,w,h);
+  const im=g.getImageData(0,0,w,h), D=im.data;
+  for (let i=0;i<D.length;i+=4){ const n=(Math.random()-.5)*14; D[i]+=n; D[i+1]+=n; D[i+2]+=n; }
+  g.putImageData(im,0,0); g.restore();
 }
 function drawReceipt(){
   // the paper is drawn at its natural length first, then laid on a story-sized (1080×1920) green card, shrunk only if it is too long
@@ -1520,7 +1574,7 @@ function drawReceipt(){
     g.font=`400 28px ${mono}`; const vw=g.measureText(v).width;
     g.fillStyle=soft; for (let x=R-vw-16; x>L+kw+16; x-=13) g.fillRect(x,y-4,3,3);     // leader dots, one pitch for every row
     text(v,R,y,`400 28px ${mono}`,ink,'right'); y+=46; }
-  y+=6; text(VISIT.secret ? '此路不通（已通過）' : SECRET_MISSED, C, y+8, `400 26px ${serif}`, VISIT.secret?'#c0392b':soft, 'center'); y+=40; dash(y); y+=36;
+  y+=6; text(VISIT.secret ? SECRET_FOUND : SECRET_MISSED, C, y+8, `400 26px ${serif}`, VISIT.secret?'#c0392b':soft, 'center'); y+=40; dash(y); y+=36;
   // the route
   const mw=R-L, mh=460, WX0=-WORLD, WX1=VISIT.secret?SECRET.x1:WORLD, WY0=Math.min(-WORLD,VISIT.secret?SECRET.y0:0), WY1=Math.max(WORLD,VISIT.secret?SECRET.y1:0);
   const sx=Math.min(mw/(WX1-WX0), mh/(WY1-WY0)), ox=L+(mw-(WX1-WX0)*sx)/2, oy=y;
@@ -1542,20 +1596,23 @@ function drawReceipt(){
   // barcode from the receipt number
   let h=hashStr(String(VISIT.no)+VISIT.poems.join(',')); let bx=C-250;
   for (let i=0;i<70;i++){ h=Math.imul(h^(h>>>15),2246822507)>>>0; const w=1+(h%4); if (i%2===0){ g.fillStyle=ink; g.fillRect(bx,y,w*2,90); } bx+=w*2+2; if (bx>C+250) break; }
-  y+=150; text('謝謝光臨',C,y,`400 28px ${serif}`,ink,'center');
+  y+=150; text(THANKS,C,y,`400 28px ${serif}`,ink,'center');
   const ph=Math.min(pc.height, y+70);
+  crumple(g, pw, ph, VISIT.no);
 
   const c=document.createElement('canvas'); c.width=RW; c.height=RH; const o=c.getContext('2d');
   o.fillStyle='#0E4939'; o.fillRect(0,0,RW,RH);
   const k=Math.min(1,(RH-200)/ph), dw=pw*k, dh=ph*k, dx=(RW-dw)/2, dy=Math.max(90,(RH-dh)/2);
-  o.beginPath(); o.moveTo(dx,dy); o.lineTo(dx+dw,dy); o.lineTo(dx+dw,dy+dh);
+  const wob=()=>(Math.random()-.5)*5;                       // crumpled paper never lies quite straight
+  o.beginPath(); o.moveTo(dx,dy); for (let x=dx; x<=dx+dw; x+=dw/6) o.lineTo(x, dy+wob()); for (let yy=dy; yy<=dy+dh; yy+=dh/9) o.lineTo(dx+dw+wob(), yy);
   for (let x=dx+dw; x>dx; x-=26) o.lineTo(Math.max(dx,x-13), dy+dh+4+Math.random()*12), o.lineTo(Math.max(dx,x-26), dy+dh);
+  for (let yy=dy+dh; yy>=dy; yy-=dh/9) o.lineTo(dx+wob(), yy);
   o.closePath();
   o.save(); o.fillStyle='#f6f4ee'; o.shadowColor='rgba(0,0,0,.35)'; o.shadowBlur=30; o.shadowOffsetY=12; o.fill(); o.restore();
   o.save(); o.clip(); o.drawImage(pc,0,0,pw,ph,dx,dy,dw,dh); o.restore();
   return c;
 }
-const SECRET_MISSED = '此路不通（真的嗎？）';
+const SECRET_MISSED = '您錯過了一面牆', SECRET_FOUND = '您穿過了一面牆', THANKS = '狀態售出，概不退換';
 function openReceipt(){
   visitSave(); const c=drawReceipt();
   const img=$('#rc-img'); img.src=c.toDataURL('image/png');
@@ -1661,7 +1718,7 @@ function buildSpaceUI(){
 function placeUI(){
   if (view!=='space') return;
   for (const o of spEls){
-    if (o.kind==='strip'){ const L2=stripLen(); o.el.style.height=L2+'px'; o.el.style.display=L2?'block':'none'; place(o.el, 9, 0);
+    if (o.kind==='strip'){ const L2=feedStrip(); o.el.style.height=(L2?L2+8:0)+'px'; o.el.style.display=L2?'block':'none'; if (L2) drawStrip(); place(o.el, 9, 0);
     } else if (o.kind==='book' || o.kind==='list'){
       if (o.kind==='list'){
         const on = Math.hypot(me.x-o.x, me.y-o.y) < 440;
