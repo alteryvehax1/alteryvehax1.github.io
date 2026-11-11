@@ -761,7 +761,7 @@ const NEUTRAL = {edge:[.34,.33,.30], core:[.60,.58,.53], rim:[.10,.10,.09], halo
 const REG = { 光:{x:140,y:-1250}, 雨:{x:1080,y:-240}, 肉:{x:-1060,y:520}, 煙:{x:-1120,y:-840}, 鏡:{x:900,y:1020} };
 const WORLD = 2150;
 const GAP = {y0:1330, y1:1490};                              // the only place the wall gives way
-const SECRET = {x0:WORLD, x1:WORLD+1500, y0:820, y1:2000};    // what's behind it
+const SECRET = {x0:WORLD, x1:WORLD+1500, y0:820, y1:2080};    // what's behind it
 const inGap = y => y>GAP.y0 && y<GAP.y1;
 let inSecret = false, secretFound = false, reveal = 0;
 const LINKS = [
@@ -1376,7 +1376,7 @@ function drawDoodles(){
     for (const n of GB.notes){                                  // what other people left here
       const nx=lerp(GB.area.x0,GB.area.x1,n.x), ny=lerp(GB.area.y0,GB.area.y1,n.y);
       if (Math.abs(nx-cam.x)>W/2+300 || Math.abs(ny-cam.y)>H/2+60) continue;
-      shaky(n.body, nx, ny, 17*k, CRAYON[(n.id*7)%CRAYON.length], v, 1);
+      shaky(n.body, nx, ny, 21*k, CRAYON[(n.id*7)%CRAYON.length], v, 1);
     }
     if (reveal>.5 && Math.hypot(me.x-GB.pen.x, me.y-GB.pen.y) < 260) shaky('寫一句話 ✎', GB.pen.x, GB.pen.y, 21*k, '#8e5cc2', v, 1);
     if (reveal>.5 && Math.hypot(me.x-LETTER.x, me.y-LETTER.y) < 170) shaky('給你的信', LETTER.x+58, LETTER.y-12, 22*k, '#c0392b', v, 0);
