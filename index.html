@@ -360,7 +360,7 @@ function show(name){
   const was = view; view = name; if (name!=='index'){ sceneEl.style.transition=''; }
   if (was==='detail' && name!=='detail') leavePoem();
   if (name!=='space' && typeof muteSounds==='function') muteSounds();
-  if (typeof spIn!=='undefined'){ spIn.touch=false; spIn.mouse=false; spIn.paused=false; spIn.keys.clear(); }
+  if (typeof spIn!=='undefined'){ spIn.touch=false; spIn.mouse=false; spIn.paused=false; spIn.goto=null; spIn.keys.clear(); }
   for (const k in views) views[k].classList.toggle('active', k===name);
   sceneEl.style.opacity = (name==='detail' || name==='space') ? 1 : 0;
   clearTimeout(modeTimer);
@@ -855,13 +855,16 @@ function stepSpace(dt){
   // steering: the body heads for the pointer (or finger, or keys); hovering something you can click holds it still
   let dx=0, dy=0, sp=0;
   if (dialogOpen()){                                      // a letter, note, receipt or lock is open: the body waits
-  } else if (spIn.keys.size){
+  } else if (spIn.keys.size){ spIn.goto=null;
     if (spIn.keys.has('ArrowLeft')||spIn.keys.has('a')) dx-=1; if (spIn.keys.has('ArrowRight')||spIn.keys.has('d')) dx+=1;
     if (spIn.keys.has('ArrowUp')||spIn.keys.has('w')) dy-=1;   if (spIn.keys.has('ArrowDown')||spIn.keys.has('s')) dy+=1;
     const l=Math.hypot(dx,dy)||1; dx/=l; dy/=l; sp=dx||dy ? 1 : 0;
   } else if (spIn.touch){
     const vx=spIn.x-spIn.ox, vy=spIn.y-spIn.oy, l=Math.hypot(vx,vy);
     if (l>8){ dx=vx/l; dy=vy/l; sp=clamp((l-8)/110,0,1); }
+  } else if (spIn.goto){                                  // flying to where you tapped, slowing as it arrives
+    const gx=spIn.goto.x-me.x, gy=spIn.goto.y-me.y, d=Math.hypot(gx,gy);
+    if (d<18) spIn.goto=null; else { dx=gx/d; dy=gy/d; sp=clamp(d/180,.25,1); }
   } else if (spIn.mouse && !spIn.paused){
     const tx=spIn.x - W/2 + cam.x, ty=spIn.y - H/2 + cam.y, d=Math.hypot(tx-me.x, ty-me.y);
     if (d>1){ dx=(tx-me.x)/d; dy=(ty-me.y)/d; sp=clamp((d-36)/240,0,1); }
@@ -1065,8 +1068,7 @@ function wakeRoomSound(){
   if (ROOM_SOUND.el) return;
   const el=new Audio(); el.src=ROOM_SOUND.src; el.preload='none'; el.crossOrigin='anonymous'; ROOM_SOUND.el=el;
   if (ROOM_SOUND.at) el.addEventListener('loadedmetadata',()=>{ try{ el.currentTime=ROOM_SOUND.at; }catch(e){} }, {once:true});
-  if (actx){ try{ const src=actx.createMediaElementSource(el), g=actx.createGain(); g.gain.value=0; src.connect(g); g.connect(out()); ROOM_SOUND.g=g; }catch(e){ el.volume=0; } }
-  else el.volume=0;
+  el.volume=0; el.muted=!soundOn;                        // a plain element: phones ignore its volume, so its fade lives in the file itself
   el.addEventListener('ended',()=>{ ROOM_SOUND.done=true; });
   const p=el.play(); if (p && p.then) p.then(()=>el.pause()).catch(()=>{}); else el.pause();
 }
@@ -1214,7 +1216,6 @@ function rebuildAudio(){                                  // phones can come bac
   const old=actx; actx=null; master=null; masterGain=null;
   for (const S of [...SOUNDS, EDGE]){ if (S.voice) voiceStop(S.voice); S.voice=null; S.loading=false; }
   for (const V of VIDEOS){ if (V.voice) voiceStop(V.voice); V.voice=null; V.aloading=false; }
-  if (ROOM_SOUND.el){ const at=ROOM_SOUND.el.currentTime||0; try{ ROOM_SOUND.el.pause(); }catch(e){} ROOM_SOUND.el=null; ROOM_SOUND.g=null; ROOM_SOUND.at=at; }
   try{ if (old) old.close(); }catch(e){}
   wakeAudio();
 }
@@ -1787,9 +1788,12 @@ function buildSpaceUI(){
   const sp=$('#space');
   sp.addEventListener('pointermove',e=>{ if (e.pointerType==='mouse'){ spIn.mouse=true; spIn.x=e.clientX; spIn.y=e.clientY; spIn.paused=!!e.target.closest('.sp-tag.on,.sp-list.on,.sp-book,.sp-press.on'); } else if (spIn.touch){ spIn.x=e.clientX; spIn.y=e.clientY; } });
   sp.addEventListener('pointerleave',e=>{ if (e.pointerType==='mouse') spIn.mouse=false; });
-  sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book,#sp-index,#sp-sound,.sp-press')){ spIn.touch=true; spIn.x=spIn.ox=e.clientX; spIn.y=spIn.oy=e.clientY;
+  sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book,#sp-index,#sp-sound,.sp-press')){ spIn.touch=true; spIn.goto=null; spIn.t0=performance.now(); spIn.x=spIn.ox=e.clientX; spIn.y=spIn.oy=e.clientY;
     stick.style.transform=`translate3d(${e.clientX}px,${e.clientY}px,0)`; stick.classList.add('on'); } });
-  const up=()=>{ spIn.touch=false; stick.classList.remove('on'); }; sp.addEventListener('pointerup',up); sp.addEventListener('pointercancel',up);
+  const up=()=>{
+    if (spIn.touch && performance.now()-(spIn.t0||0) < 260 && Math.hypot(spIn.x-spIn.ox, spIn.y-spIn.oy) < 14)   // a tap, not a drag: go there
+      spIn.goto={x: spIn.ox - W/2 + cam.x, y: spIn.oy - H/2 + cam.y};
+    spIn.touch=false; stick.classList.remove('on'); }; sp.addEventListener('pointerup',up); sp.addEventListener('pointercancel',up);
   addEventListener('keydown',e=>{ if (view!=='space' || dialogOpen()) return; const k=e.key.length===1?e.key.toLowerCase():e.key;
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','w','a','s','d'].includes(k)){ spIn.keys.add(k); e.preventDefault(); } });
   addEventListener('keyup',e=>{ spIn.keys.delete(e.key.length===1?e.key.toLowerCase():e.key); });
