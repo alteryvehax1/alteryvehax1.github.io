@@ -725,7 +725,7 @@ const WORLD = 2150;
 const GAP = {y0:1330, y1:1490};                              // the only place the wall gives way
 const SECRET = {x0:WORLD, x1:WORLD+1500, y0:820, y1:2000};    // what's behind it
 const inGap = y => y>GAP.y0 && y<GAP.y1;
-let inSecret = false, secretFound = false;
+let inSecret = false, secretFound = false, reveal = 0;
 const LINKS = [
   {name:'instagram',            url:'https://www.instagram.com/wxzldhrl.yhc/', x:300,  y:-210,  k:5},
   {name:'youtube',              url:'https://www.youtube.com/@yvehax1',         x:-360, y:250,   k:5},
@@ -802,6 +802,7 @@ function stepSpace(dt){
       if (nx<SECRET.x0) inSecret=false;
     }
     me.x=nx; me.y=ny; }
+  reveal = lerp(reveal, inSecret ? 1 : 0, Math.min(1, dt*(inSecret ? 1.6 : 3)));   // the paper only shows itself once you're through
   me.r = lerp(me.r, 24*sc, Math.min(1,dt*2));
   cam.x = lerp(cam.x, me.x, Math.min(1,dt*2.4)); cam.y = lerp(cam.y, me.y, Math.min(1,dt*2.4));
 
@@ -879,7 +880,7 @@ const FS2 = `precision highp float;
 uniform vec2 uRes;uniform vec4 uS[48];uniform float uT;uniform vec2 uL;uniform vec3 uBg;
 uniform vec3 kE[6],kC[6],kR[6],kH[6];
 uniform sampler2D uV0,uV1,uV2,uV3,uV4;uniform vec4 uVC[5];
-uniform vec2 uCam;uniform vec4 uRip[6];uniform vec4 uSec;uniform float uWld;
+uniform vec2 uCam;uniform vec4 uRip[6];uniform vec4 uSec;uniform float uWld,uRev;
 float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
   return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
@@ -923,7 +924,7 @@ void main(){
   float ou=max(abs(w.x),abs(w.y))-uWld; lake*=1.-.72*smoothstep(0.,40.,ou);
   float pap=smoothstep(uSec.x+30.,uSec.x+95.,w.x)*smoothstep(uSec.z-50.,uSec.z+20.,w.y)*(1.-smoothstep(uSec.w-20.,uSec.w+50.,w.y));
   vec3 paper=vec3(.952,.925,.850)-(h(floor(p/2.)+.7)-.5)*.035;
-  lake=mix(lake,paper,pap);
+  lake=mix(lake,paper,pap*uRev);
   vec3 col=lake+Hh*clamp((f-.8)*5.,0.,1.)*(1.-w3);
   if(inside>.5){
     vec3 c=mix(mix(E,C,clamp((f-1.)*1.5,0.,1.)),mix(E,C,smk),w3);
@@ -957,7 +958,7 @@ function setupSpaceGL(){
     if(!gl.getProgramParameter(prog2,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog2)); }
   catch(e){ console.warn(e); prog2=null; return; }
   gl.useProgram(prog2);
-  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH','uV0','uV1','uV2','uV3','uV4','uVC','uCam','uRip','uSec','uWld']) U2[n]=gl.getUniformLocation(prog2,n);
+  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH','uV0','uV1','uV2','uV3','uV4','uVC','uCam','uRip','uSec','uWld','uRev']) U2[n]=gl.getUniformLocation(prog2,n);
   for (let j=0;j<5;j++){
     const tx=gl.createTexture(); gl.activeTexture(gl.TEXTURE2+j); gl.bindTexture(gl.TEXTURE_2D,tx);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
@@ -1108,7 +1109,7 @@ function drawSpace(){
   gl.uniform2f(U2.uRes,LW,LH); gl.uniform4fv(U2.uS,sarr); gl.uniform1f(U2.uT,t);
   gl.uniform2f(U2.uL,sx(me.x),sy(me.y));
   gl.uniform2f(U2.uCam,cam.x/PX,-cam.y/PX);
-  gl.uniform4f(U2.uSec,SECRET.x0/PX,SECRET.x1/PX,-SECRET.y1/PX,-SECRET.y0/PX); gl.uniform1f(U2.uWld,WORLD/PX);
+  gl.uniform4f(U2.uSec,SECRET.x0/PX,SECRET.x1/PX,-SECRET.y1/PX,-SECRET.y0/PX); gl.uniform1f(U2.uWld,WORLD/PX); gl.uniform1f(U2.uRev,reveal);
   rarr.fill(0); ripples.forEach((r,i)=>{ rarr[i*4]=sx(r.x); rarr[i*4+1]=sy(r.y); rarr[i*4+2]=r.age*Math.max(sc,.8); rarr[i*4+3]=r.s*(1-r.age/2.6); });
   gl.uniform4fv(U2.uRip,rarr);
   varr.fill(0);
@@ -1192,19 +1193,32 @@ function buildDoodles(){
   for (let i=0;i<10;i++){ const x=X+rnd(60,1420), y=Y+rnd(-640,640); add(pick(CRAYON),rnd(3,6),line(x,y,x+rnd(-140,140),y+rnd(-60,60),5),5); }
 }
 const LETTER = {x:0, y:0, near:false};
+const CRACK = [];                                        // from outside: a few crayon marks leaking through the gap, nothing more
+function buildCrack(){ const c=['#e8473d','#f4c430','#3a7bd5','#f27ab0','#4fb35a'];
+  for (let i=0;i<6;i++){ const y=GAP.y0+18+i*(GAP.y1-GAP.y0-36)/5, x=WORLD+rnd(-2,10);
+    CRACK.push({crack:true, col:c[i%c.length], w:rnd(3,5), alpha:.9, paths:wob(line(x,y,x+rnd(14,30),y+rnd(-10,10),3),2)}); } }
 function drawDoodles(){
   const d=Math.min(devicePixelRatio||1,2);
   if (dcv.width!==Math.round(W*d)){ dcv.width=Math.round(W*d); dcv.height=Math.round(H*d); }
   dctx.setTransform(1,0,0,1,0,0); dctx.clearRect(0,0,dcv.width,dcv.height);
-  if (cam.x+W/2 < SECRET.x0+40 || view!=='space') return;   // only draws when the paper is on screen
+  if (cam.x+W/2 < SECRET.x0-40 || view!=='space') return;   // only draws when the wall is on screen
   const v=REDUCED ? 0 : Math.floor(t*4)%3;                    // the lines 'boil', like a hand-drawn animation
   dctx.setTransform(d,0,0,d,(W/2-cam.x)*d,(H/2-cam.y)*d);
   dctx.lineCap='round'; dctx.lineJoin='round';
   const k=Math.max(sc,.8);
-  for (const o of DOODLES){
-    const pts=o.paths[v]; dctx.strokeStyle=o.col; dctx.globalAlpha=o.alpha*.9; dctx.lineWidth=o.w*k;
+  const list = reveal>.01 ? CRACK.concat(DOODLES) : CRACK;
+  for (const o of list){
+    const a = o.crack ? 1 : reveal;
+    const pts=o.paths[v]; dctx.strokeStyle=o.col; dctx.globalAlpha=o.alpha*.9*a; dctx.lineWidth=o.w*k;
     dctx.beginPath(); pts.forEach(([x,y],i)=> i?dctx.lineTo(x,y):dctx.moveTo(x,y)); dctx.stroke();
-    dctx.globalAlpha=o.alpha*.35; dctx.lineWidth=o.w*k*.55; dctx.beginPath(); pts.forEach(([x,y],i)=> i?dctx.lineTo(x+1.6,y-1.2):dctx.moveTo(x+1.6,y-1.2)); dctx.stroke();   // waxy second pass
+    dctx.globalAlpha=o.alpha*.35*a; dctx.lineWidth=o.w*k*.55; dctx.beginPath(); pts.forEach(([x,y],i)=> i?dctx.lineTo(x+1.6,y-1.2):dctx.moveTo(x+1.6,y-1.2)); dctx.stroke();   // waxy second pass
+  }
+  if (reveal>.01){                                          // on paper, you are drawn in crayon too
+    const cols=['#e8473d','#f39a2b','#f4c430','#4fb35a','#3a7bd5','#8e5cc2'], R=me.r*1.3;
+    dctx.lineWidth=4*k;
+    for (let i=0;i<6;i++){ const a0=i/6*6.283+t*.6, a1=a0+1.25; dctx.strokeStyle=cols[i]; dctx.globalAlpha=.9*reveal; dctx.beginPath();
+      for (let j=0;j<=8;j++){ const a=a0+(a1-a0)*j/8, rr=R*(1+Math.sin(a*3+v*2)*.08); j?dctx.lineTo(me.x+Math.cos(a)*rr,me.y+Math.sin(a)*rr):dctx.moveTo(me.x+Math.cos(a)*rr,me.y+Math.sin(a)*rr); }
+      dctx.stroke(); }
   }
   dctx.globalAlpha=1;
 }
@@ -1265,7 +1279,7 @@ function placeUI(){
         o.el.style.transform=`translate3d(${lx.toFixed(1)}px,${ly.toFixed(1)}px,0)`;
       } else place(o.el, o.x, o.y);
     } else if (o.kind==='letter'){
-      o.el.classList.toggle('on', Math.hypot(me.x-LETTER.x, me.y-LETTER.y) < 170); place(o.el, LETTER.x+30, LETTER.y-20);
+      o.el.classList.toggle('on', reveal>.5 && Math.hypot(me.x-LETTER.x, me.y-LETTER.y) < 170); place(o.el, LETTER.x+30, LETTER.y-20);
     } else if (o.kind==='link'){
       const b=o.link.body; o.el.classList.toggle('on', !!o.link.near); place(o.el, b.x, b.y);
     } else {                                                   // a faint mark at the edge, toward places off screen
@@ -1310,7 +1324,7 @@ function startLoop(){ if (raf) return; last=performance.now(); raf=requestAnimat
 function stopLoop(){ if (raf) cancelAnimationFrame(raf); raf=null; }
 document.addEventListener('visibilitychange', ()=>{ if (document.hidden) stopLoop(); else if (opened) startLoop(); });
 addEventListener('resize', resize);
-buildDoodles(); setupGL(); setupSpaceGL(); buildSpaceUI(); resize();
+buildDoodles(); buildCrack(); setupGL(); setupSpaceGL(); buildSpaceUI(); resize();
 NOGL = failed || !prog2;
 if (NOGL) document.body.classList.add('nogl');      // no WebGL: the poems are still all here, just without the space
 addEventListener('pointerdown', wakeAudio, {once:true});
