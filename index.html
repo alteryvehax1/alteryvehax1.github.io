@@ -1251,6 +1251,7 @@ const DRAWN = [                                                  // her drawings
   {src:'egg/yvette.png',   x:1420, y:340,  h:175},
   {src:'egg/catghost.png', x:880,  y:330,  h:145, float:true},
   {src:'egg/capybara.png', x:450,  y:-250, h:110, race:true, span:900},   // racing, of course
+  {src:'egg/puffer.png',   x:215,  y:-330, h:120, puff:true},               // puffs up now and then
 ];
 const PRESS = {x:0, y:0, n:0, eye:{x:0,y:0}, say:'', boing:0};
 const CRACK = [];                                        // from outside: a few crayon marks leaking through the gap, nothing more
@@ -1299,7 +1300,8 @@ function drawDrawn(D, v, k, alpha){
   let x=D.wx, y=D.wy, flip=1;
   if (D.float) y+=Math.sin(t*.9)*16;
   if (D.race){ const span=D.span||900, ph=(t*95)%(span*2), go=ph<span; x=D.wx+(go?ph:span*2-ph); flip=go?1:-1; y+=Math.abs(Math.sin(t*9))*-7; }
-  const h=D.h*k, w=h*D.img.naturalWidth/D.img.naturalHeight, rot=Math.sin(v*2.1+D.wx)*.035;
+  const pf = D.puff ? .82+.42*Math.exp(-((t%4.5))*1.6) : 1;
+  const h=D.h*k*pf, w=h*D.img.naturalWidth/D.img.naturalHeight, rot=Math.sin(v*2.1+D.wx)*.035;
   dctx.save(); dctx.globalAlpha=alpha; dctx.translate(x,y); dctx.rotate(rot); dctx.scale(flip,1); dctx.drawImage(D.img,-w/2,-h/2,w,h); dctx.restore();
 }
 function drawDoodles(){
