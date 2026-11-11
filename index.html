@@ -207,6 +207,22 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #note #note-s{color:#fff;background:#e8473d;padding:.35rem .9rem;border-radius:999px 980px 990px 970px;transform:rotate(-2deg)}
 #note #note-msg{min-height:1.2em;margin-top:.6rem;font-size:.85rem;color:#3a7bd5}
 
+.sp-strip{width:26px;height:0;margin:27px 0 0 -13px;padding:0;border:none;cursor:pointer;pointer-events:auto;transform-origin:top center;
+  background:#f6f4ee repeating-linear-gradient(180deg,transparent 0 6px,rgba(43,42,39,.28) 6px 7px,transparent 7px 11px);
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 4px),85% 100%,70% calc(100% - 4px),55% 100%,40% calc(100% - 4px),25% 100%,10% calc(100% - 4px),0 100%);
+  box-shadow:0 4px 10px rgba(0,0,0,.35);transition:height .6s cubic-bezier(.3,1.4,.6,1);animation:sway 3.2s ease-in-out infinite alternate}
+@keyframes sway{from{rotate:-3deg}to{rotate:3deg}}
+#receipt{position:fixed;inset:0;z-index:22;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:16px;background:rgba(5,5,5,.82);
+  opacity:0;pointer-events:none;transition:opacity .35s}
+#receipt.on{opacity:1;pointer-events:auto}
+#receipt .rc-wrap{max-height:84vh;max-width:min(92vw,30rem);overflow:auto}
+#receipt img{display:block;width:100%;height:auto;animation:rcin .7s cubic-bezier(.2,.8,.2,1)}
+@keyframes rcin{from{transform:translateY(-40px);opacity:0}to{transform:none;opacity:1}}
+#receipt .rc-row{display:flex;gap:2rem}
+#receipt button{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#d8d4c8}
+#receipt button:hover,#receipt button:focus-visible{color:#fff}
+@media (prefers-reduced-motion:reduce){ .sp-strip{animation:none;transition:none} #receipt img{animation:none} }
+
 /* ───────────── LOCK ───────────── */
 #lock{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem;background:rgba(5,5,5,.94);
   opacity:0;pointer-events:none;transition:opacity .4s}
@@ -314,6 +330,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
     <div class="row"><span id="note-n">0 / 60</span><button type="button" id="note-x">算了</button><button type="submit" id="note-s">貼上去</button></div>
     <p id="note-msg"></p>
   </form>
+</div>
+
+<div id="receipt" role="dialog" aria-label="收據">
+  <div class="rc-wrap"><img id="rc-img" alt="這次拜訪的收據"></div>
+  <div class="rc-row"><button id="rc-close">✕ close</button><button id="rc-save">save</button></div>
 </div>
 
 <div id="lock" role="dialog" aria-label="未公開">
@@ -447,6 +468,7 @@ function trimLines(a){ let s=0,e=a.length; while(s<e && !a[s].trim()) s++; while
 function openPoem(i, push=true){
   const p = P[i];
   if (p.locked && !unlocked.has(i)){ showLock(i); return; }
+  seen('poems', i);
   $('#d-title').textContent = p.title;
   $('#d-year').textContent = p.year;
   const c = $('#d-content');
@@ -493,7 +515,7 @@ addEventListener('popstate', e=>{
   if (v==='detail') openPoem(e.state.i, false); else if (v==='index' || NOGL) show('index'); else show('space');
 });
 addEventListener('keydown', e=>{
-  if (e.key==='Escape'){ if ($('#note').classList.contains('on')) closeNote(); else if ($('#letter').classList.contains('on')) closeLetter(); else if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
+  if (e.key==='Escape'){ if ($('#receipt').classList.contains('on')) closeDialog($('#receipt')); else if ($('#note').classList.contains('on')) closeNote(); else if ($('#letter').classList.contains('on')) closeLetter(); else if (lock.classList.contains('on')) hideLock(); else if (view==='detail') $('#back').click(); else if (view==='index') $('#i-back').click(); }
 });
 
 /* ───────────── MATERIAL 01 ─────────────
@@ -714,6 +736,7 @@ function uploadPhoto(){
   fullCtx.filter='none';
 }
 function stamp(x,y){
+  if (poem){ const pi=P.indexOf(poem); if (pi>=0) seen('photos', pi); }
   const r=Math.max(64,96*sc)/CELL, cx=x/CELL, cy=y/CELL;
   for (let j=Math.max(0,Math.floor(cy-r)); j<=Math.min(MH-1,Math.ceil(cy+r)); j++)
     for (let i=Math.max(0,Math.floor(cx-r)); i<=Math.min(MW-1,Math.ceil(cx+r)); i++){
@@ -1136,7 +1159,7 @@ function updateSound(){
         const dur=V.voice.buf.duration, want=V.el.currentTime % dur;
         const at=(V.voice.off + actx.currentTime - V.voice.at) % dur;
         if (!V.voice.src || Math.min(Math.abs(at-want), dur-Math.abs(at-want)) > .2) voicePlay(V.voice, want);
-        const c=clamp(1-d/(560*A),0,1); voiceAim(V.voice, Math.pow(c,1.4)*.9, clamp((V.x-me.x)/(420*A),-1,1));
+        const c=clamp(1-d/(560*A),0,1); if (c>.4) seen('films', V.src); voiceAim(V.voice, Math.pow(c,1.4)*.9, clamp((V.x-me.x)/(420*A),-1,1));
       } else if (V.voice.src){ voiceAim(V.voice,0,0); if (!V.voice.stopping){ V.voice.stopping=true; setTimeout(()=>{ V.voice.stopping=false; if (!(V.inView && Math.hypot(V.x-me.x,V.y-me.y)<560*audioScale())) voiceStop(V.voice); }, 700); } }
     }
   }
@@ -1161,7 +1184,7 @@ function updateSound(){
   for (const S of SOUNDS){
     const d=Math.hypot(S.x-me.x, S.y-me.y);
     if (!S.voice && !S.loading && d<1150*A && here) loadSound(S);
-    if (S.voice){ const c=here ? clamp(1-d/(700*A),0,1) : 0; voiceAim(S.voice, Math.pow(c,1.6)*.85, clamp((S.x-me.x)/(420*A),-1,1)); }
+    if (S.voice){ const c=here ? clamp(1-d/(700*A),0,1) : 0; if (c>.4) seen('sounds', S.src); voiceAim(S.voice, Math.pow(c,1.6)*.85, clamp((S.x-me.x)/(420*A),-1,1)); }
   }
   // the edge: past here there is nothing. you hear it before you reach it.
   const room = inSecret ? 9999 : WORLD - Math.max(Math.abs(me.x), Math.abs(me.y));
@@ -1433,6 +1456,125 @@ function drawDoodles(){
   dctx.globalAlpha=1;
 }
 
+
+/* ───────────── THE RECEIPT ─────────────
+   Everything a visitor does is noted (in their own browser only, for this visit).
+   A strip of receipt paper grows out of the little book as they go; tear it off any time. */
+const VISIT = (()=>{ let v=null; try{ v=JSON.parse(sessionStorage.getItem('visit')||'null'); }catch(e){}
+  return v || {start:Date.now(), poems:[], photos:[], sounds:[], films:[], links:[], secret:false, letter:false, notes:0, presses:0, dist:0, path:[], torn:0, no:Math.floor(100000+Math.random()*899999)}; })();
+let visitDirty=false;
+function seen(kind, id){ const a=VISIT[kind]; if (!a.includes(id)){ a.push(id); visitDirty=true; printTick(); } }
+function visitSave(){ if (!visitDirty) return; visitDirty=false; try{ sessionStorage.setItem('visit', JSON.stringify(VISIT)); }catch(e){} }
+setInterval(visitSave, 3000); addEventListener('pagehide', ()=>{ visitDirty=true; visitSave(); });
+const visitItems = () => VISIT.poems.length+VISIT.photos.length+VISIT.sounds.length+VISIT.films.length+VISIT.links.length+(VISIT.secret?2:0)+(VISIT.letter?1:0)+VISIT.notes+Math.floor(VISIT.dist/3000);
+let lastPt=null;
+function visitTrack(dt){                                  // the route: a point whenever you've moved a little
+  if (view!=='space') return;
+  if (lastPt){ const d=Math.hypot(me.x-lastPt.x, me.y-lastPt.y); VISIT.dist+=d; }
+  lastPt={x:me.x,y:me.y};
+  const P2=VISIT.path, q=P2[P2.length-1];
+  if (!q || Math.hypot(me.x-q[0], me.y-q[1])>60){ P2.push([Math.round(me.x),Math.round(me.y)]); if (P2.length>900) P2.splice(0,P2.length-900); visitDirty=true; }
+  if (inSecret && !VISIT.secret){ VISIT.secret=true; visitDirty=true; printTick(); }
+}
+function printTick(){                                     // a receipt printer, very small: a few clicks of filtered noise
+  if (!actx || !soundOn || view!=='space') return;
+  try{ const n=actx.sampleRate*.12|0, b=actx.createBuffer(1,n,actx.sampleRate), d=b.getChannelData(0);
+    for (let i=0;i<n;i++){ const ph=(i/actx.sampleRate*90)%1; d[i]=(Math.random()*2-1)*(ph<.35?1:.15)*(1-i/n); }
+    const src=actx.createBufferSource(); src.buffer=b; const f=actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=3200; f.Q.value=1.2;
+    const g=actx.createGain(); g.gain.value=.12; src.connect(f); f.connect(g); g.connect(out()); src.start(); }catch(e){}
+}
+/* the strip, hanging out of the book */
+const strip=document.createElement('button'); strip.className='sp-strip'; strip.setAttribute('aria-label','撕下收據');
+function stripLen(){ const n=visitItems()-VISIT.torn; return n<=0 ? 0 : Math.min(150, 14+n*9); }
+
+/* the receipt itself, drawn so it can be saved as one image (IG story size) */
+const RW=1080, RH=1920;
+function hashStr(s){ let h=2166136261; for (const c of s){ h^=c.codePointAt(0); h=Math.imul(h,16777619); } return h>>>0; }
+function collage(){                                       // up to ten lines, each taken from a poem this visitor read
+  const read=VISIT.poems.map(i=>P[i]).filter(Boolean); if (!read.length) return [];
+  let seed=VISIT.no; const rnd2=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+  const pools=read.map(p=>p.content.split('\n').map(l=>l.trim()).filter(l=>l && !/^\d+\.?$/.test(l) && [...l].length<=22));
+  const want=Math.min(10, Math.max(3, read.length)), out2=[]; let k=0, guard=0;
+  while (out2.length<want && guard++<200){ const pool=pools[k%pools.length]; k++; if (!pool.length) continue; const j=Math.floor(rnd2()*pool.length); const l=pool.splice(j,1)[0]; out2.push(l); if (pools.every(p=>!p.length)) break; }
+  return out2;
+}
+function drawReceipt(){
+  // the paper is drawn at its natural length first, then laid on a story-sized (1080×1920) green card, shrunk only if it is too long
+  const pw=780, pc=document.createElement('canvas'); pc.width=pw; pc.height=3600; const g=pc.getContext('2d');
+  g.fillStyle='#f6f4ee'; g.fillRect(0,0,pw,pc.height);
+  const ink='#2b2a27', soft='#8a8679', mono='"Space Mono", monospace', serif='"Noto Serif TC", serif';
+  const L=70, R=pw-70, C=pw/2; let y=96;
+  const text=(s,x,yy,font,col,align)=>{ g.font=font; g.fillStyle=col||ink; g.textAlign=align||'left'; g.fillText(s,x,yy); };
+  const dash=yy=>{ g.strokeStyle=soft; g.setLineDash([10,9]); g.lineWidth=2; g.beginPath(); g.moveTo(L,yy); g.lineTo(R,yy); g.stroke(); g.setLineDash([]); };
+  text('超優惠',C,y,`600 64px ${serif}`,ink,'center'); y+=58;
+  text('小誌 Vol.3',C,y,`400 34px ${serif}`,ink,'center'); y+=44;
+  text('alteryvehax1.github.io',C,y,`400 22px ${mono}`,soft,'center'); y+=56;
+  const d=new Date(), z=n=>String(n).padStart(2,'0');
+  text(`${d.getFullYear()}.${z(d.getMonth()+1)}.${z(d.getDate())}  ${z(d.getHours())}:${z(d.getMinutes())}`,L,y,`400 24px ${mono}`); text('No.'+VISIT.no,R,y,`400 24px ${mono}`,ink,'right'); y+=34; dash(y); y+=58;
+  const totalPhotos=P.filter(p=>p.photo).length;
+  const mins=Math.max(1,Math.round((Date.now()-VISIT.start)/60000));
+  const rows=[['詩',`${VISIT.poems.length}/${P.length}`],['照片',`${VISIT.photos.length}/${totalPhotos}`],['聲音',`${VISIT.sounds.length}/${SOUNDS.length}`],['影片',`${VISIT.films.length}/${VIDEOS.length}`],['連結',`${VISIT.links.length}/${LINKS.length}`],
+              ['信',VISIT.letter?'1/1':'0/1'],['留言',`${VISIT.notes}`],['沒有用的按鈕',`×${VISIT.presses}`],['走了',`${Math.round(VISIT.dist/100)} 步`],['待了',`${mins} 分鐘`]];
+  for (const [k,v] of rows){
+    text(k,L,y,`400 30px ${serif}`); const kw=g.measureText(k).width;
+    g.font=`400 28px ${mono}`; const vw=g.measureText(v).width;
+    g.fillStyle=soft; for (let x=R-vw-16; x>L+kw+16; x-=13) g.fillRect(x,y-4,3,3);     // leader dots, one pitch for every row
+    text(v,R,y,`400 28px ${mono}`,ink,'right'); y+=46; }
+  y+=6; text(VISIT.secret ? '此路不通（已通過）' : SECRET_MISSED, C, y+8, `400 26px ${serif}`, VISIT.secret?'#c0392b':soft, 'center'); y+=40; dash(y); y+=36;
+  // the route
+  const mw=R-L, mh=460, WX0=-WORLD, WX1=VISIT.secret?SECRET.x1:WORLD, WY0=Math.min(-WORLD,VISIT.secret?SECRET.y0:0), WY1=Math.max(WORLD,VISIT.secret?SECRET.y1:0);
+  const sx=Math.min(mw/(WX1-WX0), mh/(WY1-WY0)), ox=L+(mw-(WX1-WX0)*sx)/2, oy=y;
+  const toP=(x,yy)=>[ox+(x-WX0)*sx, oy+(yy-WY0)*sx];
+  g.strokeStyle='#d8d4c8'; g.lineWidth=2; g.strokeRect(...toP(-WORLD,-WORLD), WORLD*2*sx, WORLD*2*sx);
+  if (VISIT.secret){ const [a,b]=toP(SECRET.x0,SECRET.y0); g.setLineDash([6,6]); g.strokeRect(a,b,(SECRET.x1-SECRET.x0)*sx,(SECRET.y1-SECRET.y0)*sx); g.setLineDash([]); }
+  const glyph={光:'#c9c4b4',雨:'#6f8f8a',肉:'#7a2a33',煙:'#9a9a94',鏡:'#2b2a27'};
+  for (const [k2,c2] of Object.entries(REG)){ const [a,b]=toP(c2.x,c2.y); g.fillStyle=glyph[k2]; g.beginPath(); g.arc(a,b,16,0,6.283); g.fill(); text(k2,a,b+44,`400 22px ${serif}`,soft,'center'); }
+  { const [a,b]=toP(0,0); g.fillStyle='#e8e1cf'; g.strokeStyle=ink; g.lineWidth=2; g.fillRect(a-8,b-11,16,22); g.strokeRect(a-8,b-11,16,22); }
+  if (VISIT.path.length>1){ g.strokeStyle='#c0392b'; g.lineWidth=3; g.lineJoin='round'; g.lineCap='round'; g.beginPath(); VISIT.path.forEach(([x,yy],i)=>{ const [a,b]=toP(x,yy); i?g.lineTo(a,b):g.moveTo(a,b); }); g.stroke();
+    const [ex,ey]=toP(...VISIT.path[VISIT.path.length-1]); g.fillStyle='#c0392b'; g.beginPath(); g.arc(ex,ey,7,0,6.283); g.fill(); }
+  y=oy+(WY1-WY0)*sx+40; dash(y); y+=60;
+  // the collage poem
+  const lines=collage();
+  text('本次拼貼詩',C,y,`400 24px ${mono}`,soft,'center'); y+=58;
+  if (!lines.length){ text('（本次未選購任何詩）',C,y,`400 30px ${serif}`,soft,'center'); y+=50; }
+  else for (const l of lines){ text(l,C,y,`300 32px ${serif}`,ink,'center'); y+=58; }
+  y+=10; dash(y); y+=50;
+  // barcode from the receipt number
+  let h=hashStr(String(VISIT.no)+VISIT.poems.join(',')); let bx=C-250;
+  for (let i=0;i<70;i++){ h=Math.imul(h^(h>>>15),2246822507)>>>0; const w=1+(h%4); if (i%2===0){ g.fillStyle=ink; g.fillRect(bx,y,w*2,90); } bx+=w*2+2; if (bx>C+250) break; }
+  y+=150; text('謝謝光臨',C,y,`400 28px ${serif}`,ink,'center');
+  const ph=Math.min(pc.height, y+70);
+
+  const c=document.createElement('canvas'); c.width=RW; c.height=RH; const o=c.getContext('2d');
+  o.fillStyle='#0E4939'; o.fillRect(0,0,RW,RH);
+  const k=Math.min(1,(RH-200)/ph), dw=pw*k, dh=ph*k, dx=(RW-dw)/2, dy=Math.max(90,(RH-dh)/2);
+  o.beginPath(); o.moveTo(dx,dy); o.lineTo(dx+dw,dy); o.lineTo(dx+dw,dy+dh);
+  for (let x=dx+dw; x>dx; x-=26) o.lineTo(Math.max(dx,x-13), dy+dh+4+Math.random()*12), o.lineTo(Math.max(dx,x-26), dy+dh);
+  o.closePath();
+  o.save(); o.fillStyle='#f6f4ee'; o.shadowColor='rgba(0,0,0,.35)'; o.shadowBlur=30; o.shadowOffsetY=12; o.fill(); o.restore();
+  o.save(); o.clip(); o.drawImage(pc,0,0,pw,ph,dx,dy,dw,dh); o.restore();
+  return c;
+}
+const SECRET_MISSED = '此路不通（真的嗎？）';
+function openReceipt(){
+  visitSave(); const c=drawReceipt();
+  const img=$('#rc-img'); img.src=c.toDataURL('image/png');
+  receiptCanvas=c; VISIT.torn=visitItems(); visitDirty=true;
+  openDialog($('#receipt'), $('#rc-close'));
+}
+let receiptCanvas=null;
+function setupReceipt(){
+  $('#rc-close').addEventListener('click',()=>closeDialog($('#receipt')));
+  $('#receipt').addEventListener('click',e=>{ if (e.target.id==='receipt') closeDialog($('#receipt')); });
+  $('#rc-save').addEventListener('click',()=>{
+    if (!receiptCanvas) return;
+    receiptCanvas.toBlob(b=>{ if (!b) return; const f=new File([b],'超優惠-小誌vol3-收據.png',{type:'image/png'});
+      if (navigator.canShare && navigator.canShare({files:[f]})) navigator.share({files:[f]}).catch(()=>{});
+      else { const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); } },'image/png');
+  });
+  strip.addEventListener('click',openReceipt);
+}
+
 /* ── things you can touch in the space ── */
 const spUI = $('#sp-ui'), spEls = [];
 function place(el, wx, wy){ el.style.transform=`translate3d(${(wx-cam.x+W/2).toFixed(1)}px,${(wy-cam.y+H/2).toFixed(1)}px,0)`; }
@@ -1443,7 +1585,7 @@ function openDialog(el, focusEl){ returnFocus=document.activeElement; el.classLi
 function closeDialog(el){ el.classList.remove('on'); if (returnFocus && document.contains(returnFocus) && returnFocus.focus) returnFocus.focus(); returnFocus=null; }
 function openNote(){ $('#note-msg').textContent=''; openDialog($('#note'), $('#note-t')); }
 function closeNote(){ closeDialog($('#note')); }
-function openLetter(){ openDialog($('#letter'), $('#letter .paper-l')); }
+function openLetter(){ if (!VISIT.letter){ VISIT.letter=true; visitDirty=true; printTick(); } openDialog($('#letter'), $('#letter .paper-l')); }
 function closeLetter(){ closeDialog($('#letter')); }
 function setupNote(){
   const t=$('#note-t'), n=$('#note-n'), msg=$('#note-msg');
@@ -1458,30 +1600,32 @@ function setupNote(){
     let lastAt=0; try{ lastAt=+localStorage.getItem('gbLast')||0; }catch(_){}
     if (Date.now()-lastAt < 45000){ msg.textContent='慢一點，等一下再寫'; return; }
     $('#note-s').disabled=true; msg.textContent='貼上去中…';
-    gbSend(body).then(()=>{ try{ localStorage.setItem('gbLast',Date.now()); }catch(_){}; t.value=''; n.textContent='0 / 60'; msg.textContent='貼好了'; setTimeout(closeNote,700); })
+    gbSend(body).then(()=>{ VISIT.notes++; visitDirty=true; try{ localStorage.setItem('gbLast',Date.now()); }catch(_){}; t.value=''; n.textContent='0 / 60'; msg.textContent='貼好了'; setTimeout(closeNote,700); })
       .catch(()=>{ msg.textContent='沒有貼上去，等一下再試試'; }).finally(()=>{ $('#note-s').disabled=false; });
   });
 }
 function buildSpaceUI(){
-  setupNote();
+  setupNote(); setupReceipt();
   stick.className='sp-stick'; $('#space').appendChild(stick);
   $('#sp-index').addEventListener('click',()=>openIndex());
   $('#sp-sound').addEventListener('click',()=>{ wakeAudio(); setSound(!soundOn); });
   setSound(soundOn);
   const bk=document.createElement('div'); bk.className='sp-book'; bk.innerHTML='<b>POEMS</b><i></i>'; bk.setAttribute('role','button'); bk.setAttribute('aria-label','POEMS 小誌'); bk.tabIndex=0;
   bk.addEventListener('keydown',e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); openIndex(); } });
-  bk.addEventListener('click',()=>openIndex()); holdStill(bk); spUI.appendChild(bk); spEls.push({el:bk, x:0, y:0, kind:'book'});
+  bk.addEventListener('click',()=>openIndex());
+  spUI.appendChild(strip); spEls.push({el:strip, kind:'strip'}); holdStill(bk); spUI.appendChild(bk); spEls.push({el:bk, x:0, y:0, kind:'book'});
   for (const L of LINKS){
     const a=document.createElement('a'); a.className='sp-tag'; a.textContent=L.name;
     if (L.url){ a.href=L.url; a.target='_blank'; a.rel='noopener'; }
     else { a.href='#'; a.addEventListener('click',e=>{ e.preventDefault(); location.href='mai'+'lto:'+L.mail.join('@'); }); }
+    a.addEventListener('click',()=>seen('links', L.name));
     holdStill(a); spUI.appendChild(a); spEls.push({el:a, link:L, kind:'link'});
   }
   { const b=document.createElement('button'); b.className='sp-press'; b.textContent='按我'; b.setAttribute('aria-label','一個沒有用的按鈕');
     try{ PRESS.n=+localStorage.getItem('useless')||0; }catch(e){}
 
     const LINES={1:'？',3:'還按',6:'好了啦',10:'它真的沒有用',15:'你看那隻貓',20:'牠的眼睛',30:'你很閒',45:'Yvette 按了零次',60:'我也沒有按',80:'這個按鈕不會壞，你會',100:'好，你贏了',101:'（其實什麼都沒有）',150:'還在？',200:'喵'};
-    b.addEventListener('click',()=>{ PRESS.n++; try{ localStorage.setItem('useless',PRESS.n); }catch(e){}
+    b.addEventListener('click',()=>{ PRESS.n++; VISIT.presses++; visitDirty=true; try{ localStorage.setItem('useless',PRESS.n); }catch(e){}
       const keys=Object.keys(LINES).map(Number).filter(k=>k<=PRESS.n); const line=LINES[Math.max(...keys)];
       PRESS.say=line+' ×'+PRESS.n; PRESS.boing=1; b.setAttribute('aria-label','一個沒有用的按鈕，按了 '+PRESS.n+' 次：'+line); });
     spUI.appendChild(b); spEls.push({el:b, kind:'press'}); }
@@ -1517,7 +1661,8 @@ function buildSpaceUI(){
 function placeUI(){
   if (view!=='space') return;
   for (const o of spEls){
-    if (o.kind==='book' || o.kind==='list'){
+    if (o.kind==='strip'){ const L2=stripLen(); o.el.style.height=L2+'px'; o.el.style.display=L2?'block':'none'; place(o.el, 9, 0);
+    } else if (o.kind==='book' || o.kind==='list'){
       if (o.kind==='list'){
         const on = Math.hypot(me.x-o.x, me.y-o.y) < 440;
         o.el.classList.toggle('on', on);
@@ -1567,7 +1712,7 @@ let raf=null, last=0;
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000); last=now; if (!REDUCED) t+=dt;      // reduced motion: the world's own clock stops
   updateSound();
-  if (mode==='space' && !NOGL){ stepSpace(dt); stepRipples(dt); drawSpace(); drawDoodles(); placeUI(); }
+  if (mode==='space' && !NOGL){ stepSpace(dt); stepRipples(dt); drawSpace(); drawDoodles(); placeUI(); visitTrack(dt); }
   else { if (!REDUCED) step(dt); draw(); drawPhoto(dt); }
   raf=requestAnimationFrame(frame);
 }
