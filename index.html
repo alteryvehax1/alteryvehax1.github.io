@@ -205,6 +205,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #note .row span{margin-right:auto}
 #note button{font-family:"Huninn",var(--serif);font-size:1rem;color:#8a7f70}
 #note #note-s{color:#fff;background:#e8473d;padding:.35rem .9rem;border-radius:999px 980px 990px 970px;transform:rotate(-2deg)}
+#note #note-pub{margin:.35rem 0 0;font-size:.72rem;line-height:1.5;color:#8a7f70}
 #note #note-msg{min-height:1.2em;margin-top:.6rem;font-size:.85rem;color:#3a7bd5}
 
 .sp-strip{width:64px;height:0;margin:27px 0 0 -32px;padding:0;border:none;background:none;cursor:pointer;pointer-events:auto;overflow:visible;display:none}
@@ -294,7 +295,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   </div>
 </section>
 
-<div id="letter" role="dialog" aria-label="一封信">
+<div id="letter" role="dialog" aria-modal="true" aria-label="一封信">
   <button id="letter-x">✕ close</button>
   <div class="paper-l" tabindex="-1">
     <p>給居然找到這裡的人：</p>
@@ -320,21 +321,22 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   </div>
 </div>
 
-<div id="note" role="dialog" aria-label="在紙上寫一句話">
+<div id="note" role="dialog" aria-modal="true" aria-label="在紙上寫一句話">
   <form class="paper-n" id="note-f">
     <label for="note-t">寫一句話，貼在這張紙上</label>
-    <textarea id="note-t" maxlength="60" rows="2" required></textarea>
+    <textarea id="note-t" maxlength="60" rows="2" required aria-describedby="note-pub"></textarea>
+    <p id="note-pub">這句話會留在紙上，後來的人都看得到。不要寫名字、電話這些。</p>
     <div class="row"><span id="note-n">0 / 60</span><button type="button" id="note-x">算了</button><button type="submit" id="note-s">貼上去</button></div>
-    <p id="note-msg"></p>
+    <p id="note-msg" role="status" aria-live="polite"></p>
   </form>
 </div>
 
-<div id="receipt" role="dialog" aria-label="收據">
+<div id="receipt" role="dialog" aria-modal="true" aria-label="收據">
   <div class="rc-wrap"><img id="rc-img" alt="這次拜訪的收據"></div>
   <div class="rc-row"><button id="rc-close">✕ close</button><button id="rc-save">save</button></div>
 </div>
 
-<div id="lock" role="dialog" aria-label="未公開">
+<div id="lock" role="dialog" aria-modal="true" aria-label="未公開">
   <button id="lock-x">✕ close</button>
   <h3>未公開。</h3>
   <div class="lock-in">
@@ -855,7 +857,8 @@ function seedSpace(){
 function stepSpace(dt){
   // steering: the body heads for the pointer (or finger, or keys); hovering something you can click holds it still
   let dx=0, dy=0, sp=0;
-  if (spIn.keys.size){
+  if (dialogOpen()){                                      // a letter, note, receipt or lock is open: the body waits
+  } else if (spIn.keys.size){
     if (spIn.keys.has('ArrowLeft')||spIn.keys.has('a')) dx-=1; if (spIn.keys.has('ArrowRight')||spIn.keys.has('d')) dx+=1;
     if (spIn.keys.has('ArrowUp')||spIn.keys.has('w')) dy-=1;   if (spIn.keys.has('ArrowDown')||spIn.keys.has('s')) dy+=1;
     const l=Math.hypot(dx,dy)||1; dx/=l; dy/=l; sp=dx||dy ? 1 : 0;
@@ -1635,7 +1638,16 @@ function place(el, wx, wy){ el.style.transform=`translate3d(${(wx-cam.x+W/2).toF
 function holdStill(el){}
 const stick = document.createElement('div');
 let returnFocus=null;
-function openDialog(el, focusEl){ returnFocus=document.activeElement; el.classList.add('on'); setTimeout(()=>(focusEl||el).focus(),60); }
+const dialogOpen=()=>document.querySelector('[role=dialog].on');
+addEventListener('keydown',e=>{                           // Tab stays inside an open dialog
+  if (e.key!=='Tab') return; const d=dialogOpen(); if (!d) return;
+  const f=[...d.querySelectorAll('button,input,textarea,a[href],[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled && x.offsetParent!==null);
+  if (!f.length){ e.preventDefault(); return; }
+  const i=f.indexOf(document.activeElement);
+  if (e.shiftKey && i<=0){ e.preventDefault(); f[f.length-1].focus(); }
+  else if (!e.shiftKey && (i===-1 || i===f.length-1)){ e.preventDefault(); f[0].focus(); }
+});
+function openDialog(el, focusEl){ returnFocus=document.activeElement; el.classList.add('on'); if (typeof spIn!=='undefined') spIn.keys.clear(); setTimeout(()=>(focusEl||el).focus(),60); }
 function closeDialog(el){ el.classList.remove('on'); if (returnFocus && document.contains(returnFocus) && returnFocus.focus) returnFocus.focus(); returnFocus=null; }
 function openNote(){ $('#note-msg').textContent=''; openDialog($('#note'), $('#note-t')); }
 function closeNote(){ closeDialog($('#note')); }
@@ -1706,7 +1718,7 @@ function buildSpaceUI(){
   sp.addEventListener('pointerdown',e=>{ wakeAudio(); if (e.pointerType!=='mouse' && !e.target.closest('.sp-tag,.sp-list,.sp-book,#sp-index,#sp-sound,.sp-press')){ spIn.touch=true; spIn.x=spIn.ox=e.clientX; spIn.y=spIn.oy=e.clientY;
     stick.style.transform=`translate3d(${e.clientX}px,${e.clientY}px,0)`; stick.classList.add('on'); } });
   const up=()=>{ spIn.touch=false; stick.classList.remove('on'); }; sp.addEventListener('pointerup',up); sp.addEventListener('pointercancel',up);
-  addEventListener('keydown',e=>{ if (view!=='space' || lock.classList.contains('on') || $('#note').classList.contains('on')) return; const k=e.key.length===1?e.key.toLowerCase():e.key;
+  addEventListener('keydown',e=>{ if (view!=='space' || dialogOpen()) return; const k=e.key.length===1?e.key.toLowerCase():e.key;
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','w','a','s','d'].includes(k)){ spIn.keys.add(k); e.preventDefault(); } });
   addEventListener('keyup',e=>{ spIn.keys.delete(e.key.length===1?e.key.toLowerCase():e.key); });
   addEventListener('blur',()=>{ spIn.keys.clear(); spIn.touch=false; spIn.mouse=false; });
