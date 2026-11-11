@@ -695,7 +695,7 @@ const WORLD = 2150;
 const LINKS = [
   {name:'instagram',            url:'https://www.instagram.com/wxzldhrl.yhc/', x:300,  y:-210,  k:5},
   {name:'youtube',              url:'https://www.youtube.com/@yvehax1',         x:-360, y:250,   k:5},
-  {name:'facebook',             url:'https://www.facebook.com/miniyhc.9',       x:400,  y:-1110, k:0},
+  {name:'facebook',             url:'https://www.facebook.com/chao.you.hui.2025',       x:400,  y:-1110, k:0},
   {name:'blu mush · instagram', url:'https://www.instagram.com/blumushh/',      x:1320, y:-70,   k:1},
   {name:'blu mush · youtube',   url:'https://www.youtube.com/@blumushh',        x:860,  y:-640,  k:1},
   {name:'email',                mail:['minio121086','gmail.com'],               x:1130, y:1230,  k:4},
@@ -713,16 +713,16 @@ const SOUNDS = [
 const EDGE = {src:'audio/edge.m4a', edge:true, vol:3};          // flown too far: 此路不通
 /* each pool keeps one film. come close and the body opens: the film plays inside its shape, with its sound. */
 const VIDEOS = [
-  {src:'video/v5.mp4', k:'光', x:-230,  y:-1020, vol:.17},   // light on is a live recording: much louder than the rest
-  {src:'video/v1.mp4', k:'雨', x:760,   y:60,    vol:1.36},
-  {src:'video/v4.mp4', k:'肉', x:-1400, y:780,   vol:1.24},
-  {src:'video/v3.mp4', k:'煙', x:-1450, y:-560,  vol:3},
-  {src:'video/v2.mp4', k:'鏡', x:560,   y:1180,  vol:.75},
+  {src:'video/v5.mp4', asrc:'video/v5.m4a', k:'光', x:-230,  y:-1020, vol:.17},   // light on is a live recording: much louder than the rest
+  {src:'video/v1.mp4', asrc:'video/v1.m4a', k:'雨', x:760,   y:60,    vol:1.36},
+  {src:'video/v4.mp4', asrc:'video/v4.m4a', k:'肉', x:-1400, y:780,   vol:1.24},
+  {src:'video/v3.mp4', asrc:'video/v3.m4a', k:'煙', x:-1450, y:-560,  vol:3},
+  {src:'video/v2.mp4', asrc:'video/v2.m4a', k:'鏡', x:560,   y:1180,  vol:.75},
 ];
 const me = {x:0, y:110, vx:0, vy:0, r:0};
 const cam = {x:0, y:70};
 const SB = [];
-let gl2=null, U2={}, prog2=null, texVid=null;
+let gl2=null, U2={}, prog2=null;
 const spIn = {mouse:false, touch:false, x:0, y:0, paused:false, keys:new Set()};
 
 function seedSpace(){
@@ -749,12 +749,12 @@ function stepSpace(dt){
     const l=Math.hypot(dx,dy)||1; dx/=l; dy/=l; sp=dx||dy ? 1 : 0;
   } else if (spIn.touch){
     const vx=spIn.x-spIn.ox, vy=spIn.y-spIn.oy, l=Math.hypot(vx,vy);
-    if (l>8){ dx=vx/l; dy=vy/l; sp=clamp((l-8)/80,0,1); }
+    if (l>8){ dx=vx/l; dy=vy/l; sp=clamp((l-8)/110,0,1); }
   } else if (spIn.mouse && !spIn.paused){
     const tx=spIn.x - W/2 + cam.x, ty=spIn.y - H/2 + cam.y, d=Math.hypot(tx-me.x, ty-me.y);
     if (d>1){ dx=(tx-me.x)/d; dy=(ty-me.y)/d; sp=clamp((d-36)/240,0,1); }
   }
-  const MAX = (W<700 ? 360 : 460);
+  const MAX = spIn.touch ? 210 : (W<700 ? 300 : 460);
   me.vx = lerp(me.vx, dx*sp*MAX, Math.min(1,dt*2.6)); me.vy = lerp(me.vy, dy*sp*MAX, Math.min(1,dt*2.6));
   me.x = clamp(me.x+me.vx*dt, -WORLD, WORLD); me.y = clamp(me.y+me.vy*dt, -WORLD, WORLD);
   me.r = lerp(me.r, 24*sc, Math.min(1,dt*2));
@@ -811,7 +811,7 @@ function stepSpace(dt){
       const tx=b.cx+Math.sin(t*.23+b.seed*6)*14, ty=b.cy+Math.cos(t*.19+b.seed*5)*14;
       ax+=(tx-b.x)*1.6; ay+=(ty-b.y)*1.6;
       if (md<380*sc){ const f=10*(1-md/(380*sc)); ax+=mdx/md*f; ay+=mdy/md*f; }
-      tr=(46 + 112*sstep(0,1,c))*Math.max(sc,.75); grow=1.6;
+      tr=(84 + 34*sstep(0,1,c))*Math.max(sc,.75); grow=1.2;
       b.vx+=ax*dt; b.vy+=ay*dt; const k=Math.exp(-dt*2.2); b.vx*=k; b.vy*=k;
     } else if (b.type==='sound'){
       const c = clamp(1-md/(700*audioScale()), 0, 1);
@@ -833,7 +833,7 @@ function stepSpace(dt){
 const FS2 = `precision highp float;
 uniform vec2 uRes;uniform vec4 uS[48];uniform float uT;uniform vec2 uL;uniform vec3 uBg;
 uniform vec3 kE[6],kC[6],kR[6],kH[6];
-uniform sampler2D uVid;uniform vec3 uVC;uniform float uVA,uVOn;
+uniform sampler2D uV0,uV1,uV2,uV3,uV4;uniform vec4 uVC[5];
 uniform vec2 uCam;uniform vec4 uRip[6];
 float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
@@ -886,12 +886,16 @@ void main(){
       float sp=pow(max(dot(n,L),0.),3.)*smoothstep(1.05,1.6,f)*(1.-smoothstep(1.6,4.,f));
       c+=vec3(.42,.46,.50)*floor(sp*3.+.4)/3.*w4;
     }
-    if(uVOn>.5&&w6>.35){
-      float side=uVC.z*2.25; vec2 sz=uVA>=1.?vec2(side*uVA,side):vec2(side,side/uVA);
-      vec2 uv=(p-uVC.xy)/sz+.5;
-      vec3 vc=texture2D(uVid,clamp(uv,0.,1.)).rgb;
-      c=mix(c,vc*.92,smoothstep(.35,.62,w6));
-      if(f<1.05)c+=vec3(.10,.10,.09);
+    if(w6>.35){
+      int bi=-1; float bv=0.; vec4 B=vec4(0.);
+      for(int j=0;j<5;j++){ vec4 V=uVC[j]; if(V.w<=0.) continue; vec2 dv=q-V.xy; float vv=V.z*V.z/(dot(dv,dv)+1.); if(vv>bv){ bv=vv; bi=j; B=V; } }
+      if(bi>=0){
+        float side=B.z*2.25; vec2 sz=B.w>=1.?vec2(side*B.w,side):vec2(side,side/B.w);
+        vec2 uv=clamp((p-B.xy)/sz+.5,0.,1.); vec3 vc;
+        if(bi==0) vc=texture2D(uV0,uv).rgb; else if(bi==1) vc=texture2D(uV1,uv).rgb; else if(bi==2) vc=texture2D(uV2,uv).rgb; else if(bi==3) vc=texture2D(uV3,uv).rgb; else vc=texture2D(uV4,uv).rgb;
+        c=mix(c,vc*.92,smoothstep(.35,.62,w6));
+        if(f<1.05)c+=vec3(.10,.10,.09);
+      }
     }
     col=mix(c,vec3(dot(c,vec3(.4,.4,.2))),.12);
   }
@@ -904,12 +908,15 @@ function setupSpaceGL(){
     if(!gl.getProgramParameter(prog2,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog2)); }
   catch(e){ console.warn(e); prog2=null; return; }
   gl.useProgram(prog2);
-  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH','uVid','uVC','uVA','uVOn','uCam','uRip']) U2[n]=gl.getUniformLocation(prog2,n);
-  texVid=gl.createTexture(); gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,texVid);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
-  gl.uniform1i(U2.uVid,2); gl.activeTexture(gl.TEXTURE0);
+  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH','uV0','uV1','uV2','uV3','uV4','uVC','uCam','uRip']) U2[n]=gl.getUniformLocation(prog2,n);
+  for (let j=0;j<5;j++){
+    const tx=gl.createTexture(); gl.activeTexture(gl.TEXTURE2+j); gl.bindTexture(gl.TEXTURE_2D,tx);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
+    gl.uniform1i(U2['uV'+j],2+j); VIDEOS[j].tex=tx;
+  }
+  gl.activeTexture(gl.TEXTURE0);
   const GLASS = {edge:[.075,.325,.265], core:[.115,.385,.320], rim:[.20,.36,.33], halo:[.010,.030,.025]};   // rain on the green night: clear water, a little lighter than what's behind it
   const HAZE  = {edge:[.25,.36,.32], core:[.60,.66,.62], rim:[0,0,0], halo:[0,0,0]};                          // smoke: a pale haze, never a stain
   const pack = key => { const a=new Float32Array(18); ['光','雨','肉','煙','鏡'].forEach((s,i)=>a.set(s==='雨'?GLASS[key]:s==='煙'?HAZE[key]:LOOK[s][key],i*3)); a.set(NEUTRAL[key],15); return a; };
@@ -954,33 +961,46 @@ function loadSound(S){
 }
 function loadFilm(V){
   V.loading=true;
-  fetch(V.src).then(r=>r.arrayBuffer()).then(ab=>{
-    const el=document.createElement('video'); el.muted=true; el.loop=true; el.playsInline=true; el.setAttribute('playsinline','');
-    el.className='sp-film'; el.src=URL.createObjectURL(new Blob([ab],{type:'video/mp4'}));
-    el.addEventListener('loadeddata',()=>{ V.ready=true; },{once:true});
-    document.body.appendChild(el); V.el=el; V.ab=ab;
-  }).catch(()=>{ V.loading=false; });
+  const el=document.createElement('video'); el.muted=true; el.loop=true; el.playsInline=true; el.setAttribute('playsinline',''); el.preload='auto';
+  el.className='sp-film'; el.src=V.src;
+  el.addEventListener('loadeddata',()=>{ V.ready=true; },{once:true});
+  document.body.appendChild(el); V.el=el; el.load();
+}
+function loadFilmSound(V){
+  V.aloading=true;
+  fetch(V.asrc).then(r=>r.arrayBuffer()).then(decode).then(buf=>{ V.voice=makeVoice(buf, V.vol); }).catch(()=>{ V.aloading=false; });
+}
+let preloaded=false;
+function preloadAll(){                      // on arriving: small sounds at once, films one after another from nearest
+  if (preloaded) return; preloaded=true;
+  const order=[...VIDEOS].sort((a,b)=>Math.hypot(a.x-me.x,a.y-me.y)-Math.hypot(b.x-me.x,b.y-me.y));
+  order.forEach((V,k)=>setTimeout(()=>{ if (!V.loading) loadFilm(V); }, 300+k*1400));
 }
 const audioScale = () => clamp(Math.min(W,H)/800, .5, 1);
 function updateSound(){
   const here = view==='space', A = audioScale();
-  for (const V of VIDEOS){                                   // films load when you are near, play only when you are close
+  if (here) preloadAll();
+  const viewR = Math.hypot(W,H)*.6 + 260;
+  for (const V of VIDEOS){                                   // films are always there; in view they play (silent); close by, you hear them
     const d=Math.hypot(V.x-me.x, V.y-me.y);
-    if (!V.loading && d<1300 && here) loadFilm(V);
+    if (!V.loading && d<1600 && here) loadFilm(V);
     if (!V.el) continue;
-    const open = here && d<560;
-    if (actx && V.ab && !V.voice && !V.decoding){ V.decoding=true; decode(V.ab.slice(0)).then(buf=>{ V.voice=makeVoice(buf, V.vol); }).catch(()=>{}); }
-    if (open && V.el.paused){ const p=V.el.play(); if (p && p.catch) p.catch(()=>{}); }
-    if (!open && !V.el.paused){ V.el.pause(); }
+    V.shown = V.ready;
+    V.inView = here && Math.hypot(V.x-cam.x, V.y-cam.y) < viewR;
+    if (V.inView && V.el.paused){ const p=V.el.play(); if (p && p.catch) p.catch(()=>{}); }
+    if (!V.inView && !V.el.paused) V.el.pause();
+    if (actx && !V.voice && !V.aloading) loadFilmSound(V);
     if (actx && V.voice){
-      if (open && V.ready){
+      const hear = V.inView && V.ready && d < 560*A;
+      if (hear){
         const dur=V.voice.buf.duration, want=V.el.currentTime % dur;
         const at=(V.voice.off + actx.currentTime - V.voice.at) % dur;
         if (!V.voice.src || Math.min(Math.abs(at-want), dur-Math.abs(at-want)) > .2) voicePlay(V.voice, want);
         const c=clamp(1-d/(560*A),0,1); voiceAim(V.voice, Math.pow(c,1.4)*.9, clamp((V.x-me.x)/(420*A),-1,1));
-      } else if (V.voice.src){ voiceAim(V.voice,0,0); if (!open) setTimeout(()=>{ if (V.el.paused) voiceStop(V.voice); }, 600); }
+      } else if (V.voice.src){ voiceAim(V.voice,0,0); if (!V.voice.stopping){ V.voice.stopping=true; setTimeout(()=>{ V.voice.stopping=false; if (!(V.inView && Math.hypot(V.x-me.x,V.y-me.y)<560*audioScale())) voiceStop(V.voice); }, 700); } }
     }
   }
+  if (actx){ for (const S of [...SOUNDS, EDGE]) if (!S.voice && !S.loading && here) loadSound(S); }
   if (!actx) return;
   for (const S of SOUNDS){
     const d=Math.hypot(S.x-me.x, S.y-me.y);
@@ -1013,7 +1033,7 @@ function stepRipples(dt){
   ripT -= dt;
   if (sp > 70 && ripT <= 0){ ripples.push({x:me.x, y:me.y, age:0, s:Math.min(1, sp/360)}); if (ripples.length>6) ripples.shift(); ripT = .42; }
 }
-const sarr = new Float32Array(48*4), near = [];
+const sarr = new Float32Array(48*4), varr = new Float32Array(20), near = [];
 function drawSpace(){
   if (failed || !prog2) return;
   near.length=0;
@@ -1022,9 +1042,7 @@ function drawSpace(){
   if (near.length>47){ near.sort((a,b)=>Math.hypot(a.x-cam.x,a.y-cam.y)-Math.hypot(b.x-cam.x,b.y-cam.y)); near.length=47; }
   sarr.fill(0);
   const sx=x=>(x-cam.x+W/2)/PX, sy=y=>(H-(y-cam.y+H/2))/PX;
-  let film=null, fd=1e9;
-  for (const V of VIDEOS){ const d=Math.hypot(V.x-me.x,V.y-me.y); if (V.el && V.ready && !V.el.paused && d<fd && d<560){ film=V; fd=d; } }
-  near.forEach((b,i)=>{ sarr[i*4]=sx(b.x); sarr[i*4+1]=sy(b.y); sarr[i*4+2]=b.r/PX; sarr[i*4+3]=(film && b===film.body) ? 6 : b.k; });
+  near.forEach((b,i)=>{ sarr[i*4]=sx(b.x); sarr[i*4+1]=sy(b.y); sarr[i*4+2]=b.r/PX; sarr[i*4+3]=(b.vid && b.vid.shown) ? 6 : b.k; });
   sarr[47*4]=sx(me.x); sarr[47*4+1]=sy(me.y); sarr[47*4+2]=me.r/PX; sarr[47*4+3]=7;
   gl.useProgram(prog2);
   { const l=gl.getAttribLocation(prog2,'p'); gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0); }
@@ -1034,12 +1052,17 @@ function drawSpace(){
   gl.uniform2f(U2.uCam,cam.x/PX,-cam.y/PX);
   rarr.fill(0); ripples.forEach((r,i)=>{ rarr[i*4]=sx(r.x); rarr[i*4+1]=sy(r.y); rarr[i*4+2]=r.age*Math.max(sc,.8); rarr[i*4+3]=r.s*(1-r.age/2.6); });
   gl.uniform4fv(U2.uRip,rarr);
-  if (film && film.el.readyState>=2){
-    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D,texVid);
-    try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,film.el); gl.uniform1f(U2.uVOn,1); }catch(e){ gl.uniform1f(U2.uVOn,0); }
-    gl.activeTexture(gl.TEXTURE0);
-    gl.uniform3f(U2.uVC,sx(film.body.x),sy(film.body.y),film.body.r/PX); gl.uniform1f(U2.uVA,film.el.videoWidth/(film.el.videoHeight||1));
-  } else gl.uniform1f(U2.uVOn,0);
+  varr.fill(0);
+  VIDEOS.forEach((V,j)=>{
+    if (!V.shown) return;
+    if (V.inView && V.el.readyState>=2 && (!V.el.paused || !V.copied)){
+      gl.activeTexture(gl.TEXTURE2+j); gl.bindTexture(gl.TEXTURE_2D,V.tex);
+      try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,V.el); V.copied=true; }catch(e){}
+    }
+    varr.set([sx(V.body.x),sy(V.body.y),V.body.r/PX,V.el.videoWidth/(V.el.videoHeight||1)], j*4);
+  });
+  gl.activeTexture(gl.TEXTURE0);
+  gl.uniform4fv(U2.uVC,varr);
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
 
