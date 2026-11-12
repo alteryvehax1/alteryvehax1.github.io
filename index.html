@@ -233,6 +233,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   background:radial-gradient(circle,rgba(214,210,200,.55) 0,rgba(214,210,200,.16) 38%,rgba(214,210,200,0) 70%);animation:alb 3.6s ease-in-out infinite alternate}
 .sp-alter span{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-4px);font-size:.85rem;color:#d8d4c8;white-space:nowrap;opacity:0;transition:opacity .6s}
 .sp-alter.near span{opacity:.85}
+.sp-alter.body::before{opacity:0}   /* at the mirror the lake draws it; the button is only where you tap */
 .sp-alter.say span{opacity:.92;white-space:normal;width:max-content;max-width:12.5em;text-align:center;line-height:1.5}
 .sp-dot.al{background:#d8d4c8}
 @keyframes alb{from{scale:.9}to{scale:1.08}}
@@ -856,7 +857,7 @@ const KIDX = {光:0, 雨:1, 肉:2, 煙:3, 鏡:4};
 const NEUTRAL = {edge:[.34,.33,.30], core:[.60,.58,.53], rim:[.10,.10,.09], halo:[.03,.03,.028]};
 const REG = { 光:{x:140,y:-1250}, 雨:{x:1080,y:-240}, 肉:{x:-1060,y:520}, 煙:{x:-1120,y:-840}, 鏡:{x:900,y:1020} };
 const ALTER_BY_BOOK = {x:60, y:240};                             // where it waits when you first arrive, before it goes ahead to the mirror
-const AL = {phase:'intro', t:0, last:0, i:-1, x:60, y:240, lines:null, el:null};
+const AL = {phase:'intro', t:0, last:0, i:-1, x:60, y:240, lines:null, el:null, px:1390, py:1060, r:0};
 const ALTER_AT = {x:1390, y:1060};                            // alter yvette, to the right of the mirror: clear of its list and of the email link
 const WORLD = 2150;
 const GAP = {y0:1330, y1:1490};                              // the only place the wall gives way
@@ -1022,7 +1023,7 @@ function stepSpace(dt){
 }
 
 const FS2 = `precision highp float;
-uniform vec2 uRes;uniform vec4 uS[48];uniform float uT;uniform vec2 uL;uniform vec3 uBg;
+uniform vec2 uRes;uniform vec4 uS[48];uniform float uT;uniform vec2 uL;uniform vec2 uA;uniform vec3 uBg;
 uniform vec3 kE[6],kC[6],kR[6],kH[6];
 uniform sampler2D uV0,uV1,uV2,uV3,uV4;uniform vec4 uVC[5];
 uniform vec2 uCam;uniform vec4 uRip[6];uniform vec4 uSec;uniform float uWld,uRev;
@@ -1035,19 +1036,22 @@ float field(vec2 q){float f=0.;for(int i=0;i<48;i++){vec4 b=uS[i];vec2 d=q-b.xy;
 void main(){
   vec2 p=gl_FragCoord.xy;
   vec2 q=p+.5*(vec2(vn(p*.022+uT*.03)-.5,vn(p*.022+7.3-uT*.025)-.5)*17.);
-  float f=0.,a0=0.,a1=0.,a2=0.,a3=0.,a4=0.,a5=0.,a6=0.,a7=0.,a8=0.,a9=0.;
+  float f=0.,a0=0.,a1=0.,a2=0.,a3=0.,a4=0.,a5=0.,a6=0.,a7=0.,a8=0.,a9=0.,a10=0.;
   for(int i=0;i<48;i++){vec4 b=uS[i];vec2 d=q-b.xy;float v=b.z*b.z/(dot(d,d)+1.);f+=v;float k=b.w;
-    if(k<.5)a0+=v;else if(k<1.5)a1+=v;else if(k<2.5)a2+=v;else if(k<3.5)a3+=v;else if(k<4.5)a4+=v;else if(k<5.5)a5+=v;else if(k<6.5)a6+=v;else if(k<7.5)a7+=v;else if(k<8.5)a8+=v;else a9+=v;}
-  float s=max(f,1e-5);float w6=a6/s,w7=a7/s,w8=a8/s,w9=a9/s;float w0=a0/s,w1=a1/s,w2=a2/s,w3=a3/s,w4=a4/s,w5=(a5+a6)/s;
+    if(k<.5)a0+=v;else if(k<1.5)a1+=v;else if(k<2.5)a2+=v;else if(k<3.5)a3+=v;else if(k<4.5)a4+=v;else if(k<5.5)a5+=v;else if(k<6.5)a6+=v;else if(k<7.5)a7+=v;else if(k<8.5)a8+=v;else if(k<9.5)a9+=v;else a10+=v;}
+  float s=max(f,1e-5);float w6=a6/s,w7=a7/s,w8=a8/s,w9=a9/s,w10=a10/s;float w0=a0/s,w1=a1/s,w2=a2/s,w3=a3/s,w4=a4/s,w5=(a5+a6)/s;
   vec2 rd=p-uL; float hue=fract(uT*.06+atan(rd.y,rd.x)/6.2832);            /* you: a slowly turning rainbow */
   vec3 rb=clamp(abs(mod(hue*6.+vec3(0.,4.,2.),6.)-3.)-1.,0.,1.);
   vec3 rbC=mix(vec3(1.),rb,.62)*.92, rbE=rbC*.55;
   vec3 sdC=vec3(.98,.84,.30), sdE=vec3(.55,.42,.10);                       /* sounds: yellow */
   vec3 lkC=vec3(.74,.55,.98), lkE=vec3(.36,.22,.56);                       /* links: purple */
-  vec3 E=kE[0]*w0+kE[1]*w1+kE[2]*w2+kE[3]*w3+kE[4]*w4+kE[5]*w5+rbE*w7+sdE*w8+lkE*w9;
-  vec3 C=kC[0]*w0+kC[1]*w1+kC[2]*w2+kC[3]*w3+kC[4]*w4+kC[5]*w5+rbC*w7+sdC*w8+lkC*w9;
-  vec3 Rm=kR[0]*w0+kR[1]*w1+kR[2]*w2+kR[3]*w3+kR[4]*w4+kR[5]*w5+vec3(.10)*(w7+w8+w9);
-  vec3 Hh=kH[0]*w0+kH[1]*w1+kH[2]*w2+kH[3]*w3+kH[4]*w4+kH[5]*w5+(rbC*w7+sdC*w8+lkC*w9)*.10;
+  vec2 ra=p-uA; float hu2=fract(-uT*.06+atan(ra.y,-ra.x)/6.2832);       /* alter at the mirror: your shape, the colour drained, turning the other way */
+  vec3 rb2=clamp(abs(mod(hu2*6.+vec3(0.,4.,2.),6.)-3.)-1.,0.,1.);
+  vec3 alC=mix(vec3(1.),rb2,.2)*.78, alE=alC*.5;
+  vec3 E=kE[0]*w0+kE[1]*w1+kE[2]*w2+kE[3]*w3+kE[4]*w4+kE[5]*w5+rbE*w7+sdE*w8+lkE*w9+alE*w10;
+  vec3 C=kC[0]*w0+kC[1]*w1+kC[2]*w2+kC[3]*w3+kC[4]*w4+kC[5]*w5+rbC*w7+sdC*w8+lkC*w9+alC*w10;
+  vec3 Rm=kR[0]*w0+kR[1]*w1+kR[2]*w2+kR[3]*w3+kR[4]*w4+kR[5]*w5+vec3(.10)*(w7+w8+w9+w10);
+  vec3 Hh=kH[0]*w0+kH[1]*w1+kH[2]*w2+kH[3]*w3+kH[4]*w4+kH[5]*w5+(rbC*w7+sdC*w8+lkC*w9+alC*w10)*.10;
   float solid=smoothstep(.97,1.03,f), smk=smoothstep(.3,2.6,f)*.74;
   float cov=mix(solid,smk,w3);
   float inside=step(b4(p)*.94+.03,cov);
@@ -1103,7 +1107,7 @@ function setupSpaceGL(){
     if(!gl.getProgramParameter(prog2,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog2)); }
   catch(e){ console.warn(e); prog2=null; return; }
   gl.useProgram(prog2);
-  for (const n of ['uRes','uS','uT','uL','uBg','kE','kC','kR','kH','uV0','uV1','uV2','uV3','uV4','uVC','uCam','uRip','uSec','uWld','uRev']) U2[n]=gl.getUniformLocation(prog2,n);
+  for (const n of ['uRes','uS','uT','uL','uA','uBg','kE','kC','kR','kH','uV0','uV1','uV2','uV3','uV4','uVC','uCam','uRip','uSec','uWld','uRev']) U2[n]=gl.getUniformLocation(prog2,n);
   for (let j=0;j<5;j++){
     const tx=gl.createTexture(); gl.activeTexture(gl.TEXTURE2+j); gl.bindTexture(gl.TEXTURE_2D,tx);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
@@ -1302,6 +1306,7 @@ function drawSpace(){
   near.length=0;
   const vx0=cam.x-W/2-260, vx1=cam.x+W/2+260, vy0=cam.y-H/2-260, vy1=cam.y+H/2+260;
   for (const b of SB) if (b.r>.5 && b.x>vx0 && b.x<vx1 && b.y>vy0 && b.y<vy1) near.push(b);
+  if (AL.phase==='mirror' && AL.r>.5 && AL.px>vx0 && AL.px<vx1 && AL.py>vy0 && AL.py<vy1) near.push(AL.body={x:AL.px, y:AL.py, r:AL.r, k:10});   // alter, once it is at the mirror, is a body in the lake like you
   if (near.length>47){ near.sort((a,b)=>Math.hypot(a.x-cam.x,a.y-cam.y)-Math.hypot(b.x-cam.x,b.y-cam.y)); near.length=47; }
   sarr.fill(0);
   const sx=x=>(x-cam.x+W/2)/PX, sy=y=>(H-(y-cam.y+H/2))/PX;
@@ -1311,7 +1316,7 @@ function drawSpace(){
   { const l=gl.getAttribLocation(prog2,'p'); gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0); }
   gl.viewport(0,0,LW,LH);
   gl.uniform2f(U2.uRes,LW,LH); gl.uniform4fv(U2.uS,sarr); gl.uniform1f(U2.uT,t);
-  gl.uniform2f(U2.uL,sx(me.x),sy(me.y));
+  gl.uniform2f(U2.uL,sx(me.x),sy(me.y)); gl.uniform2f(U2.uA,sx(AL.px),sy(AL.py));
   gl.uniform2f(U2.uCam,cam.x/PX,-cam.y/PX);
   gl.uniform4f(U2.uSec,SECRET.x0/PX,SECRET.x1/PX,-SECRET.y1/PX,-SECRET.y0/PX); gl.uniform1f(U2.uWld,WORLD/PX); gl.uniform1f(U2.uRev,reveal);
   rarr.fill(0); ripples.forEach((r,i)=>{ rarr[i*4]=sx(r.x); rarr[i*4+1]=sy(r.y); rarr[i*4+2]=r.age*Math.max(sc,.8); rarr[i*4+3]=r.s*(1-r.age/2.6); });
@@ -1924,10 +1929,13 @@ function placeUI(){
         if (u>=1) alterArrive();
       }
       if (AL.phase==='mirror'){
-        const d=Math.hypot(me.x-ALTER_AT.x, me.y-ALTER_AT.y);
+        const dx=me.x-ALTER_AT.x, dy=me.y-ALTER_AT.y, d=Math.hypot(dx,dy);
         o.el.style.display = d<1400 ? '' : 'none';
         o.el.classList.toggle('near', d<300*audioScale());
-        place(o.el, ALTER_AT.x+clamp(me.vx*.12,-30,30), ALTER_AT.y+clamp(me.vy*.12,-30,30));
+        // your reflection: it stands where you would be on the other side of the glass, a little ahead of where you are going
+        const wgt=REDUCED ? 0 : clamp((560-d)/260,0,1); let ox=-(dx+me.vx*.3)*.38*wgt, oy=(dy+me.vy*.3)*.38*wgt; const ol=Math.hypot(ox,oy); if (ol>120){ ox*=120/ol; oy*=120/ol; }
+        const e=Math.min(1,dtA*6); AL.px=lerp(AL.px, ALTER_AT.x+ox, e); AL.py=lerp(AL.py, ALTER_AT.y+oy, e); AL.r=lerp(AL.r, 24*sc, Math.min(1,dtA*2));
+        o.el.classList.add('body'); place(o.el, AL.px, AL.py);
       } else { o.el.style.display=''; place(o.el, AL.x, AL.y); }
     } else if (o.kind==='press'){
       o.el.classList.toggle('on', reveal>.5); place(o.el, PRESS.x, PRESS.y);
