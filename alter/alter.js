@@ -31,12 +31,13 @@ window.makeAlter = function (el){
   const mapsOf = ask => !ask || !ask.a ? [] : Array.isArray(ask.a) ? (typeof ask.a[0] === 'string' ? [Object.fromEntries(ask.a.map(t => [t, null]))] : ask.a) : [ask.a];
 
   let S;                                                  // one conversation's state
-  const META = { times: 0, asked: new Set(), hinted: new Set(), guide: false, more: 0, dry: 0, liked: new Set() };   // what it remembers between conversations in one visit
+  const META = { times: 0, asked: new Set(), hinted: new Set(), guide: false, more: 0, dry: 0, liked: new Set(), used: new Set(), early: 0, right: 0, taught: false };   // what it remembers between conversations in one visit
   const fresh = () => ({ picked: [], sent: 0, typing: null, guess: null, used: new Set(), busy: false, shown: new Set(), usedPoem: false,
     ask: null, answering: null, asked: new Set(), offering: null, choice: -1, answer: null, answerId: -1, early: 0, right: 0, note: null, said: [], saidIds: [], doors: new Set(), ctx: { poems: [] }, read: new Set(),
     POEM_ROUND: 1 + Math.floor(Math.random() * 2), run: 0, onSent: null });
   const poemTime = () => S.sent === S.POEM_ROUND || (S.sent === A.LIMIT - 2 && !S.usedPoem);
-  const choice = list => { const f = list.filter(r => !S.used.has(r)); const r = rnd(f.length ? f : list); S.used.add(r); return r; };
+  const choice = list => { const f = list.filter(r => !S.used.has(r) && !META.used.has(r)), g = list.filter(r => !S.used.has(r)), r = rnd(f.length ? f : g.length ? g : list);   // not twice in a talk, and not again later in the same visit if it can be helped
+    S.used.add(r); META.used.add(r); return r; };
 
   function leap(i){                                       // somewhere else that shares a character with this phrase
     const p = PH[i], chars = [...p[0]].filter(ch => BY.has(ch)).reverse();
@@ -115,9 +116,10 @@ window.makeAlter = function (el){
     if (kind === 'starter') S.choice = S.answering.s.indexOf(PH[j][0]);
     if (kind === 'answer'){
       S.answer = PH[j][0]; S.answerId = j;
+      if (A.TEACH && !META.taught){ META.taught = true; stopTyping(); say(A.TEACH, 'a door'); }   // once: you can go on stringing lines, or send
       const guess = S.guess !== null ? S.guess : rnd(S.list); S.guess = null;
-      if (guess !== null && guess !== j && S.early < 1 && Math.random() < .35){ S.early++; S.note = choice(A.EARLY); }
-      else if (guess === j && A.RIGHT && S.right < 1 && Math.random() < .25){ S.right++; S.note = choice(A.RIGHT); }
+      if (guess !== null && guess !== j && META.early < 1 && Math.random() < .35){ META.early++; S.note = choice(A.EARLY); }
+      else if (guess === j && A.RIGHT && META.right < 1 && Math.random() < .25){ META.right++; S.note = choice(A.RIGHT); }
       else S.note = null;
     }
     if (S.picked.length >= 5) return send();
@@ -146,7 +148,7 @@ window.makeAlter = function (el){
       const prevs = S.said.filter(x => x.length >= 3 && x.length <= 12 && x !== first && !ids.some(i => PH[i][0] === x));
       const after = a.after.filter(r => !r.includes('{prev}') || prevs.length);
       const want = prevs.length && Math.random() < .5 ? after.filter(r => r.includes('{prev}')) : after.filter(r => !r.includes('{prev}'));
-      parts.push(fill(rnd(want.length ? want : after), { prev: prevs.length ? rnd(prevs) : '' }));
+      parts.push(fill(choice(want.length ? want : after), { prev: prevs.length ? rnd(prevs) : '' }));
       return parts;
     }
     const mine = a && S.answer ? replyTo(a, S.answer, S.choice) : null;
@@ -210,7 +212,7 @@ window.makeAlter = function (el){
   const hintText = h => { const c = S.ctx, t = Array.isArray(h.t) ? h.t[c.touch ? 1 : 0] : h.t;
     return fill(t, { el: c.reg ? rnd(Object.keys(c.reg).filter(k => k !== '鏡' && !c.reg[k])) : '' }); };
   function here(){ const p = S.ctx.poems, n = p.length, H = A.HERE; if (!H) return null;
-    return fill(rnd(n === 0 ? H.none : n === 1 ? H.one : n < 8 ? H.few : H.many), { n, title: p[n - 1] }); }
+    return fill(choice(n === 0 ? H.none : n === 1 ? H.one : n < 8 ? H.few : H.many), { n, title: p[n - 1] }); }
   function firstAsk(){ const light = A.ASK.filter(q => (q.d || 1) === 1), f = light.filter(q => !META.asked.has(q.q)), q = rnd(f.length ? f : light.length ? light : A.ASK);
     S.asked.add(q.q); META.asked.add(q.q); return q; }
   // which line did you like: only lines from poems you have read; it says where the line comes from, then goes on
@@ -219,7 +221,7 @@ window.makeAlter = function (el){
     const run = S.run, seen = new Set(), pool = likeLines().filter(i => !seen.has(PH[i][0]) && seen.add(PH[i][0])), list = [];
     while (list.length < 3 && pool.length){ let f = pool.filter(i => !list.some(j => PH[j][1] === PH[i][1])); if (!f.length) f = pool; const k = rnd(f); list.push(k); pool.splice(pool.indexOf(k), 1); }
     S.typing = say('⋯', 'a typing'); await wait(800); stopTyping(); if (run !== S.run) return;
-    say(rnd(A.LIKE.q), 'a door'); await wait(400); if (run !== S.run) return;
+    say(choice(A.LIKE.q), 'a door'); await wait(400); if (run !== S.run) return;
     opts.innerHTML = '';
     list.forEach((j, n) => { S.shown.add(j); META.liked.add(j); const b = document.createElement('button'); b.textContent = PH[j][0]; b.style.animationDelay = (n * 60) + 'ms';
       b.addEventListener('click', () => { if (run === S.run) liked(j); }); opts.appendChild(b); });
@@ -295,7 +297,7 @@ window.makeAlter = function (el){
       log.innerHTML = ''; line.innerHTML = ''; opts.innerHTML = ''; poem.classList.remove('on');
       await wait(700); if (run !== S.run) return;
       // the first time it only shows you around; when you come back, it knows what you did and it can talk
-      const lines = first ? A.FIRST[book ? 'book' : 'mirror'] : [META.times > 1 && A.AGAIN ? rnd(A.AGAIN) : book && A.FIRST ? A.FIRST.book[0] : A.OPEN[0], here()].filter(Boolean);
+      const lines = first ? A.FIRST[book ? 'book' : 'mirror'] : [META.times > 1 && A.AGAIN ? choice(META.times > 2 && A.AGAIN3 ? A.AGAIN3 : A.AGAIN) : book && A.FIRST ? A.FIRST.book[0] : A.OPEN[0], here()].filter(Boolean);
       for (let n = 0; n < lines.length; n++){
         if (n){ S.typing = say('⋯', 'a typing'); await wait(900); stopTyping(); if (run !== S.run) return; }
         say(lines[n], 'a door');
