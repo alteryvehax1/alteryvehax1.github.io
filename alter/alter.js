@@ -243,6 +243,7 @@ window.makeAlter = function (el){
     opts.innerHTML = ''; const run = S.run, D = A.DOORS, list = [];
     list.push(['guide', META.guide ? D.more : D.guide]);  // it can always be asked again, even when it has nothing left
     if (!S.doors.has('who')) list.push(['who', D.who]);
+    else if (D.yvette && A.WHOIS && !S.doors.has('yvette')) list.push(['yvette', D.yvette]);   // and who is she, then
     if (S.canChat) list.push(['chat', D.chat]);           // not the first time: first you look around
     if (D.bye) list.push(['bye', D.bye]);
     list.forEach(([k, t], n) => { const b = document.createElement('button'); b.textContent = t; b.style.animationDelay = (n * 60) + 'ms';
@@ -255,6 +256,7 @@ window.makeAlter = function (el){
     if (k === 'bye'){ say(rnd(A.BYE || ['掰掰']), 'a door'); await wait(1300); if (run !== S.run) return; if (el.onBye) el.onBye(); return; }
     let lines;
     if (k === 'who') lines = A.ABOUT;
+    else if (k === 'yvette') lines = A.WHOIS;
     else {
       const first = !META.guide; META.guide = true; if (!first){ META.more++; if (el.onMore) el.onMore(META.more); }
       const hs = hintsLeft().slice(0, first ? 3 : 1), dry = A.SPEECHLESS || [A.NOHINT || '⋯'];
