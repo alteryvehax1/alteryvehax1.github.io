@@ -1238,7 +1238,9 @@ function updateSound(){
     const nowP=performance.now(), dP=Math.min(.1,(nowP-(PRESS.last||nowP))/1000); PRESS.last=nowP;
     PRESS.kick*=.86; PRESS.rate=lerp(PRESS.rate, (PRESS.held ? PRESS.to : 1)+PRESS.kick, PRESS.held ? .08 : .14);
     if (PRESS.held){ PRESS.sec+=dP; const sN=Math.round(PRESS.sec); if (sN!==VISIT.presses){ VISIT.presses=sN; visitDirty=true; } PRESS.say=sN ? sN+' 秒' : ''; }
-    if (R0.el && Math.abs(R0.el.playbackRate-PRESS.rate)>.012){ try{ R0.el.playbackRate=clamp(PRESS.rate,.4,1.8); }catch(e){} }
+    // a phone drops the sound for a moment every time the speed is set, so there it moves in a few big steps instead of many small ones
+    const goal=PRESS.held ? PRESS.to : 1, dR=R0.el ? Math.abs(R0.el.playbackRate-PRESS.rate) : 0;
+    if (R0.el && (dR>(COARSE ? .18 : .012) || (dR>.005 && Math.abs(PRESS.rate-goal)<.012))){ try{ R0.el.playbackRate=clamp(PRESS.rate,.4,1.8); }catch(e){} }
   }
   if (R0.el && !R0.done){
     const inside = here && reveal>.3;
@@ -1833,16 +1835,16 @@ function alterCtx(at){                                        // what this visit
 }
 function alterPoem(title){ const i=P.findIndex(p=>p.title===title); if (i<0) return; closeAlter(); openPoem(i); }
 function openAlter(e){
-  if (e) e.preventDefault(); const at = AL.phase==='mirror' ? 'mirror' : 'book'; if (AL.phase!=='mirror') alterArrive();
+  if (e) e.preventDefault(); const at = AL.phase==='mirror' ? 'mirror' : 'book'; if (AL.phase!=='mirror') alterArrive(); AL.open=true;
   openDialog($('#alter'), $('#al-x'));
-  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=21').then(()=>loadScript('alter/replies.js?v=21')).then(()=>loadScript('alter/alter.js?v=21')).then(()=>{
+  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=22').then(()=>loadScript('alter/replies.js?v=22')).then(()=>loadScript('alter/alter.js?v=22')).then(()=>{
     alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), onPoem:alterPoem, onBye:closeAlter,
       onMore:n=>{ if (n>=10){ if (!VISIT.more) printTick(); VISIT.more=n; visitDirty=true; } } });   // ten times is the hidden achievement; after that the receipt keeps counting
   }).catch(()=>{ alterLoading=null; });
   alterLoading.then(()=>{ if (!alterUI || !$('#alter').classList.contains('on')) return; alterUI.show(); alterUI.start(alterSent, alterCtx(at)); });   // every visit starts over: it only lives while it is open
 }
 const alterSent = n=>{ if (n>(VISIT.alter||0)){ VISIT.alter=n; visitDirty=true; printTick(); } };
-function closeAlter(){ closeDialog($('#alter')); if (alterUI){ alterUI.hide(); alterUI.stop(); } }
+function closeAlter(){ AL.open=false; closeDialog($('#alter')); if (alterUI){ alterUI.hide(); alterUI.stop(); } }
 function setupNote(){
   const t=$('#note-t'), n=$('#note-n'), msg=$('#note-msg');
   t.addEventListener('input',()=>{ n.textContent=[...t.value].length+' / 60'; });
@@ -1999,9 +2001,11 @@ function resize(){
 }
 let raf=null, last=0;
 function frame(now){
+  if (COARSE && now-last < 30){ raf=requestAnimationFrame(frame); return; }   // phones: about thirty pictures a second is enough for this, and much less heat
   const dt=Math.min(.05,(now-last)/1000); last=now; if (!REDUCED) t+=dt;      // reduced motion: the world's own clock stops
   updateSound();
-  if (mode==='space' && !NOGL){ stepSpace(dt); stepRipples(dt); drawSpace(); drawDoodles(); placeUI(); visitTrack(dt); }
+  if (AL.open){}                                           // talking with alter covers the whole lake: nothing to draw behind it
+  else if (mode==='space' && !NOGL){ stepSpace(dt); stepRipples(dt); drawSpace(); drawDoodles(); placeUI(); visitTrack(dt); }
   else { if (!REDUCED) step(dt); draw(); drawPhoto(dt); }
   raf=requestAnimationFrame(frame);
 }

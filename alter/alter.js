@@ -304,7 +304,7 @@ window.makeAlter = function (el){
     async start(onSent, ctx){                             // a new meeting: it speaks first, and it knows what you have done here
       const run = (S ? S.run : 0) + 1; S = fresh(); S.run = run; S.onSent = onSent;
       S.ctx = Object.assign({ poems: [] }, ctx || {}); S.read = new Set(S.ctx.poems);
-      const first = META.times === 0 && !S.ctx.known && !!A.FIRST, book = S.ctx.at === 'book';
+      const first = META.times === 0 && !!A.FIRST, book = S.ctx.at === 'book';   // every visit: the first time you tap it, it only shows you around
       S.canChat = !first; META.times++;
       log.innerHTML = ''; line.innerHTML = ''; opts.innerHTML = ''; poem.classList.remove('on');
       await wait(700); if (run !== S.run) return;
