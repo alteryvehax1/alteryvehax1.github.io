@@ -1236,9 +1236,9 @@ function updateSound(){
   const R0 = ROOM_SOUND;
   { // the button in the room: hold it and the song drags, let go and it springs back
     const nowP=performance.now(), dP=Math.min(.1,(nowP-(PRESS.last||nowP))/1000); PRESS.last=nowP;
-    PRESS.kick*=.86; PRESS.rate=lerp(PRESS.rate, (PRESS.held ? .32 : 1)+PRESS.kick, PRESS.held ? .08 : .14);
+    PRESS.kick*=.86; PRESS.rate=lerp(PRESS.rate, (PRESS.held ? PRESS.to : 1)+PRESS.kick, PRESS.held ? .08 : .14);
     if (PRESS.held){ PRESS.sec+=dP; const sN=Math.round(PRESS.sec); if (sN!==VISIT.presses){ VISIT.presses=sN; visitDirty=true; } PRESS.say=sN ? sN+' 秒' : ''; }
-    if (R0.el && Math.abs(R0.el.playbackRate-PRESS.rate)>.012){ try{ R0.el.playbackRate=clamp(PRESS.rate,.25,1.5); }catch(e){} }
+    if (R0.el && Math.abs(R0.el.playbackRate-PRESS.rate)>.012){ try{ R0.el.playbackRate=clamp(PRESS.rate,.4,1.8); }catch(e){} }
   }
   if (R0.el && !R0.done){
     const inside = here && reveal>.3;
@@ -1429,7 +1429,7 @@ const DRAWN = [                                                  // her drawings
   {src:'egg/capybara.png', x:450,  y:-250, h:110, race:true, span:900},   // racing, of course
   {src:'egg/puffer.png',   x:215,  y:-330, h:120, puff:true},               // puffs up now and then
 ];
-const PRESS = {x:0, y:0, n:0, eye:{x:0,y:0}, say:'', boing:0, held:false, rate:1, kick:0, sec:0, last:0};
+const PRESS = {x:0, y:0, n:0, eye:{x:0,y:0}, say:'', boing:0, held:false, rate:1, to:.6, kick:0, sec:0, last:0};
 /* the guestbook: short notes from visitors, written onto the paper for whoever comes next.
    (Supabase: anyone can read and add; only Yvette can remove, from her dashboard) */
 const GB = {url:'https://kpkuxfuzjjjjiohtwduz.supabase.co/rest/v1/guestbook', key:'sb_publishable_2rrjX-kwiMktss-DguJwSg_Ba8vhABx',
@@ -1508,7 +1508,7 @@ function drawDoodles(){
   for (const D of DRAWN) if (D.outside && D.img.complete && D.img.naturalWidth) drawDrawn(D, v, k, 1);   // the sign is on this side of the wall
   if (reveal>.01){
     // the useless thing: every press makes one cat's big eye bigger — coloured in with crayon, like the rest
-    const er=9+clamp((1-PRESS.rate)/.68,0,1)*23;        // the cat's eye widens as the song slows dctx.globalAlpha=reveal*.9;
+    const er=9+clamp(Math.abs(1-PRESS.rate)/.45,0,1)*23;        // the cat's eye widens as the song slows dctx.globalAlpha=reveal*.9;
     crayonBlob(PRESS.eye.x, PRESS.eye.y, er, er*.85, '#2b2b2b', '#2b2b2b', v, k, 7);
     if (er>14){ dctx.fillStyle='#f3ecd9'; dctx.beginPath(); dctx.arc(PRESS.eye.x-er*.32,PRESS.eye.y-er*.3,er*.2,0,6.283); dctx.fill(); }
   }
@@ -1521,7 +1521,7 @@ function drawDoodles(){
   }
   if (reveal>.01){
     // the button itself: a wobbly crayon circle, coloured in outside the lines, and its words, written shakily
-    dctx.globalAlpha=reveal; const pb=(PRESS.boing>0 ? 1-Math.sin(PRESS.boing*Math.PI)*.18 : 1)*(.78+.22*clamp(PRESS.rate,0,1));
+    dctx.globalAlpha=reveal; const pb=(PRESS.boing>0 ? 1-Math.sin(PRESS.boing*Math.PI)*.18 : 1)*clamp(1-(1-PRESS.rate)*.4,.8,1.2);
     crayonBlob(PRESS.x, PRESS.y, 50*k*pb, 46*k*pb, '#e8473d', '#f4c430', v, k, 10);
     shaky('按住', PRESS.x, PRESS.y+2, 26*k, '#c0392b', v, 1);
     if (PRESS.say) shaky(PRESS.say, PRESS.x, PRESS.y+80*k, 19*k, '#3a7bd5', v, 1);
@@ -1864,10 +1864,10 @@ function buildSpaceUI(){
     a.addEventListener('click',()=>seen('links', L.name));
     holdStill(a); spUI.appendChild(a); spEls.push({el:a, link:L, kind:'link'});
   }
-  { const b=document.createElement('button'); b.className='sp-press'; b.textContent='按住'; b.setAttribute('aria-label','按住這個按鈕，房間裡的歌會變慢變低，放開就彈回來');
-    const down=e=>{ if (e){ e.preventDefault(); e.stopPropagation(); } if (PRESS.held) return; PRESS.held=true; PRESS.boing=1;
+  { const b=document.createElement('button'); b.className='sp-press'; b.textContent='按住'; b.setAttribute('aria-label','按住這個按鈕，房間裡的歌會變慢或變快，放開就彈回來');
+    const down=e=>{ if (e){ e.preventDefault(); e.stopPropagation(); } if (PRESS.held) return; PRESS.held=true; PRESS.boing=1; PRESS.to = Math.random()<.35 ? 1.5 : .6;   // most of the time it drags, now and then it runs ahead
       const R0=ROOM_SOUND; if (R0.done && R0.el){ R0.done=false; try{ R0.el.currentTime=0; }catch(err){} } };          // the song had ended: pressing puts the needle back
-    const up=()=>{ if (!PRESS.held) return; PRESS.held=false; PRESS.kick=.22; };
+    const up=()=>{ if (!PRESS.held) return; PRESS.held=false; PRESS.kick = PRESS.to>1 ? -.16 : .2; };
     b.addEventListener('pointerdown',down); for (const t of ['pointerup','pointercancel','pointerleave','blur']) b.addEventListener(t,up);
     b.addEventListener('keydown',e=>{ if (e.key===' ' || e.key==='Enter') down(e); }); b.addEventListener('keyup',up);
     b.addEventListener('contextmenu',e=>e.preventDefault()); b.addEventListener('click',e=>e.preventDefault());
