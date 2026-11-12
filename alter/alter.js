@@ -31,7 +31,7 @@ window.makeAlter = function (el){
   const mapsOf = ask => !ask || !ask.a ? [] : Array.isArray(ask.a) ? (typeof ask.a[0] === 'string' ? [Object.fromEntries(ask.a.map(t => [t, null]))] : ask.a) : [ask.a];
 
   let S;                                                  // one conversation's state
-  const META = { times: 0, asked: new Set(), hinted: new Set() };   // what it remembers between conversations in one visit
+  const META = { times: 0, asked: new Set(), hinted: new Set(), guide: false, more: 0, dry: 0 };   // what it remembers between conversations in one visit
   const fresh = () => ({ picked: [], sent: 0, typing: null, guess: null, used: new Set(), busy: false, shown: new Set(), usedPoem: false,
     ask: null, answering: null, asked: new Set(), offering: null, choice: -1, answer: null, answerId: -1, early: 0, right: 0, note: null, said: [], saidIds: [], doors: new Set(), ctx: { poems: [] }, read: new Set(),
     POEM_ROUND: 1 + Math.floor(Math.random() * 2), run: 0, onSent: null });
@@ -190,14 +190,13 @@ window.makeAlter = function (el){
   }
   async function end(run){
     let before = [...log.querySelectorAll('.m.a')].slice(-2).map(m => m.textContent).join('');
-    for (const l of A.END){ await wait(readTime(before)); if (run !== S.run) return; say(l, 'a'); before = l; }
-    await wait(readTime(before) + 1500); if (run !== S.run) return;
-    poem.querySelector('pre').textContent = A.POEM; poem.classList.add('on');
-    if (el.from){                                         // the poems your sentences came from: a way back to them
-      el.from.innerHTML = '';
-      [...new Set(S.saidIds.filter(i => kindOf(i) === 'poem').map(i => SRC[PH[i][1]].title))].slice(0, 6).forEach(t => {
-        const b = document.createElement('button'); b.textContent = '〈' + t + '〉'; b.addEventListener('click', () => { if (el.onPoem) el.onPoem(t); }); el.from.appendChild(b); });
-    }
+    const endTime = t => 650 + [...t].length * 70;
+    for (const l of A.END){ await wait(endTime(before)); if (run !== S.run) return; say(l, 'a'); before = l; }
+    await wait(endTime(before) + 600); if (run !== S.run) return;
+    opts.innerHTML = '';                                  // what is left: the poems your sentences came from, and its own, which opens only if you ask
+    const ref = (text, cls, go) => { const b = document.createElement('button'); b.className = cls; b.textContent = text; b.addEventListener('click', go); opts.appendChild(b); };
+    [...new Set(S.saidIds.filter(i => kindOf(i) === 'poem').map(i => SRC[PH[i][1]].title))].slice(0, 5).forEach(t => ref('〈' + t + '〉', 'ref', () => { if (el.onPoem) el.onPoem(t); }));
+    ref(A.POEM_LINK || '— ａｌｔｅｒ　ｙｖｅｔｔｅ', 'ref mine', () => { poem.querySelector('pre').textContent = A.POEM; poem.classList.add('on'); });
   }
 
   /* ── before the talk: it knows what you did on this visit, and it can tell you what else there is ── */
@@ -216,9 +215,10 @@ window.makeAlter = function (el){
     S.asked.add(q.q); META.asked.add(q.q); return q; }
   function doors(){
     opts.innerHTML = ''; const run = S.run, D = A.DOORS, list = [];
-    if (hintsLeft().length) list.push(['guide', S.doors.has('guide') ? D.more : D.guide]);
+    list.push(['guide', META.guide ? D.more : D.guide]);  // it can always be asked again, even when it has nothing left
     if (!S.doors.has('who')) list.push(['who', D.who]);
-    list.push(['chat', D.chat]);
+    if (S.canChat) list.push(['chat', D.chat]);           // not the first time: first you look around
+    if (D.bye) list.push(['bye', D.bye]);
     list.forEach(([k, t], n) => { const b = document.createElement('button'); b.textContent = t; b.style.animationDelay = (n * 60) + 'ms';
       b.addEventListener('click', () => { if (run === S.run) door(k, t); }); opts.appendChild(b); });
   }
@@ -226,7 +226,16 @@ window.makeAlter = function (el){
     const run = S.run; opts.innerHTML = ''; say(t, 'v door'); S.doors.add(k);
     await wait(EARLY_MS); if (run !== S.run) return;
     if (k === 'chat'){ S.ask = firstAsk(); say(S.ask.q, 'a'); await wait(600); if (run !== S.run) return; return offer(); }
-    const hs = hintsLeft().slice(0, 3), lines = k === 'who' ? A.ABOUT : hs.length ? hs.map(h => { const t = hintText(h); META.hinted.add(h.if); return t; }) : [A.NOHINT];
+    if (k === 'bye'){ say(rnd(A.BYE || ['掰掰']), 'a door'); await wait(1300); if (run !== S.run) return; if (el.onBye) el.onBye(); return; }
+    let lines;
+    if (k === 'who') lines = A.ABOUT;
+    else {
+      const first = !META.guide; META.guide = true; if (!first) META.more++;
+      const hs = hintsLeft().slice(0, first ? 3 : 1), dry = A.SPEECHLESS || [A.NOHINT || '⋯'];
+      if (!first && META.more === 10 && A.ACHIEVE){ lines = [A.ACHIEVE]; if (el.onAchieve) el.onAchieve('more'); }
+      else if (hs.length) lines = hs.map(h => { const x = hintText(h); META.hinted.add(h.if); return x; });
+      else lines = [dry[Math.min(META.dry++, dry.length - 1)]];
+    }
     for (let n = 0; n < lines.length; n++){
       if (n){ S.typing = say('⋯', 'a typing'); await wait(Math.min(2000, 450 + [...lines[n]].length * 40)); stopTyping(); if (run !== S.run) return; }
       say(lines[n], 'a door');
@@ -260,12 +269,17 @@ window.makeAlter = function (el){
     async start(onSent, ctx){                             // a new meeting: it speaks first, and it knows what you have done here
       const run = (S ? S.run : 0) + 1; S = fresh(); S.run = run; S.onSent = onSent;
       S.ctx = Object.assign({ poems: [] }, ctx || {}); S.read = new Set(S.ctx.poems);
-      log.innerHTML = ''; line.innerHTML = ''; opts.innerHTML = ''; poem.classList.remove('on'); if (el.from) el.from.innerHTML = '';
+      const first = META.times === 0 && !S.ctx.known && !!A.FIRST, book = S.ctx.at === 'book';
+      S.canChat = !first; META.times++;
+      log.innerHTML = ''; line.innerHTML = ''; opts.innerHTML = ''; poem.classList.remove('on');
       await wait(700); if (run !== S.run) return;
-      say(META.times && A.AGAIN ? rnd(A.AGAIN) : A.OPEN[0], 'a door'); META.times++;
-      await wait(1100); if (run !== S.run) return;
-      const h = here();
-      if (h){ S.typing = say('⋯', 'a typing'); await wait(900); stopTyping(); if (run !== S.run) return; say(h, 'a door'); await wait(500); if (run !== S.run) return; }
+      // the first time it only shows you around; when you come back, it knows what you did and it can talk
+      const lines = first ? A.FIRST[book ? 'book' : 'mirror'] : [META.times > 1 && A.AGAIN ? rnd(A.AGAIN) : book && A.FIRST ? A.FIRST.book[0] : A.OPEN[0], here()].filter(Boolean);
+      for (let n = 0; n < lines.length; n++){
+        if (n){ S.typing = say('⋯', 'a typing'); await wait(900); stopTyping(); if (run !== S.run) return; }
+        say(lines[n], 'a door');
+      }
+      await wait(600); if (run !== S.run) return;
       if (A.DOORS) doors(); else { S.ask = firstAsk(); say(S.ask.q, 'a'); offer(); }
     },
     show(){ live = true; size(); if (!raf) raf = requestAnimationFrame(frame); },

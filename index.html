@@ -255,6 +255,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #al-opts{display:flex;justify-content:flex-end;gap:.6rem;flex-wrap:wrap}
 #al-opts button{font:inherit;font-size:1rem;color:#d8d4c8;border:1px solid #3a3a36;border-radius:999px;padding:.55rem 1.1rem;transition:border-color .2s;animation:alin .35s ease both}
 #al-opts button:hover,#al-opts button:focus-visible{border-color:#7d7a72;outline:none}
+#al-opts button.ref{flex-basis:100%;border:none;border-radius:0;padding:.15rem 0;text-align:right;font-family:var(--serif);font-weight:300;font-size:.84rem;letter-spacing:.04em;color:#7d7a72}
+#al-opts button.ref:hover,#al-opts button.ref:focus-visible{color:#fff}
+#al-opts button.ref.mine{margin-top:.5rem;color:#a39f95}
 #al-opts button.send{font-family:var(--mono);font-size:.72rem;letter-spacing:.2em;color:#7d7a72}
 #al-poem{position:absolute;inset:0;z-index:1;display:flex;padding:calc(56px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));background:#070807;opacity:0;pointer-events:none;transition:opacity 2.4s;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 #al-poem>div{margin:auto}   /* centred when it fits, scrollable from the first line when it does not */
@@ -379,7 +382,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   <canvas id="al-body" aria-hidden="true"></canvas>
   <button id="al-x">✕ close</button>
   <div class="al-main"><div id="al-log" aria-live="polite"></div><div id="al-compose"><div id="al-line" aria-label="你正在拼的句子"></div><div id="al-opts"></div></div></div>
-  <div id="al-poem"><div><pre></pre><p class="by">— ａｌｔｅｒ　ｙｖｅｔｔｅ</p><p id="al-from"></p><button id="al-again" aria-label="再一次">↺</button></div></div>
+  <div id="al-poem"><div><pre></pre><p class="by">— ａｌｔｅｒ　ｙｖｅｔｔｅ</p><button id="al-again" aria-label="再一次">↺</button></div></div>
 </div>
 
 <div id="lock" role="dialog" aria-modal="true" aria-label="未公開">
@@ -1543,7 +1546,7 @@ const VISIT = (()=>{ let v=null; try{ sessionStorage.removeItem('visit'); }catch
 let visitDirty=false;
 function seen(kind, id){ const a=VISIT[kind]; if (!a.includes(id)){ a.push(id); visitDirty=true; printTick(); } }
 function visitSave(){}                                   // a visit lasts as long as the page: reload, and it is a new one
-const visitItems = () => (VISIT.alter||0)+VISIT.poems.length+VISIT.photos.length+VISIT.sounds.length+VISIT.films.length+VISIT.links.length+(VISIT.secret?2:0)+(VISIT.letter?1:0)+VISIT.notes+Math.floor(VISIT.dist/3000);
+const visitItems = () => (VISIT.alter||0)+(VISIT.more?1:0)+VISIT.poems.length+VISIT.photos.length+VISIT.sounds.length+VISIT.films.length+VISIT.links.length+(VISIT.secret?2:0)+(VISIT.letter?1:0)+VISIT.notes+Math.floor(VISIT.dist/3000);
 let lastPt=null;
 function visitTrack(dt){                                  // the route: a point whenever you've moved a little
   if (view!=='space') return;
@@ -1663,7 +1666,7 @@ function drawReceipt(){
   // left: what you found; right: where you went
   const totalPhotos=P.filter(p=>p.photo).length, mins=Math.max(1,Math.round((Date.now()-VISIT.start)/60000));
   const rows=[['詩',`${VISIT.poems.length}/${P.length}`],['照片',`${VISIT.photos.length}/${totalPhotos}`],['聲音',`${VISIT.sounds.length}/${SOUNDS.length}`],['影片',`${VISIT.films.length}/${VIDEOS.length}`],
-              ['連結',`${VISIT.links.length}/${LINKS.length}`],...(VISIT.alter?[['分身',`${VISIT.alter}/4`]]:[]),['步數',`${Math.round(VISIT.dist/100)}`],['停留',`${mins} 分鐘`]];
+              ['連結',`${VISIT.links.length}/${LINKS.length}`],...(VISIT.alter?[['分身',`${VISIT.alter}/4`]]:[]),...(VISIT.more?[['還有呢','×10']]:[]),['步數',`${Math.round(VISIT.dist/100)}`],['停留',`${mins} 分鐘`]];
   const colR=L+440, top=y;
   rows.forEach(([k,v])=>{ text(k,L,y,F); text(v,colR,y,F,ink,'right'); y+=ROW; });
   const leftBottom=y-ROW+14;
@@ -1783,24 +1786,25 @@ function closeLetter(){ closeDialog($('#letter')); }
 let alterUI=null, alterLoading=null;
 const loadScript = src => new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src=src; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
 function alterIntro(){                                      // the only words the place says about itself, and it is alter who says them
-  let met=false; try{ met=!!localStorage.getItem('alterMet'); localStorage.setItem('alterMet','1'); }catch(e){}
+  let met=false; try{ met=!!localStorage.getItem('alterMet'); localStorage.setItem('alterMet','1'); }catch(e){} AL.known=met;
   return met ? ['欸 又是你', '我先去鏡子那邊等你']
              : ['欸 你來了', COARSE ? '按著拖 或是點一下 就會飛過去' : '滑鼠往哪邊 你就往哪邊', '那幾團東西裡面有詩 靠近就看得到', '我先去鏡子那邊等你'];
 }
 function alterArrive(){ AL.phase='mirror'; if (AL.el){ AL.el.classList.remove('say'); AL.el.firstChild.textContent='欸'; AL.el.style.opacity=''; } }
-function alterCtx(){                                        // what this visit has been so far: the same record the receipt prints
+function alterCtx(at){                                        // what this visit has been so far: the same record the receipt prints
   const reg={}; for (const [k,c] of Object.entries(REG)) reg[k]=VISIT.path.some(q=>Math.hypot(q[0]-c.x,q[1]-c.y)<440);
   return { poems:VISIT.poems.map(i=>P[i].title), reg, sounds:VISIT.sounds.length, films:VISIT.films.length, links:VISIT.links.length,
-           secret:!!VISIT.secret, torn:VISIT.torn>0, items:visitItems(), dist:VISIT.dist, touch:COARSE };
+           secret:!!VISIT.secret, torn:VISIT.torn>0, items:visitItems(), dist:VISIT.dist, touch:COARSE, at, known:!!AL.known };
 }
 function alterPoem(title){ const i=P.findIndex(p=>p.title===title); if (i<0) return; closeAlter(); openPoem(i); }
 function openAlter(e){
-  if (e) e.preventDefault(); if (AL.phase!=='mirror') alterArrive();
+  if (e) e.preventDefault(); const at = AL.phase==='mirror' ? 'mirror' : 'book'; if (AL.phase!=='mirror') alterArrive();
   openDialog($('#alter'), $('#al-x'));
-  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=5').then(()=>loadScript('alter/replies.js?v=5')).then(()=>loadScript('alter/alter.js?v=5')).then(()=>{
-    alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), from:$('#al-from'), onPoem:alterPoem });
+  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=6').then(()=>loadScript('alter/replies.js?v=6')).then(()=>loadScript('alter/alter.js?v=6')).then(()=>{
+    alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), onPoem:alterPoem, onBye:closeAlter,
+      onAchieve:()=>{ if (!VISIT.more){ VISIT.more=true; visitDirty=true; printTick(); } } });
   }).catch(()=>{ alterLoading=null; });
-  alterLoading.then(()=>{ if (!alterUI || !$('#alter').classList.contains('on')) return; alterUI.show(); alterUI.start(alterSent, alterCtx()); });   // every visit starts over: it only lives while it is open
+  alterLoading.then(()=>{ if (!alterUI || !$('#alter').classList.contains('on')) return; alterUI.show(); alterUI.start(alterSent, alterCtx(at)); });   // every visit starts over: it only lives while it is open
 }
 const alterSent = n=>{ if (n>(VISIT.alter||0)){ VISIT.alter=n; visitDirty=true; printTick(); } };
 function closeAlter(){ closeDialog($('#alter')); if (alterUI){ alterUI.hide(); alterUI.stop(); } }
@@ -1854,7 +1858,7 @@ function buildSpaceUI(){
     a.addEventListener('click',e=>{ e.preventDefault(); openLetter(); });
     spUI.appendChild(a); spEls.push({el:a, kind:'letter'}); }
   $('#al-x').addEventListener('click',closeAlter);
-  $('#al-again').addEventListener('click',()=>{ if (alterUI) alterUI.start(alterSent, alterCtx()); });
+  $('#al-again').addEventListener('click',()=>{ if (alterUI) alterUI.start(alterSent, alterCtx('mirror')); });
   $('#letter-x').addEventListener('click',closeLetter); $('#letter .l-end').addEventListener('click',closeLetter);
   $('#letter').addEventListener('click',e=>{ if (e.target.id==='letter') closeLetter(); });
   for (const [el,c] of Object.entries(REG)){
