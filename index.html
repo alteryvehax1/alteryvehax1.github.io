@@ -231,6 +231,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   background:radial-gradient(circle,rgba(214,210,200,.55) 0,rgba(214,210,200,.16) 38%,rgba(214,210,200,0) 70%);animation:alb 3.6s ease-in-out infinite alternate}
 .sp-alter span{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-4px);font-size:.85rem;color:#d8d4c8;white-space:nowrap;opacity:0;transition:opacity .6s}
 .sp-alter.near span{opacity:.85}
+.sp-alter.say span{opacity:.92;white-space:normal;width:max-content;max-width:12.5em;text-align:center;line-height:1.5}
+.sp-dot.al{background:#d8d4c8}
 @keyframes alb{from{scale:.9}to{scale:1.08}}
 #alter{position:fixed;inset:0;z-index:23;background:#070807;color:#d8d4c8;opacity:0;pointer-events:none;transition:opacity .5s;
   font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
@@ -261,6 +263,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 [role=dialog]:not(.on),[role=dialog]:not(.on) *{pointer-events:none!important}   /* a closed dialog never catches a tap, whatever is left on inside it */
 #al-poem pre{font-family:var(--serif);font-weight:300;font-size:1rem;line-height:2.1;letter-spacing:.06em;white-space:pre-wrap;max-width:24rem}
 #al-poem .by{margin-top:2.4rem;text-align:right;font-family:var(--serif);font-weight:300;font-size:.82rem;letter-spacing:.06em;color:#7d7a72}
+#al-from{margin-top:1.8rem;text-align:right}
+#al-from button{display:block;margin-left:auto;font-family:var(--serif);font-weight:300;font-size:.78rem;line-height:2;letter-spacing:.04em;color:#5c5a54}
+#al-from button:hover,#al-from button:focus-visible{color:#d8d4c8}
 #al-again{display:block;margin:2.4rem 0 0 auto;font-family:var(--mono);font-size:.7rem;color:#3a3a36}
 #al-again:hover,#al-again:focus-visible{color:#d8d4c8}
 @media (prefers-reduced-motion:reduce){ .sp-alter::before{animation:none} #alter .m,#al-opts button,#al-line span{animation:none} #al-poem{transition:none} }
@@ -374,7 +379,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   <canvas id="al-body" aria-hidden="true"></canvas>
   <button id="al-x">✕ close</button>
   <div class="al-main"><div id="al-log" aria-live="polite"></div><div id="al-compose"><div id="al-line" aria-label="你正在拼的句子"></div><div id="al-opts"></div></div></div>
-  <div id="al-poem"><div><pre></pre><p class="by">— ａｌｔｅｒ　ｙｖｅｔｔｅ</p><button id="al-again" aria-label="再一次">↺</button></div></div>
+  <div id="al-poem"><div><pre></pre><p class="by">— ａｌｔｅｒ　ｙｖｅｔｔｅ</p><p id="al-from"></p><button id="al-again" aria-label="再一次">↺</button></div></div>
 </div>
 
 <div id="lock" role="dialog" aria-modal="true" aria-label="未公開">
@@ -844,6 +849,8 @@ dScroll.addEventListener('contextmenu', e=>{ if (lastType!=='mouse') e.preventDe
 const KIDX = {光:0, 雨:1, 肉:2, 煙:3, 鏡:4};
 const NEUTRAL = {edge:[.34,.33,.30], core:[.60,.58,.53], rim:[.10,.10,.09], halo:[.03,.03,.028]};
 const REG = { 光:{x:140,y:-1250}, 雨:{x:1080,y:-240}, 肉:{x:-1060,y:520}, 煙:{x:-1120,y:-840}, 鏡:{x:900,y:1020} };
+const ALTER_BY_BOOK = {x:60, y:240};                             // where it waits when you first arrive, before it goes ahead to the mirror
+const AL = {phase:'intro', t:0, last:0, i:-1, x:60, y:240, lines:null, el:null};
 const ALTER_AT = {x:1390, y:1060};                            // alter yvette, to the right of the mirror: clear of its list and of the email link
 const WORLD = 2150;
 const GAP = {y0:1330, y1:1490};                              // the only place the wall gives way
@@ -1775,13 +1782,25 @@ function openLetter(){ if (!VISIT.letter){ VISIT.letter=true; visitDirty=true; p
 function closeLetter(){ closeDialog($('#letter')); }
 let alterUI=null, alterLoading=null;
 const loadScript = src => new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src=src; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+function alterIntro(){                                      // the only words the place says about itself, and it is alter who says them
+  let met=false; try{ met=!!localStorage.getItem('alterMet'); localStorage.setItem('alterMet','1'); }catch(e){}
+  return met ? ['欸 又是你', '我先去鏡子那邊等你']
+             : ['欸 你來了', COARSE ? '按著拖 或是點一下 就會飛過去' : '滑鼠往哪邊 你就往哪邊', '那幾團東西裡面有詩 靠近就看得到', '我先去鏡子那邊等你'];
+}
+function alterArrive(){ AL.phase='mirror'; if (AL.el){ AL.el.classList.remove('say'); AL.el.firstChild.textContent='欸'; AL.el.style.opacity=''; } }
+function alterCtx(){                                        // what this visit has been so far: the same record the receipt prints
+  const reg={}; for (const [k,c] of Object.entries(REG)) reg[k]=VISIT.path.some(q=>Math.hypot(q[0]-c.x,q[1]-c.y)<440);
+  return { poems:VISIT.poems.map(i=>P[i].title), reg, sounds:VISIT.sounds.length, films:VISIT.films.length, links:VISIT.links.length,
+           secret:!!VISIT.secret, torn:VISIT.torn>0, items:visitItems(), dist:VISIT.dist, touch:COARSE };
+}
+function alterPoem(title){ const i=P.findIndex(p=>p.title===title); if (i<0) return; closeAlter(); openPoem(i); }
 function openAlter(e){
-  if (e) e.preventDefault();
+  if (e) e.preventDefault(); if (AL.phase!=='mirror') alterArrive();
   openDialog($('#alter'), $('#al-x'));
-  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=4').then(()=>loadScript('alter/replies.js?v=4')).then(()=>loadScript('alter/alter.js?v=4')).then(()=>{
-    alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body') });
+  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=5').then(()=>loadScript('alter/replies.js?v=5')).then(()=>loadScript('alter/alter.js?v=5')).then(()=>{
+    alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), from:$('#al-from'), onPoem:alterPoem });
   }).catch(()=>{ alterLoading=null; });
-  alterLoading.then(()=>{ if (!alterUI || !$('#alter').classList.contains('on')) return; alterUI.show(); alterUI.start(alterSent); });   // every visit starts over: it only lives while it is open
+  alterLoading.then(()=>{ if (!alterUI || !$('#alter').classList.contains('on')) return; alterUI.show(); alterUI.start(alterSent, alterCtx()); });   // every visit starts over: it only lives while it is open
 }
 const alterSent = n=>{ if (n>(VISIT.alter||0)){ VISIT.alter=n; visitDirty=true; printTick(); } };
 function closeAlter(){ closeDialog($('#alter')); if (alterUI){ alterUI.hide(); alterUI.stop(); } }
@@ -1830,12 +1849,12 @@ function buildSpaceUI(){
   { const w=document.createElement('a'); w.className='sp-tag crayon'; w.textContent='寫一句話'; w.href='#';
     w.addEventListener('click',e=>{ e.preventDefault(); openNote(); }); spUI.appendChild(w); spEls.push({el:w, kind:'pen'}); }
   { const b=document.createElement('button'); b.className='sp-alter'; b.setAttribute('aria-label','鏡子旁邊的人'); b.innerHTML='<span>欸</span>';
-    b.addEventListener('click',openAlter); spUI.appendChild(b); spEls.push({el:b, kind:'alter'}); }
+    b.addEventListener('click',openAlter); spUI.appendChild(b); spEls.push({el:b, kind:'alter'}); AL.el=b; }
   { const a=document.createElement('a'); a.className='sp-tag crayon'; a.textContent='給你的信'; a.href='#';
     a.addEventListener('click',e=>{ e.preventDefault(); openLetter(); });
     spUI.appendChild(a); spEls.push({el:a, kind:'letter'}); }
   $('#al-x').addEventListener('click',closeAlter);
-  $('#al-again').addEventListener('click',()=>{ if (alterUI) alterUI.start(alterSent); });
+  $('#al-again').addEventListener('click',()=>{ if (alterUI) alterUI.start(alterSent, alterCtx()); });
   $('#letter-x').addEventListener('click',closeLetter); $('#letter .l-end').addEventListener('click',closeLetter);
   $('#letter').addEventListener('click',e=>{ if (e.target.id==='letter') closeLetter(); });
   for (const [el,c] of Object.entries(REG)){
@@ -1846,8 +1865,8 @@ function buildSpaceUI(){
       ol.appendChild(li); });
     holdStill(ol); spUI.appendChild(ol); spEls.push({el:ol, x:c.x, y:c.y, kind:'list'});
   }
-  for (const [el,c] of [['書',{x:0,y:0}], ...Object.entries(REG)]){
-    const d=document.createElement('div'); d.className='sp-dot'; spUI.appendChild(d); spEls.push({el:d, x:c.x, y:c.y, kind:'dot'}); }
+  for (const [el,c] of [['書',{x:0,y:0}], ...Object.entries(REG), ['alter',ALTER_AT]]){
+    const d=document.createElement('div'); d.className='sp-dot'+(el==='alter'?' al':''); spUI.appendChild(d); spEls.push({el:d, x:c.x, y:c.y, kind:'dot', alter:el==='alter'}); }
   const sp=$('#space');
   sp.addEventListener('pointermove',e=>{ if (e.pointerType==='mouse'){ spIn.mouse=true; spIn.x=e.clientX; spIn.y=e.clientY; spIn.paused=!!e.target.closest('.sp-tag.on,.sp-list.on,.sp-book,.sp-press.on'); } else if (spIn.touch){ spIn.x=e.clientX; spIn.y=e.clientY; } });
   sp.addEventListener('pointerleave',e=>{ if (e.pointerType==='mouse') spIn.mouse=false; });
@@ -1879,10 +1898,24 @@ function placeUI(){
         o.el.style.transform=`translate3d(${lx.toFixed(1)}px,${ly.toFixed(1)}px,0)`;
       } else place(o.el, o.x, o.y);
     } else if (o.kind==='alter'){                            // it leans a little ahead of where you are going
-      const d=Math.hypot(me.x-ALTER_AT.x, me.y-ALTER_AT.y);
-      o.el.style.display = d<1400 ? '' : 'none';
-      o.el.classList.toggle('near', d<300*audioScale());
-      place(o.el, ALTER_AT.x+clamp(me.vx*.12,-30,30), ALTER_AT.y+clamp(me.vy*.12,-30,30));
+      const now=performance.now(), dtA=Math.min(.1,(now-(AL.last||now))/1000); AL.last=now;
+      if (AL.phase==='intro'){                               // you have just arrived: it is already here, says how this place works, and goes ahead
+        if (!AL.lines) AL.lines=alterIntro();
+        AL.t+=dtA; let k=Math.floor((AL.t-1.2)/3.4);
+        if (Math.hypot(me.x-AL.x, me.y-AL.y)>620 && k<AL.lines.length-1){ k=AL.lines.length-1; AL.t=1.2+k*3.4; }   // you left before it finished: it skips to the last line
+        if (k>=AL.lines.length){ AL.phase='going'; AL.t=0; }
+        else if (k>=0 && k!==AL.i){ AL.i=k; o.el.firstChild.textContent=AL.lines[k]; o.el.classList.add('say'); }
+      } else if (AL.phase==='going'){
+        AL.t+=dtA; const u=clamp(AL.t/2.4,0,1), e=REDUCED?0:u*u*u, a=Math.atan2(ALTER_AT.y-ALTER_BY_BOOK.y, ALTER_AT.x-ALTER_BY_BOOK.x);
+        AL.x=ALTER_BY_BOOK.x+Math.cos(a)*e*1100; AL.y=ALTER_BY_BOOK.y+Math.sin(a)*e*1100; o.el.style.opacity=(1-u).toFixed(2);
+        if (u>=1) alterArrive();
+      }
+      if (AL.phase==='mirror'){
+        const d=Math.hypot(me.x-ALTER_AT.x, me.y-ALTER_AT.y);
+        o.el.style.display = d<1400 ? '' : 'none';
+        o.el.classList.toggle('near', d<300*audioScale());
+        place(o.el, ALTER_AT.x+clamp(me.vx*.12,-30,30), ALTER_AT.y+clamp(me.vy*.12,-30,30));
+      } else { o.el.style.display=''; place(o.el, AL.x, AL.y); }
     } else if (o.kind==='press'){
       o.el.classList.toggle('on', reveal>.5); place(o.el, PRESS.x, PRESS.y);
     } else if (o.kind==='pen'){
@@ -1892,7 +1925,7 @@ function placeUI(){
     } else if (o.kind==='link'){
       const b=o.link.body; o.el.classList.toggle('on', !!o.link.near); place(o.el, b.x, b.y);
     } else {                                                   // a faint mark at the edge, toward places off screen
-      const dx=o.x-cam.x, dy=o.y-cam.y, hw=W/2-10, hh=H/2-10, off=Math.abs(dx)>hw+40 || Math.abs(dy)>hh+40;
+      const dx=o.x-cam.x, dy=o.y-cam.y, hw=W/2-10, hh=H/2-10, off=(Math.abs(dx)>hw+40 || Math.abs(dy)>hh+40) && !(o.alter && AL.phase!=='mirror');
       o.el.classList.toggle('on', off);
       if (off){ const k=Math.min(hw/Math.abs(dx||1), hh/Math.abs(dy||1)); o.el.style.transform=`translate3d(${(W/2+dx*k).toFixed(1)}px,${(H/2+dy*k).toFixed(1)}px,0)`; }
     }
