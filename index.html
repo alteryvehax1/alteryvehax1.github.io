@@ -1706,7 +1706,7 @@ function drawReceipt(){
   if (!lines.length){ text('（本次未選購任何詩）',C,y,`400 34px ${SANS}`,grey,'center'); y+=52; }
   else for (const l of lines){ text(l,C,y,`400 34px ${SANS}`,ink,'center'); y+=52; }
   y+=6; rule(y); y+=72;
-  text(THANKS,C,y,`400 34px ${SANS}`,ink,'center'); y+=42;
+  text(CASHIER+alterVerdict(),C,y,`400 34px ${SANS}`,ink,'center'); y+=42;
   // barcode from the receipt number
   let h=hashStr(String(VISIT.no)+VISIT.poems.join(',')); let bx=L+40; const by=y;
   while (bx<R-40){ h=Math.imul(h^(h>>>15),2246822507)>>>0; const w=2+(h%4)*2; g.fillStyle=ink; g.fillRect(bx,by,w,100); h=Math.imul(h^(h>>>13),1274126177)>>>0; bx+=w+2+(h%3)*3; }
@@ -1717,7 +1717,20 @@ function drawReceipt(){
   o.globalCompositeOperation='multiply'; o.drawImage(paperTex(RWd,H,VISIT.no),0,0); o.globalCompositeOperation='source-over';
   return c;
 }
-const SECRET_MISSED = '您錯過了一面牆', SECRET_FOUND = '您穿過了一面牆', THANKS = '狀態售出，概不退換';
+const SECRET_MISSED = '您錯過了一面牆', SECRET_FOUND = '您穿過了一面牆', CASHIER = '收銀員 alter：';
+function alterVerdict(){                                    // the last line of the receipt: what alter, at the till, has to say about this visit
+  const v=VISIT, n=v.poems.length, mins=(Date.now()-v.start)/60000, c=[];
+  if (v.more) c.push('你很會問');
+  if (v.secret) c.push(v.letter ? '你連信都看了' : '你不太聽話 我喜歡');
+  if (!n) c.push(v.dist>6000 ? '你什麼都沒讀 但走了很多路' : '你只是路過 也可以');
+  if (v.alter>=4) c.push('跟你聊天還不錯');
+  if (n>=20) c.push('你讀得比我想的多'); else if (n>=8) c.push('你有認真在逛');
+  if (v.presses>=10) c.push('你把我的歌壓壞了');
+  if (v.sounds.length>=4) c.push('你耳朵很好');
+  if (mins>=15) c.push('你待很久 我有看到');
+  if (!c.length) c.push('你來過了 我記得');
+  return c[Math.floor(Math.random()*c.length)];
+}
 function openReceipt(){
   visitSave(); const c=drawReceipt();
   const img=$('#rc-img'); img.src=c.toDataURL('image/png');
@@ -1822,7 +1835,7 @@ function alterPoem(title){ const i=P.findIndex(p=>p.title===title); if (i<0) ret
 function openAlter(e){
   if (e) e.preventDefault(); const at = AL.phase==='mirror' ? 'mirror' : 'book'; if (AL.phase!=='mirror') alterArrive();
   openDialog($('#alter'), $('#al-x'));
-  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=17').then(()=>loadScript('alter/replies.js?v=17')).then(()=>loadScript('alter/alter.js?v=17')).then(()=>{
+  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=18').then(()=>loadScript('alter/replies.js?v=18')).then(()=>loadScript('alter/alter.js?v=18')).then(()=>{
     alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), onPoem:alterPoem, onBye:closeAlter,
       onMore:n=>{ if (n>=10){ if (!VISIT.more) printTick(); VISIT.more=n; visitDirty=true; } } });   // ten times is the hidden achievement; after that the receipt keeps counting
   }).catch(()=>{ alterLoading=null; });

@@ -31,9 +31,9 @@ window.makeAlter = function (el){
   const mapsOf = ask => !ask || !ask.a ? [] : Array.isArray(ask.a) ? (typeof ask.a[0] === 'string' ? [Object.fromEntries(ask.a.map(t => [t, null]))] : ask.a) : [ask.a];
 
   let S;                                                  // one conversation's state
-  const META = { times: 0, asked: new Set(), hinted: new Set(), guide: false, more: 0, dry: 0, liked: new Set(), used: new Set(), early: 0, right: 0, taught: false, ended: 0, end2: new Set() };   // what it remembers between conversations in one visit
+  const META = { times: 0, asked: new Set(), hinted: new Set(), guide: false, more: 0, dry: 0, liked: new Set(), used: new Set(), early: 0, right: 0, taught: false, ended: 0, end2: new Set(), who: null };   // what it remembers between conversations in one visit
   const fresh = () => ({ picked: [], sent: 0, typing: null, guess: null, used: new Set(), busy: false, shown: new Set(), usedPoem: false,
-    ask: null, answering: null, asked: new Set(), offering: null, choice: -1, answer: null, answerId: -1, early: 0, right: 0, note: null, said: [], saidIds: [], doors: new Set(), ctx: { poems: [] }, read: new Set(),
+    ask: null, answering: null, asked: new Set(), offering: null, choice: -1, answer: null, answerId: -1, early: 0, right: 0, note: null, said: [], saidIds: [], who2: false, same: false, starters: null, doors: new Set(), ctx: { poems: [] }, read: new Set(),
     POEM_ROUND: 1 + Math.floor(Math.random() * 2), run: 0, onSent: null });
   const poemTime = () => S.sent === S.POEM_ROUND || (S.sent === A.LIMIT - 2 && !S.usedPoem);
   const choice = list => { const f = list.filter(r => !S.used.has(r) && !META.used.has(r)), g = list.filter(r => !S.used.has(r)), r = rnd(f.length ? f : g.length ? g : list);   // not twice in a talk, and not again later in the same visit if it can be helped
@@ -54,7 +54,7 @@ window.makeAlter = function (el){
   }
   function answersTo(ask, which){                         // the lines that really answer this question, picked by hand
     const maps = mapsOf(ask), m = which >= 0 && maps.length > 1 ? maps[which] : Object.assign({}, ...maps);
-    let ids = Object.keys(m).map(t => ID.get(t)).filter(i => i !== undefined && !S.shown.has(i));
+    let ids = Object.keys(m).map(t => ID.get(t)).filter(i => i !== undefined && !S.shown.has(i) && !(ask === A.WHO && S.who2 && PH[i][0] === META.who));
     const many = ask === A.WHO ? 6 : 3;
     if (ids.length < 2 && maps.length > 1) ids = Object.keys(Object.assign({}, ...maps)).map(t => ID.get(t)).filter(i => i !== undefined && !S.shown.has(i));
     if (ids.length < 2 && ask.k){                          // only when the hand-picked ones have run out
@@ -80,7 +80,8 @@ window.makeAlter = function (el){
     let list;
     if (!S.picked.length){                                // a new question is on the table
       const ask = S.ask || rnd(A.ASK); S.answering = ask; S.ask = null; S.choice = -1; S.answer = null; S.answerId = -1; S.guess = null;
-      if (ask.s){ list = ask.s.map(starterId); S.offering = 'starter'; }
+      const st = ask === A.WHO ? (S.who2 ? A.WHO2.s : null) : ask.s; S.starters = st;   // asked again in the same visit, 「你覺得我是誰」 starts from what you said last time
+      if (st){ list = st.map(starterId); S.offering = 'starter'; }
       else { list = answersTo(ask, -1); S.offering = 'answer'; }
     } else if (S.offering === 'starter'){                 // after 「喜歡」 or 「還好欸」: now the real answer
       list = answersTo(S.answering, S.choice); S.offering = 'answer'; S.guess = null;
@@ -113,7 +114,8 @@ window.makeAlter = function (el){
     const kind = S.offering;
     S.picked.push(j); if (kindOf(j) === 'poem') S.usedPoem = true;
     const s = document.createElement('span'); s.textContent = (S.picked.length > 1 ? ' ' : '') + PH[j][0]; line.appendChild(s);
-    if (kind === 'starter') S.choice = S.answering.s.indexOf(PH[j][0]);
+    if (kind === 'starter'){ S.choice = S.starters.indexOf(PH[j][0]);
+      if (S.answering === A.WHO && S.choice === 0){ S.answer = META.who; S.same = true; return send(); } }   // 「還是」: nothing more to choose
     if (kind === 'answer'){
       S.answer = PH[j][0]; S.answerId = j;
       if (A.TEACH && !META.taught){ META.taught = true; stopTyping(); say(A.TEACH, 'a door'); }   // once: you can go on stringing lines, or send
@@ -144,7 +146,7 @@ window.makeAlter = function (el){
     const a = S.answering, parts = [];
     if (a === A.WHO){                                     // the fourth answer gets its own reply, and then it is over
       const first = S.answer || PH[ids[0]][0], t = first.length <= 10 ? first : first.slice(0, 8) + '⋯';
-      parts.push(replyTo(a, first, -1) || fill(rnd(a.r), { t }));
+      parts.push(S.same && A.WHO2 ? choice(A.WHO2.same) : (replyTo(a, first, -1) || fill(rnd(a.r), { t }))); META.who = first;
       const prevs = S.said.filter(x => x.length >= 3 && x.length <= 12 && x !== first && !ids.some(i => PH[i][0] === x));
       const after = a.after.filter(r => !r.includes('{prev}') || prevs.length);
       const want = prevs.length && Math.random() < .5 ? after.filter(r => r.includes('{prev}')) : after.filter(r => !r.includes('{prev}'));
@@ -173,9 +175,9 @@ window.makeAlter = function (el){
       if (scored.length && (!parts.length || Math.random() < .45)){ const l = rnd(scored.slice(0, 3))[1]; S.used.add(l); parts.push(l); extra = true; }
     }
     if (!parts.length) parts.push(choice(A.SHARE.concat(window.LIFE || []).filter(r => !QUESTIONY.test(r))));
-    S.ask = S.sent === A.LIMIT - 1 ? A.WHO : nextAsk();
-    if (S.ask.lead && (!extra || S.ask === A.WHO)) parts.push(choice(S.ask.lead));   // something of its own, then the question
-    parts.push(S.ask.q);
+    S.ask = S.sent === A.LIMIT - 1 ? A.WHO : nextAsk(); S.who2 = S.ask === A.WHO && !!META.who && !!A.WHO2;
+    if (S.ask.lead && !S.who2 && (!extra || S.ask === A.WHO)) parts.push(choice(S.ask.lead));   // something of its own, then the question
+    parts.push(S.who2 ? fill(A.WHO2.q, { who: META.who }) : S.ask.q);
     return parts;
   }
   async function send(){
