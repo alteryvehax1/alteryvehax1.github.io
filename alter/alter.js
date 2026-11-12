@@ -216,7 +216,7 @@ window.makeAlter = function (el){
     move: c => c.dist !== undefined && c.dist < 700, poems0: c => !c.poems.length, book: c => c.poems.length < 3,
     reg: c => !!c.reg && Object.keys(c.reg).some(k => k !== '鏡' && !c.reg[k]),
     sound: c => c.sounds === 0, film: c => c.films === 0, link: c => c.links === 0,
-    receipt: c => (c.items || 0) >= 3 && !c.torn, save: c => c.poems.length >= 1, wall: c => c.secret === false, walled: c => c.secret === true,
+    receipt: c => (c.items || 0) >= 3 && !c.torn, save: c => c.poems.length >= 1, wall: c => c.secret === false, walled: c => c.secret === true, letter: c => c.secret === true && c.letter === false,
   };
   const hintsLeft = () => (A.HINTS || []).filter(h => !META.hinted.has(h.if) && COND[h.if] && COND[h.if](S.ctx));
   const hintText = h => { const c = S.ctx, t = Array.isArray(h.t) ? h.t[c.touch ? 1 : 0] : h.t;
@@ -241,9 +241,9 @@ window.makeAlter = function (el){
     opts.innerHTML = ''; say(PH[j][0], 'v door'); S.said.push(PH[j][0]); S.saidIds.push(j);
     await wait(EARLY_MS); if (run !== S.run) return;
     const note = A.NOTES && A.NOTES[src.title];
-    say(note || fill(rnd(next ? A.LIKE.next : A.LIKE.alone), { title: src.title, year: src.year, next }), 'a door');
+    say(fill(rnd(next && !note ? A.LIKE.next : A.LIKE.alone), { title: src.title, year: src.year, next }), 'a door');   // where the line is from; then her own note on that poem, if she left one
     S.typing = say('⋯', 'a typing'); await wait(1200); stopTyping(); if (run !== S.run) return;
-    say(choice(A.LIKE.after), 'a door'); await wait(600); if (run !== S.run) return;
+    say(note || choice(A.LIKE.after), 'a door'); await wait(600); if (run !== S.run) return;
     doors();
   }
   function doors(){

@@ -1829,13 +1829,13 @@ function alterArrive(){ AL.phase='mirror'; if (AL.el){ AL.el.classList.remove('s
 function alterCtx(at){                                        // what this visit has been so far: the same record the receipt prints
   const reg={}; for (const [k,c] of Object.entries(REG)) reg[k]=VISIT.path.some(q=>Math.hypot(q[0]-c.x,q[1]-c.y)<440);
   return { poems:VISIT.poems.map(i=>P[i].title), reg, sounds:VISIT.sounds.length, films:VISIT.films.length, links:VISIT.links.length,
-           secret:!!VISIT.secret, torn:VISIT.torn>0, items:visitItems(), dist:VISIT.dist, touch:COARSE, at, known:!!AL.known };
+           secret:!!VISIT.secret, letter:!!VISIT.letter, torn:VISIT.torn>0, items:visitItems(), dist:VISIT.dist, touch:COARSE, at, known:!!AL.known };
 }
 function alterPoem(title){ const i=P.findIndex(p=>p.title===title); if (i<0) return; closeAlter(); openPoem(i); }
 function openAlter(e){
   if (e) e.preventDefault(); const at = AL.phase==='mirror' ? 'mirror' : 'book'; if (AL.phase!=='mirror') alterArrive();
   openDialog($('#alter'), $('#al-x'));
-  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=18').then(()=>loadScript('alter/replies.js?v=18')).then(()=>loadScript('alter/alter.js?v=18')).then(()=>{
+  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=19').then(()=>loadScript('alter/replies.js?v=19')).then(()=>loadScript('alter/alter.js?v=19')).then(()=>{
     alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), onPoem:alterPoem, onBye:closeAlter,
       onMore:n=>{ if (n>=10){ if (!VISIT.more) printTick(); VISIT.more=n; visitDirty=true; } } });   // ten times is the hidden achievement; after that the receipt keeps counting
   }).catch(()=>{ alterLoading=null; });
