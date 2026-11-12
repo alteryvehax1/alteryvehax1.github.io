@@ -158,7 +158,12 @@ window.makeAlter = function (el){
     else if (a && a.sr) parts.push(choice(a.sr.flat()));
     // if they went on stringing lines after the answer, it sometimes picks up a word from that tail
     const tail = ids.slice(ids.indexOf(S.answerId) + 1).map(i => PH[i][0]); let extra = false;
-    if (tail.length){
+    if (a && a.share){                                    // every round it also says something of its own about what it just asked you
+      const mine0 = ids.map(i => PH[i][0]).filter(t => t.length >= 3), b0 = bigrams(parts[0] || '');
+      const c = a.share.filter(r => !S.used.has(r) && !mine0.some(t => r.includes(t)) && [...bigrams(r)].filter(g => b0.has(g)).length < 3);
+      if (c.length){ parts.push(choice(c)); extra = true; }
+    }
+    if (tail.length && !extra){
       const text = tail.join(' '), bi = bigrams(text), ch = new Set([...text].filter(c => !STOP.has(c) && c.trim()));
       const hit = new Set(); for (const t of A.TOPICS) if (t.k.some(k => text.includes(k))) t.r.forEach(r => hit.add(r));
       const own = ids.map(i => PH[i][0]).filter(t => t.length >= 3);
