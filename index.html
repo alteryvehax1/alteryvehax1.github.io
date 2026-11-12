@@ -1835,7 +1835,7 @@ function alterPoem(title){ const i=P.findIndex(p=>p.title===title); if (i<0) ret
 function openAlter(e){
   if (e) e.preventDefault(); const at = AL.phase==='mirror' ? 'mirror' : 'book'; if (AL.phase!=='mirror') alterArrive();
   openDialog($('#alter'), $('#al-x'));
-  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=19').then(()=>loadScript('alter/replies.js?v=19')).then(()=>loadScript('alter/alter.js?v=19')).then(()=>{
+  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=20').then(()=>loadScript('alter/replies.js?v=20')).then(()=>loadScript('alter/alter.js?v=20')).then(()=>{
     alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), onPoem:alterPoem, onBye:closeAlter,
       onMore:n=>{ if (n>=10){ if (!VISIT.more) printTick(); VISIT.more=n; visitDirty=true; } } });   // ten times is the hidden achievement; after that the receipt keeps counting
   }).catch(()=>{ alterLoading=null; });
