@@ -31,7 +31,7 @@ window.makeAlter = function (el){
   const mapsOf = ask => !ask || !ask.a ? [] : Array.isArray(ask.a) ? (typeof ask.a[0] === 'string' ? [Object.fromEntries(ask.a.map(t => [t, null]))] : ask.a) : [ask.a];
 
   let S;                                                  // one conversation's state
-  const META = { times: 0, asked: new Set(), hinted: new Set(), guide: false, more: 0, dry: 0 };   // what it remembers between conversations in one visit
+  const META = { times: 0, asked: new Set(), hinted: new Set(), guide: false, more: 0, dry: 0, liked: new Set() };   // what it remembers between conversations in one visit
   const fresh = () => ({ picked: [], sent: 0, typing: null, guess: null, used: new Set(), busy: false, shown: new Set(), usedPoem: false,
     ask: null, answering: null, asked: new Set(), offering: null, choice: -1, answer: null, answerId: -1, early: 0, right: 0, note: null, said: [], saidIds: [], doors: new Set(), ctx: { poems: [] }, read: new Set(),
     POEM_ROUND: 1 + Math.floor(Math.random() * 2), run: 0, onSent: null });
@@ -213,6 +213,27 @@ window.makeAlter = function (el){
     return fill(rnd(n === 0 ? H.none : n === 1 ? H.one : n < 8 ? H.few : H.many), { n, title: p[n - 1] }); }
   function firstAsk(){ const light = A.ASK.filter(q => (q.d || 1) === 1), f = light.filter(q => !META.asked.has(q.q)), q = rnd(f.length ? f : light.length ? light : A.ASK);
     S.asked.add(q.q); META.asked.add(q.q); return q; }
+  // which line did you like: only lines from poems you have read; it says where the line comes from, then goes on
+  const likeLines = () => PH.map((p, i) => i).filter(i => kindOf(i) === 'poem' && S.read.has(SRC[PH[i][1]].title) && !META.liked.has(i) && [...PH[i][0]].length >= 4 && [...PH[i][0]].length <= 16);
+  async function like(){
+    const run = S.run, seen = new Set(), pool = likeLines().filter(i => !seen.has(PH[i][0]) && seen.add(PH[i][0])), list = [];
+    while (list.length < 3 && pool.length){ let f = pool.filter(i => !list.some(j => PH[j][1] === PH[i][1])); if (!f.length) f = pool; const k = rnd(f); list.push(k); pool.splice(pool.indexOf(k), 1); }
+    S.typing = say('⋯', 'a typing'); await wait(800); stopTyping(); if (run !== S.run) return;
+    say(rnd(A.LIKE.q), 'a door'); await wait(400); if (run !== S.run) return;
+    opts.innerHTML = '';
+    list.forEach((j, n) => { S.shown.add(j); META.liked.add(j); const b = document.createElement('button'); b.textContent = PH[j][0]; b.style.animationDelay = (n * 60) + 'ms';
+      b.addEventListener('click', () => { if (run === S.run) liked(j); }); opts.appendChild(b); });
+  }
+  async function liked(j){
+    const run = S.run, src = SRC[PH[j][1]], nx = PH[j][2], next = nx >= 0 && PH[nx] && PH[nx][1] === PH[j][1] ? PH[nx][0] : null;
+    opts.innerHTML = ''; say(PH[j][0], 'v door'); S.said.push(PH[j][0]); S.saidIds.push(j);
+    await wait(EARLY_MS); if (run !== S.run) return;
+    const note = A.NOTES && A.NOTES[src.title];
+    say(note || fill(rnd(next ? A.LIKE.next : A.LIKE.alone), { title: src.title, year: src.year, next }), 'a door');
+    S.typing = say('⋯', 'a typing'); await wait(1200); stopTyping(); if (run !== S.run) return;
+    say(choice(A.LIKE.after), 'a door'); await wait(600); if (run !== S.run) return;
+    doors();
+  }
   function doors(){
     opts.innerHTML = ''; const run = S.run, D = A.DOORS, list = [];
     list.push(['guide', META.guide ? D.more : D.guide]);  // it can always be asked again, even when it has nothing left
@@ -230,7 +251,7 @@ window.makeAlter = function (el){
     let lines;
     if (k === 'who') lines = A.ABOUT;
     else {
-      const first = !META.guide; META.guide = true; if (!first) META.more++;
+      const first = !META.guide; META.guide = true; if (!first){ META.more++; if (el.onMore) el.onMore(META.more); }
       const hs = hintsLeft().slice(0, first ? 3 : 1), dry = A.SPEECHLESS || [A.NOHINT || '⋯'];
       if (!first && META.more === 10 && A.ACHIEVE){ lines = [A.ACHIEVE]; if (el.onAchieve) el.onAchieve('more'); }
       else if (hs.length) lines = hs.map(h => { const x = hintText(h); META.hinted.add(h.if); return x; });
@@ -280,7 +301,8 @@ window.makeAlter = function (el){
         say(lines[n], 'a door');
       }
       await wait(600); if (run !== S.run) return;
-      if (A.DOORS) doors(); else { S.ask = firstAsk(); say(S.ask.q, 'a'); offer(); }
+      if (!A.DOORS){ S.ask = firstAsk(); say(S.ask.q, 'a'); return offer(); }
+      if (!first && A.LIKE && likeLines().length >= 2) like(); else doors();
     },
     show(){ live = true; size(); if (!raf) raf = requestAnimationFrame(frame); },
     hide(){ live = false; },

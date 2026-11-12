@@ -140,6 +140,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #d-save{display:block;margin:5rem 0 0 auto;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963;transition:color .3s}
 #d-save:hover,#d-save:focus-visible{color:#fff}
 #d-save[hidden]{display:none}
+.sec-save{display:block;margin:2.4rem 0 0 auto;font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#6d6963;transition:color .3s}
+.sec-save:hover,.sec-save:focus-visible{color:#fff}
 .d-nav{display:flex;justify-content:space-between;gap:1.5rem;margin-top:3rem;font-family:var(--mono);font-size:.62rem;letter-spacing:.14em}
 .d-nav button{color:#6d6963;text-align:left;max-width:48%;line-height:1.7;transition:color .3s}
 .d-nav #d-next{text-align:right;margin-left:auto}
@@ -528,7 +530,7 @@ function openPoem(i, push=true){
       if (/^\d+$/.test(l.trim())){ cur = {n:+l.trim(), lines:[]}; parts.push(cur); }
       else if (cur) cur.lines.push(l);
     }
-    c.innerHTML = parts.map(s=>`<section class="sec" data-n="${s.n}"><span class="sec-no">${s.n}</span>${renderLines(trimLines(s.lines))}</section>`).join('');
+    c.innerHTML = parts.map(s=>`<section class="sec" data-n="${s.n}"><span class="sec-no">${s.n}</span>${renderLines(trimLines(s.lines))}<button class="sec-save" data-n="${s.n}" aria-label="存第 ${s.n} 段">save</button></section>`).join('');
     enterScene(STATE_SECTIONS[0], p);
     secObs = new IntersectionObserver(es=>{
       for (const e of es) if (e.isIntersecting) setState(STATE_SECTIONS[(+e.target.dataset.n-1)%STATE_SECTIONS.length], p);
@@ -543,7 +545,7 @@ function openPoem(i, push=true){
   pv.hidden = i<=0; nx.hidden = i>=P.length-1;
   if (i>0){ pv.textContent='← '+P[i-1].title; pv.dataset.i=i-1; }
   if (i<P.length-1){ nx.textContent=P[i+1].title+' →'; nx.dataset.i=i+1; }
-  $('#d-save').hidden = !!p.locked; curPoem = i;
+  $('#d-save').hidden = !!p.locked || p.el==='態'; curPoem = i;   // the twelve states are saved one at a time, each from its own button
   if (view!=='detail') detailFrom = view==='space' ? 'space' : 'index';
   show('detail');
   if (push) history.pushState({v:'detail', i}, '', '?p='+encodeURIComponent(p.slug||p.title));
@@ -1666,7 +1668,7 @@ function drawReceipt(){
   // left: what you found; right: where you went
   const totalPhotos=P.filter(p=>p.photo).length, mins=Math.max(1,Math.round((Date.now()-VISIT.start)/60000));
   const rows=[['詩',`${VISIT.poems.length}/${P.length}`],['照片',`${VISIT.photos.length}/${totalPhotos}`],['聲音',`${VISIT.sounds.length}/${SOUNDS.length}`],['影片',`${VISIT.films.length}/${VIDEOS.length}`],
-              ['連結',`${VISIT.links.length}/${LINKS.length}`],...(VISIT.alter?[['分身',`${VISIT.alter}/4`]]:[]),...(VISIT.more?[['還有呢','×10']]:[]),['步數',`${Math.round(VISIT.dist/100)}`],['停留',`${mins} 分鐘`]];
+              ['連結',`${VISIT.links.length}/${LINKS.length}`],...(VISIT.alter?[['分身',`${VISIT.alter}/4`]]:[]),...(VISIT.more?[['還有呢','×'+VISIT.more]]:[]),['步數',`${Math.round(VISIT.dist/100)}`],['停留',`${mins} 分鐘`]];
   const colR=L+440, top=y;
   rows.forEach(([k,v])=>{ text(k,L,y,F); text(v,colR,y,F,ink,'right'); y+=ROW; });
   const leftBottom=y-ROW+14;
@@ -1715,7 +1717,7 @@ function shareCanvas(c, name){                               // phone: the share
     if (navigator.canShare && navigator.canShare({files:[f]})) navigator.share({files:[f]}).catch(()=>{});
     else { const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=f.name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); } },'image/png');
 }
-async function drawPoemCard(p){                              // the poem on paper; its photo, if it has one, cropped square above it
+async function drawPoemCard(p, part){                              // the poem on paper; its photo, if it has one, cropped square above it
   try{ await document.fonts.ready; }catch(e){}
   const Wd=1080, M=96, iw=Wd-2*M, ink='#1f1d1a', grey='#77736b', SERIF='"Noto Serif TC",serif', MONO2='"Space Mono",monospace';
   let img=null;
@@ -1723,7 +1725,7 @@ async function drawPoemCard(p){                              // the poem on pape
   const ph = img ? iw : 0;                                     // its photo, cropped square
   const mc=document.createElement('canvas').getContext('2d'); mc.font=`300 34px ${SERIF}`;
   const rows=[];                                             // wrap the poem to the card's width; keep its empty lines
-  for (const raw of p.content.split('\n')){
+  for (const raw of (part ? [String(part.n), ...part.lines] : p.content.split('\n'))){   // one numbered part of the long poem, or a whole poem
     const l=raw.replace(/\s+$/,'');
     if (!l.trim()){ rows.push({gap:true}); continue; }
     if (p.el==='態' && /^\d+$/.test(l.trim())){ rows.push({no:l.trim()}); continue; }
@@ -1758,6 +1760,13 @@ function setupReceipt(){
     const p=P[curPoem]; if (!p || p.locked) return;
     const btn=$('#d-save'); btn.textContent='⋯';
     try{ const c=await drawPoemCard(p); shareCanvas(c, '超優惠-'+p.title.replace(/[\\/:*?"<>|]/g,'')+'.png'); } finally { btn.textContent='save'; }
+  });
+  $('#d-content').addEventListener('click',async e=>{       // 〈都是一種狀態〉: each of its twelve parts is its own picture
+    const btn=e.target.closest('.sec-save'), p=P[curPoem]; if (!btn || !p || p.locked) return;
+    const n=+btn.dataset.n; let part=null, cur=null;
+    for (const l of p.content.split('\n')){ if (/^\d+$/.test(l.trim())) cur={n:+l.trim(), lines:[]}; else if (cur) cur.lines.push(l); if (cur && cur.n===n) part=cur; }
+    if (!part) return; btn.textContent='⋯';
+    try{ const c=await drawPoemCard(p, part); shareCanvas(c, '超優惠-'+p.title.replace(/[\\/:*?"<>|]/g,'')+'-'+n+'.png'); } finally { btn.textContent='save'; }
   });
   strip.addEventListener('click',openReceipt);
 }
@@ -1800,9 +1809,9 @@ function alterPoem(title){ const i=P.findIndex(p=>p.title===title); if (i<0) ret
 function openAlter(e){
   if (e) e.preventDefault(); const at = AL.phase==='mirror' ? 'mirror' : 'book'; if (AL.phase!=='mirror') alterArrive();
   openDialog($('#alter'), $('#al-x'));
-  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=6').then(()=>loadScript('alter/replies.js?v=6')).then(()=>loadScript('alter/alter.js?v=6')).then(()=>{
+  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=7').then(()=>loadScript('alter/replies.js?v=7')).then(()=>loadScript('alter/alter.js?v=7')).then(()=>{
     alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), onPoem:alterPoem, onBye:closeAlter,
-      onAchieve:()=>{ if (!VISIT.more){ VISIT.more=true; visitDirty=true; printTick(); } } });
+      onMore:n=>{ if (n>=10){ if (!VISIT.more) printTick(); VISIT.more=n; visitDirty=true; } } });   // ten times is the hidden achievement; after that the receipt keeps counting
   }).catch(()=>{ alterLoading=null; });
   alterLoading.then(()=>{ if (!alterUI || !$('#alter').classList.contains('on')) return; alterUI.show(); alterUI.start(alterSent, alterCtx(at)); });   // every visit starts over: it only lives while it is open
 }
