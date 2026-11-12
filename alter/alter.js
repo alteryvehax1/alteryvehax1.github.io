@@ -31,7 +31,7 @@ window.makeAlter = function (el){
   const mapsOf = ask => !ask || !ask.a ? [] : Array.isArray(ask.a) ? (typeof ask.a[0] === 'string' ? [Object.fromEntries(ask.a.map(t => [t, null]))] : ask.a) : [ask.a];
 
   let S;                                                  // one conversation's state
-  const META = { times: 0, asked: new Set(), hinted: new Set(), guide: false, more: 0, dry: 0, liked: new Set(), used: new Set(), early: 0, right: 0, taught: false };   // what it remembers between conversations in one visit
+  const META = { times: 0, asked: new Set(), hinted: new Set(), guide: false, more: 0, dry: 0, liked: new Set(), used: new Set(), early: 0, right: 0, taught: false, ended: 0, end2: new Set() };   // what it remembers between conversations in one visit
   const fresh = () => ({ picked: [], sent: 0, typing: null, guess: null, used: new Set(), busy: false, shown: new Set(), usedPoem: false,
     ask: null, answering: null, asked: new Set(), offering: null, choice: -1, answer: null, answerId: -1, early: 0, right: 0, note: null, said: [], saidIds: [], doors: new Set(), ctx: { poems: [] }, read: new Set(),
     POEM_ROUND: 1 + Math.floor(Math.random() * 2), run: 0, onSent: null });
@@ -193,7 +193,10 @@ window.makeAlter = function (el){
   async function end(run){
     let before = [...log.querySelectorAll('.m.a')].slice(-2).map(m => m.textContent).join('');
     const endTime = t => 650 + [...t].length * 70;
-    for (const l of A.END){ await wait(endTime(before)); if (run !== S.run) return; say(l, 'a'); before = l; }
+    let closing = A.END;                                    // the first full talk of a visit ends the way she wrote it; later ones end another way
+    if (META.ended && A.END2 && A.END2.length){ const f = A.END2.filter((x, i) => !META.end2.has(i)), set = rnd(f.length ? f : A.END2); META.end2.add(A.END2.indexOf(set)); closing = set; }
+    META.ended++;
+    for (const l of closing){ await wait(endTime(before)); if (run !== S.run) return; say(l, 'a'); before = l; }
     await wait(endTime(before) + 600); if (run !== S.run) return;
     opts.innerHTML = '';                                  // what is left: the poems your sentences came from, and its own, which opens only if you ask
     const ref = (text, cls, go) => { const b = document.createElement('button'); b.className = cls; b.textContent = text; b.addEventListener('click', go); opts.appendChild(b); };

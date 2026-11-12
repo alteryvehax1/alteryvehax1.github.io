@@ -863,9 +863,8 @@ const SECRET = {x0:WORLD, x1:WORLD+1500, y0:820, y1:2080};    // what's behind i
 const inGap = y => y>GAP.y0 && y<GAP.y1;
 let inSecret = false, secretFound = false, reveal = 0;
 const LINKS = [
-  {name:'instagram',            url:'https://www.instagram.com/wxzldhrl.yhc/', x:300,  y:-210,  k:5},
+  {name:'instagram',            url:'https://www.instagram.com/yve.ha.x1/',    x:300,  y:-210,  k:5},
   {name:'youtube',              url:'https://www.youtube.com/@yvehax1',         x:-360, y:250,   k:5},
-  {name:'facebook',             url:'https://www.facebook.com/chao.you.hui.2025',       x:400,  y:-1110, k:0},
   {name:'blu mush · instagram', url:'https://www.instagram.com/blumushh/',      x:1320, y:-70,   k:1},
   {name:'blu mush · youtube',   url:'https://www.youtube.com/@blumushh',        x:860,  y:-640,  k:1},
   {name:'email',                mail:['minio121086','gmail.com'],               x:1130, y:1230,  k:4},
@@ -1809,7 +1808,7 @@ function alterPoem(title){ const i=P.findIndex(p=>p.title===title); if (i<0) ret
 function openAlter(e){
   if (e) e.preventDefault(); const at = AL.phase==='mirror' ? 'mirror' : 'book'; if (AL.phase!=='mirror') alterArrive();
   openDialog($('#alter'), $('#al-x'));
-  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=9').then(()=>loadScript('alter/replies.js?v=9')).then(()=>loadScript('alter/alter.js?v=9')).then(()=>{
+  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=10').then(()=>loadScript('alter/replies.js?v=10')).then(()=>loadScript('alter/alter.js?v=10')).then(()=>{
     alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), onPoem:alterPoem, onBye:closeAlter,
       onMore:n=>{ if (n>=10){ if (!VISIT.more) printTick(); VISIT.more=n; visitDirty=true; } } });   // ten times is the hidden achievement; after that the receipt keeps counting
   }).catch(()=>{ alterLoading=null; });
