@@ -226,7 +226,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #receipt button:hover,#receipt button:focus-visible{color:#fff}
 @media (prefers-reduced-motion:reduce){ #receipt img{animation:none} }
 /* alter yvette: a soft grey one by the mirror, a little ahead of you */
-.sp-alter{width:64px;height:64px;margin:-32px 0 0 -32px;padding:0;border:none;border-radius:50%;cursor:pointer;pointer-events:auto;
+.sp-alter{width:64px;height:64px;margin:-32px 0 0 -32px;padding:0;border:none;border-radius:50%;background:none;cursor:pointer;pointer-events:auto;z-index:1}
+.sp-alter::before{content:"";position:absolute;inset:0;border-radius:50%;   /* the glow breathes on its own layer, so breathing never moves where it stands */
   background:radial-gradient(circle,rgba(214,210,200,.55) 0,rgba(214,210,200,.16) 38%,rgba(214,210,200,0) 70%);animation:alb 3.6s ease-in-out infinite alternate}
 .sp-alter span{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-4px);font-size:.85rem;color:#d8d4c8;white-space:nowrap;opacity:0;transition:opacity .6s}
 .sp-alter.near span{opacity:.85}
@@ -253,13 +254,16 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #al-opts button{font:inherit;font-size:1rem;color:#d8d4c8;border:1px solid #3a3a36;border-radius:999px;padding:.55rem 1.1rem;transition:border-color .2s;animation:alin .35s ease both}
 #al-opts button:hover,#al-opts button:focus-visible{border-color:#7d7a72;outline:none}
 #al-opts button.send{font-family:var(--mono);font-size:.72rem;letter-spacing:.2em;color:#7d7a72}
-#al-poem{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;padding:16px;background:#070807;opacity:0;pointer-events:none;transition:opacity 2.4s}
-#al-poem.on{opacity:1;pointer-events:auto}
+#al-poem{position:absolute;inset:0;z-index:1;display:flex;padding:calc(56px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));background:#070807;opacity:0;pointer-events:none;transition:opacity 2.4s;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#al-poem>div{margin:auto}   /* centred when it fits, scrollable from the first line when it does not */
+#al-poem.on{opacity:1}
+#alter.on #al-poem.on{pointer-events:auto}
+[role=dialog]:not(.on),[role=dialog]:not(.on) *{pointer-events:none!important}   /* a closed dialog never catches a tap, whatever is left on inside it */
 #al-poem pre{font-family:var(--serif);font-weight:300;font-size:1rem;line-height:2.1;letter-spacing:.06em;white-space:pre-wrap;max-width:24rem}
 #al-poem .by{margin-top:2.4rem;text-align:right;font-family:var(--serif);font-weight:300;font-size:.82rem;letter-spacing:.06em;color:#7d7a72}
 #al-again{display:block;margin:2.4rem 0 0 auto;font-family:var(--mono);font-size:.7rem;color:#3a3a36}
 #al-again:hover,#al-again:focus-visible{color:#d8d4c8}
-@media (prefers-reduced-motion:reduce){ .sp-alter{animation:none} #alter .m,#al-opts button,#al-line span{animation:none} #al-poem{transition:none} }
+@media (prefers-reduced-motion:reduce){ .sp-alter::before{animation:none} #alter .m,#al-opts button,#al-line span{animation:none} #al-poem{transition:none} }
 
 /* ───────────── LOCK ───────────── */
 #lock{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4rem;background:rgba(5,5,5,.94);
@@ -840,7 +844,7 @@ dScroll.addEventListener('contextmenu', e=>{ if (lastType!=='mouse') e.preventDe
 const KIDX = {光:0, 雨:1, 肉:2, 煙:3, 鏡:4};
 const NEUTRAL = {edge:[.34,.33,.30], core:[.60,.58,.53], rim:[.10,.10,.09], halo:[.03,.03,.028]};
 const REG = { 光:{x:140,y:-1250}, 雨:{x:1080,y:-240}, 肉:{x:-1060,y:520}, 煙:{x:-1120,y:-840}, 鏡:{x:900,y:1020} };
-const ALTER_AT = {x:1160, y:1250};                            // alter yvette, by the mirror
+const ALTER_AT = {x:1390, y:1060};                            // alter yvette, to the right of the mirror: clear of its list and of the email link
 const WORLD = 2150;
 const GAP = {y0:1330, y1:1490};                              // the only place the wall gives way
 const SECRET = {x0:WORLD, x1:WORLD+1500, y0:820, y1:2080};    // what's behind it
@@ -1774,13 +1778,13 @@ const loadScript = src => new Promise((ok,no)=>{ const sc=document.createElement
 function openAlter(e){
   if (e) e.preventDefault();
   openDialog($('#alter'), $('#al-x'));
-  if (!alterLoading) alterLoading = loadScript('alter/phrases.js').then(()=>loadScript('alter/replies.js')).then(()=>loadScript('alter/alter.js')).then(()=>{
+  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=4').then(()=>loadScript('alter/replies.js?v=4')).then(()=>loadScript('alter/alter.js?v=4')).then(()=>{
     alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body') });
   }).catch(()=>{ alterLoading=null; });
-  alterLoading.then(()=>{ if (!alterUI || !$('#alter').classList.contains('on')) return; alterUI.show();
-    if (!alterUI.started || alterUI.done) alterUI.start(n=>{ if (n>(VISIT.alter||0)){ VISIT.alter=n; visitDirty=true; printTick(); } }); });
+  alterLoading.then(()=>{ if (!alterUI || !$('#alter').classList.contains('on')) return; alterUI.show(); alterUI.start(alterSent); });   // every visit starts over: it only lives while it is open
 }
-function closeAlter(){ closeDialog($('#alter')); if (alterUI) alterUI.hide(); }
+const alterSent = n=>{ if (n>(VISIT.alter||0)){ VISIT.alter=n; visitDirty=true; printTick(); } };
+function closeAlter(){ closeDialog($('#alter')); if (alterUI){ alterUI.hide(); alterUI.stop(); } }
 function setupNote(){
   const t=$('#note-t'), n=$('#note-n'), msg=$('#note-msg');
   t.addEventListener('input',()=>{ n.textContent=[...t.value].length+' / 60'; });
@@ -1831,7 +1835,7 @@ function buildSpaceUI(){
     a.addEventListener('click',e=>{ e.preventDefault(); openLetter(); });
     spUI.appendChild(a); spEls.push({el:a, kind:'letter'}); }
   $('#al-x').addEventListener('click',closeAlter);
-  $('#al-again').addEventListener('click',()=>{ if (alterUI) alterUI.start(n=>{ if (n>(VISIT.alter||0)){ VISIT.alter=n; visitDirty=true; printTick(); } }); });
+  $('#al-again').addEventListener('click',()=>{ if (alterUI) alterUI.start(alterSent); });
   $('#letter-x').addEventListener('click',closeLetter); $('#letter .l-end').addEventListener('click',closeLetter);
   $('#letter').addEventListener('click',e=>{ if (e.target.id==='letter') closeLetter(); });
   for (const [el,c] of Object.entries(REG)){
@@ -1866,9 +1870,12 @@ function placeUI(){
     } else if (o.kind==='book' || o.kind==='list'){
       if (o.kind==='list'){
         const on = Math.hypot(me.x-o.x, me.y-o.y) < 440;
-        o.el.classList.toggle('on', on);
-        if (!o.h) o.h=o.el.offsetHeight;
-        const lx=clamp(o.x-cam.x+W/2+150*Math.max(sc,.8), 16, W-o.el.offsetWidth-16), ly=clamp(o.y-cam.y+H/2-o.h/2, 64, Math.max(64,H-o.h-20));
+        if (!o.h){ o.h=o.el.offsetHeight; o.w=o.el.offsetWidth; }
+        const lx=clamp(o.x-cam.x+W/2+150*Math.max(sc,.8), 16, W-o.w-16), ly=clamp(o.y-cam.y+H/2-o.h/2, 64, Math.max(64,H-o.h-20));
+        // a link you are standing next to comes first: the list steps aside instead of lying under its name
+        const under = on && spEls.some(t=>{ if (t.kind!=='link' || !t.link.near) return false; if (!t.w) t.w=t.el.offsetWidth;
+          const tx=t.link.body.x-cam.x+W/2, ty=t.link.body.y-cam.y+H/2; return tx+t.w+24>lx && tx<lx+o.w && ty+26>ly && ty-28<ly+o.h; });
+        o.el.classList.toggle('on', on && !under);
         o.el.style.transform=`translate3d(${lx.toFixed(1)}px,${ly.toFixed(1)}px,0)`;
       } else place(o.el, o.x, o.y);
     } else if (o.kind==='alter'){                            // it leans a little ahead of where you are going
