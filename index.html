@@ -1155,7 +1155,7 @@ function out(){                                  // every sound goes: its own ga
 function setSound(on){
   soundOn=on; try{ localStorage.setItem('sound', on?'on':'off'); }catch(e){}
   if (masterGain) masterGain.gain.setTargetAtTime(on?1:0, actx.currentTime, .08);
-  if (ROOM_SOUND.el && !ROOM_SOUND.g) ROOM_SOUND.el.muted=!on;
+  if (ROOM_SOUND.el && !ROOM_SOUND.g) ROOM_SOUND.el.muted=!on || !inSecret;
   const b=$('#sp-sound'); if (b){ b.textContent = on ? 'sound on' : 'sound off'; b.setAttribute('aria-pressed', on?'true':'false'); }
 }
 function makeVoice(buf, vol){
@@ -1240,7 +1240,8 @@ function updateSound(){
     if (PRESS.held){ PRESS.sec+=dP; const sN=Math.round(PRESS.sec); if (sN!==VISIT.presses){ VISIT.presses=sN; visitDirty=true; } PRESS.say=sN ? sN+' 秒' : ''; }
     // a phone drops the sound for a moment every time the speed is set, so there it moves in a few big steps instead of many small ones
     const goal=PRESS.held ? PRESS.to : 1, dR=R0.el ? Math.abs(R0.el.playbackRate-PRESS.rate) : 0;
-    if (R0.el && (dR>(COARSE ? .18 : .012) || (dR>.005 && Math.abs(PRESS.rate-goal)<.012))){ try{ R0.el.playbackRate=clamp(PRESS.rate,.4,1.8); }catch(e){} }
+    // only while the song is really playing in the room: on an iPhone, setting the speed of a paused song can start it
+    if (R0.el && !R0.el.paused && here && reveal>.3 && (dR>(COARSE ? .18 : .012) || (dR>.005 && Math.abs(PRESS.rate-goal)<.012))){ try{ R0.el.playbackRate=clamp(PRESS.rate,.4,1.8); }catch(e){} }
   }
   if (R0.el && !R0.done){
     const inside = here && reveal>.3;
@@ -1250,6 +1251,14 @@ function updateSound(){
     R0.v = lerp(R0.v||0, target, .06);
     if (R0.g) R0.g.gain.setTargetAtTime(R0.v, actx.currentTime, .05); else R0.el.volume = clamp(R0.v,0,1);
     if (!inside && R0.v<.01 && !R0.el.paused) R0.el.pause();
+  }
+  if (R0.el && !R0.g){                                        // outside the room the song is shut off outright (a phone ignores its volume): muted, paused, and held where it was
+    const inside = here && reveal>.3 && !R0.done, faded = R0.done || (R0.v||0)<.02, quiet = !soundOn || (!inside && faded);
+    if (R0.el.muted!==quiet) R0.el.muted=quiet;
+    if (!inside && faded){ const ct=R0.el.currentTime, moving = R0.ct!==undefined && ct>R0.ct+.02;
+      if (!R0.el.paused || moving){ try{ R0.el.pause(); if (moving) R0.el.currentTime=R0.ct; }catch(e){} }
+      if (!moving) R0.ct=ct; }
+    else R0.ct=undefined;
   }
   if (here && reveal>.05 && performance.now()-GB.loaded > 60000) gbLoad();
   for (const F of FRIENDS){                                   // friends' films load only once the room is showing
@@ -1298,6 +1307,8 @@ function audioGesture(){
   else if (!actx || actx.state!=='running') wakeAudio();
   audioStale=false;
   if (actx && masterGain && soundOn) masterGain.gain.setTargetAtTime(1, actx.currentTime, .3);
+  const R0=ROOM_SOUND;                                        // in the room, a touch is also what lets a phone un-mute and start the song
+  if (R0.el && !R0.g && !R0.done && view==='space' && reveal>.3){ R0.el.muted=!soundOn; if (R0.el.paused){ const p=R0.el.play(); if (p && p.catch) p.catch(()=>{}); } }
 }
 const ripples = [], rarr = new Float32Array(24); let ripT = 0, idleT = 1.2;
 function stepRipples(dt){
