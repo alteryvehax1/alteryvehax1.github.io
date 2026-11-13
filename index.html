@@ -1212,6 +1212,7 @@ const audioScale = () => clamp(Math.min(W,H)/800, .5, 1);
 function updateSound(){
   const here = view==='space', A = audioScale();
   if (here) preloadAll();
+  if (here && !alterPre){ alterPre=true; loadAlter(); }
   const viewR = Math.hypot(W,H)*.6 + 260;
   for (const V of VIDEOS){                                   // films are always there; in view they play (silent); close by, you hear them
     const d=Math.hypot(V.x-me.x, V.y-me.y);
@@ -1832,7 +1833,17 @@ function closeNote(){ closeDialog($('#note')); }
 function openLetter(){ if (!VISIT.letter){ VISIT.letter=true; visitDirty=true; printTick(); } openDialog($('#letter'), $('#letter .paper-l')); }
 function closeLetter(){ closeDialog($('#letter')); }
 let alterUI=null, alterLoading=null;
-const loadScript = src => new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src=src; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+const loadScript = src => new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src=src; sc.fetchPriority='high'; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+let alterTries=0, alterPre=false;
+function loadAlter(){                                        // its words are three files. They are fetched once, in the background, soon after you arrive; a file the connection drops is asked for again
+  if (alterLoading) return alterLoading;
+  const q='?v=22'+(alterTries ? '&r='+alterTries : ''), need=(have,src)=> have() ? null : loadScript(src+q);   // all three at once; one that already arrived is not asked for twice
+  return alterLoading = Promise.all([need(()=>window.PH && window.SRC && window.LIFE,'alter/phrases.js'), need(()=>window.ALTER,'alter/replies.js'), need(()=>window.makeAlter,'alter/alter.js')]).then(()=>{
+    if (!alterUI) alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), onPoem:alterPoem, onBye:closeAlter,
+      onMore:n=>{ if (n>=10){ if (!VISIT.more) printTick(); VISIT.more=n; visitDirty=true; } } });   // ten times is the hidden achievement; after that the receipt keeps counting
+  }).catch(()=>{ alterLoading=null; alterTries++;             // while you are waiting in front of it, it keeps trying; otherwise three times, and again the next time you ask
+    return new Promise(r=>setTimeout(r, Math.min(6000, 700*alterTries))).then(()=> ($('#alter').classList.contains('on') || alterTries<3) ? loadAlter() : null); });
+}
 function alterIntro(){                                      // the only words the place says about itself, and it is alter who says them
   let met=false; try{ met=!!localStorage.getItem('alterMet'); localStorage.setItem('alterMet','1'); }catch(e){} AL.known=met;
   return met ? ['欸 又是你', '我先去鏡子那邊等你']
@@ -1848,11 +1859,8 @@ function alterPoem(title){ const i=P.findIndex(p=>p.title===title); if (i<0) ret
 function openAlter(e){
   if (e) e.preventDefault(); const at = AL.phase==='mirror' ? 'mirror' : 'book'; if (AL.phase!=='mirror') alterArrive(); AL.open=true;
   openDialog($('#alter'), $('#al-x'));
-  if (!alterLoading) alterLoading = loadScript('alter/phrases.js?v=22').then(()=>loadScript('alter/replies.js?v=22')).then(()=>loadScript('alter/alter.js?v=22')).then(()=>{
-    alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), onPoem:alterPoem, onBye:closeAlter,
-      onMore:n=>{ if (n>=10){ if (!VISIT.more) printTick(); VISIT.more=n; visitDirty=true; } } });   // ten times is the hidden achievement; after that the receipt keeps counting
-  }).catch(()=>{ alterLoading=null; });
-  alterLoading.then(()=>{ if (!alterUI || !$('#alter').classList.contains('on')) return; alterUI.show(); alterUI.start(alterSent, alterCtx(at)); });   // every visit starts over: it only lives while it is open
+  if (!alterUI) $('#al-log').innerHTML='<div class="m a typing">⋯</div>';     // its words are still on their way: it is typing, as it would be anyway
+  loadAlter().then(()=>{ if (!alterUI || !$('#alter').classList.contains('on')) return; alterUI.show(); alterUI.start(alterSent, alterCtx(at)); });   // every visit starts over: it only lives while it is open
 }
 const alterSent = n=>{ if (n>(VISIT.alter||0)){ VISIT.alter=n; visitDirty=true; printTick(); } };
 function closeAlter(){ AL.open=false; closeDialog($('#alter')); if (alterUI){ alterUI.hide(); alterUI.stop(); } }
@@ -2028,6 +2036,7 @@ buildDoodles(); buildCrack(); setupGL(); setupSpaceGL(); buildSpaceUI(); resize(
 NOGL = failed || !prog2;
 if (NOGL) document.body.classList.add('nogl');      // no WebGL: the poems are still all here, just without the space
 addEventListener('pointerdown', wakeAudio, {once:true});
+setTimeout(loadAlter, 400);                             // alter's words come first, while the book is still closed: once you are in the lake the films and sounds take the whole line
 ['pointerdown','touchend'].forEach(ev=>addEventListener(ev, audioGesture, {passive:true}));   // iOS can leave it 'interrupted' or silently dead after media pauses or another tab
 (function deepLink(){                                // opened from a poem's own link: go straight to it
   const want = new URLSearchParams(location.search).get('p');
