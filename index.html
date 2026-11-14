@@ -118,8 +118,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .yr{display:grid;grid-template-columns:5.5rem 1fr;margin-bottom:4.2rem}
 .yr .y{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#55524d;line-height:2.5rem}
 .yr ol{list-style:none}
-.it{display:block;font-family:var(--serif);font-weight:300;font-size:.98rem;letter-spacing:.1em;line-height:2.5rem;color:#a8a49d;
-  cursor:pointer;transition:color .35s;-webkit-tap-highlight-color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it{display:block;font-family:var(--serif);font-weight:300;font-size:.98rem;letter-spacing:.1em;line-height:1.6;padding:.47rem 0;color:#a8a49d;
+  cursor:pointer;transition:color .35s;-webkit-tap-highlight-color:transparent;overflow-wrap:anywhere}   /* a long title wraps; a poem's name is never cut */
 .it:hover,.it:focus-visible{color:#fff}
 .it:focus-visible,.sp-tag:focus-visible,.sp-book:focus-visible,button:focus-visible,#intro:focus-visible{outline:1px dotted rgba(232,225,207,.45);outline-offset:4px}
 .nogl #i-back{visibility:hidden}
@@ -166,7 +166,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sp-tag:hover{color:#fff}
 .sp-list{list-style:none;width:12.5rem;opacity:0;transition:opacity .6s ease;pointer-events:none}
 .sp-list.on{opacity:1;pointer-events:auto}
-.sp-list .it{font-size:.86rem;line-height:2.05rem}
+.sp-list .it{font-size:.86rem;line-height:1.5;padding:.38rem 0}
 .sp-dot{width:3px;height:3px;margin:-1.5px 0 0 -1.5px;background:#6d6963;opacity:0;transition:opacity .6s}
 .sp-dot.on{opacity:.8}
 .sp-stick{position:absolute;left:0;top:0;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;border:1px solid rgba(232,225,207,.28);
@@ -1252,10 +1252,11 @@ function updateSound(){
     const nowP=performance.now(), dP=Math.min(.1,(nowP-(PRESS.last||nowP))/1000); PRESS.last=nowP;
     PRESS.kick*=.86; PRESS.rate=lerp(PRESS.rate, (PRESS.held ? PRESS.to : 1)+PRESS.kick, PRESS.held ? .08 : .14);
     if (PRESS.held){ PRESS.sec+=dP; const sN=Math.round(PRESS.sec); if (sN!==VISIT.presses){ VISIT.presses=sN; visitDirty=true; } PRESS.say=sN ? sN+' 秒' : ''; }
-    // a phone drops the sound for a moment every time the speed is set, so there it moves in a few big steps instead of many small ones
+    // a phone drops the sound for a moment every time the speed is set: there it is set once at the press and once at the release
     const goal=PRESS.held ? PRESS.to : 1, dR=R0.el ? Math.abs(R0.el.playbackRate-PRESS.rate) : 0;
     // only while the song is really playing in the room: on an iPhone, setting the speed of a paused song can start it
-    if (R0.el && !R0.el.paused && here && reveal>.3 && (dR>(COARSE ? .18 : .012) || (dR>.005 && Math.abs(PRESS.rate-goal)<.012))){ try{ R0.el.playbackRate=clamp(PRESS.rate,.4,1.8); }catch(e){} }
+    if (COARSE){ if (R0.el && !R0.el.paused && here && reveal>.3 && Math.abs(R0.el.playbackRate-goal)>.01){ try{ R0.el.playbackRate=goal; }catch(e){} } }   // phones stall a little at every change of speed: one change at the press, one at the release, straight away
+    else if (R0.el && !R0.el.paused && here && reveal>.3 && (dR>.012 || (dR>.005 && Math.abs(PRESS.rate-goal)<.012))){ try{ R0.el.playbackRate=clamp(PRESS.rate,.4,1.8); }catch(e){} }
   }
   if (R0.el && !R0.done){
     const inside = here && reveal>.3;
@@ -2045,13 +2046,15 @@ function resize(){
   uploadPhoto();
 }
 let raf=null, last=0;
+let hidAt=0;
 function frame(now){
   if (COARSE && now-last < 30){ raf=requestAnimationFrame(frame); return; }   // phones: about thirty pictures a second is enough for this, and much less heat
   const dt=Math.min(.05,(now-last)/1000); last=now; if (!REDUCED) t+=dt;      // reduced motion: the world's own clock stops
   updateSound();
   if (AL.open){}                                           // talking with alter covers the whole lake: nothing to draw behind it
   else if (mode==='space' && !NOGL){ stepSpace(dt); stepRipples(dt); drawSpace(); drawDoodles(); placeUI(); visitTrack(dt); }
-  else { if (!REDUCED) step(dt); draw(); drawPhoto(dt); }
+  else if (view==='index' && +sceneEl.style.opacity===0){ if (!hidAt) hidAt=now; if (now-hidAt<1300){ if (!REDUCED) step(dt); draw(); drawPhoto(dt); } }   // the index alone: once the picture has faded out it is not drawn at all
+  else { hidAt=0; if (!REDUCED) step(dt); draw(); drawPhoto(dt); }
   raf=requestAnimationFrame(frame);
 }
 function startLoop(){ if (raf) return; last=performance.now(); raf=requestAnimationFrame(frame); }
