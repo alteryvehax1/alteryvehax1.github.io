@@ -456,7 +456,7 @@ intro.addEventListener('pointerleave', () => { if(!opened){ book.style.removePro
 function openBook(){
   if (opened) return; opened = true; wakeAudio();
   book.style.removeProperty('--rx'); book.style.removeProperty('--ry');
-  const go = () => { const base = NOGL ? 'index' : 'space'; show(base); history.replaceState({v:base}, '', location.pathname); startLoop(); };
+  const go = () => { const base = NOGL ? 'index' : 'space'; show(base); history.replaceState({v:base}, '', location.pathname); startLoop(); if (!NOGL) openGuide(); };   // every visit: the book opens, the note comes first, then the lake
   if (REDUCED){ go(); return; }
   intro.classList.add('opening');
   setTimeout(()=>intro.classList.add('zoom'), 1500);
@@ -476,8 +476,8 @@ addEventListener('keydown', e => { if (!opened && (e.key==='Enter'||e.key===' ')
       if (p.year!==y) return;
       const li = document.createElement('li');
       li.className = 'it' + (p.locked?' locked':''); li.tabIndex = 0; li.textContent = p.title;
-      li.addEventListener('click', ()=>firstPoem(i));
-      li.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); firstPoem(i); } });
+      li.addEventListener('click', ()=>openPoem(i));
+      li.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openPoem(i); } });
       li.addEventListener('pointerenter', e=>{ if (e.pointerType!=='mouse' || view!=='index') return; preview(p); });
       ol.appendChild(li);
     });
@@ -1841,20 +1841,16 @@ addEventListener('keydown',e=>{                           // Tab stays inside an
 });
 function openDialog(el, focusEl){ returnFocus=document.activeElement; el.classList.add('on'); if (typeof spIn!=='undefined') spIn.keys.clear(); setTimeout(()=>(focusEl||el).focus(),60); }
 function closeDialog(el){ el.classList.remove('on'); if (returnFocus && document.contains(returnFocus) && returnFocus.focus) returnFocus.focus(); returnFocus=null; }
-let guideFor=null;
 const GUIDE = touch => [                                      // plain words, the site's own: how to read, how to walk
   [ '這裡有詩、影像和聲音。', '可以讀，也可以走進去。' ],
   [ '<span class="h">走進去</span>' + (touch ? '拖曳或點一下，你會跟著過去。' : '移動滑鼠，你會跟著過去。'), '靠近不同的形狀，看看裡面有什麼。', '有些要靠近，有些要按住。' ],
   [ '<span class="h">只讀詩</span>左上角的 index，按年份排。' ],
 ];
-function firstPoem(i){                                       // the first poem a visitor picks, from the lake or the book's list, waits behind the note, once
-  let seen=false; try{ seen=!!localStorage.getItem('guide2'); }catch(e){}
-  if (seen || NOGL || guideFor!==null){ openPoem(i); return; }
-  guideFor=i; $('#guide .g').innerHTML=GUIDE(COARSE).map(l=>'<p>'+l.join('<br>')+'</p>').join('');
-  try{ localStorage.setItem('guide2','1'); }catch(e){}
+function openGuide(){                                         // shown each time the book is opened, before anything in the lake
+  $('#guide .g').innerHTML=GUIDE(COARSE).map(l=>'<p>'+l.join('<br>')+'</p>').join('');
   openDialog($('#guide'), $('#guide-ok')); $('#guide').dataset.t=Date.now();
 }
-function closeGuide(){ if (!$('#guide').classList.contains('on')) return; closeDialog($('#guide')); const i=guideFor; guideFor=-1; if (i!==null && i>=0) openPoem(i); }
+function closeGuide(){ if ($('#guide').classList.contains('on')) closeDialog($('#guide')); }
 function openNote(){ $('#note-msg').textContent=''; openDialog($('#note'), $('#note-t')); }
 function closeNote(){ closeDialog($('#note')); }
 function openLetter(){ if (!VISIT.letter){ VISIT.letter=true; visitDirty=true; printTick(); } openDialog($('#letter'), $('#letter .paper-l')); }
@@ -1951,7 +1947,7 @@ function buildSpaceUI(){
     const ol=document.createElement('ol'); ol.className='sp-list';
     P.forEach((p,i)=>{ if (p.el!==el) return;
       const li=document.createElement('li'); li.className='it'+(p.locked?' locked':''); li.textContent=p.title; li.tabIndex=0;
-      li.addEventListener('click',()=>firstPoem(i)); li.addEventListener('keydown',e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); firstPoem(i); } });
+      li.addEventListener('click',()=>openPoem(i)); li.addEventListener('keydown',e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); openPoem(i); } });
       ol.appendChild(li); });
     holdStill(ol); spUI.appendChild(ol); spEls.push({el:ol, x:c.x, y:c.y, kind:'list'});
   }
@@ -1991,7 +1987,7 @@ function placeUI(){
       const now=performance.now(), dtA=Math.min(.1,(now-(AL.last||now))/1000); AL.last=now;
       if (AL.phase==='intro'){                               // you have just arrived: it is already here, says how this place works, and goes ahead
         if (!AL.lines) AL.lines=alterIntro();
-        AL.t+=dtA; let k=Math.floor((AL.t-1.2)/3.4);
+        if (!dialogOpen()) AL.t+=dtA; let k=Math.floor((AL.t-1.2)/3.4);   // it waits while the note is up
         if (Math.hypot(me.x-AL.x, me.y-AL.y)>620 && k<AL.lines.length-1){ k=AL.lines.length-1; AL.t=1.2+k*3.4; }   // you left before it finished: it skips to the last line
         if (k>=AL.lines.length){ AL.phase='going'; AL.t=0; }
         else if (k>=0 && k!==AL.i){ AL.i=k; o.el.firstChild.textContent=AL.lines[k]; o.el.classList.add('say'); }
