@@ -1133,7 +1133,7 @@ function wakeRoomSound(){
   const el=new Audio(); el.src=ROOM_SOUND.src; el.preload='none'; el.crossOrigin='anonymous'; ROOM_SOUND.el=el;
   el.preservesPitch=false; el.mozPreservesPitch=false; el.webkitPreservesPitch=false;   // slowed down, it also drops in pitch: a record under a finger
   if (ROOM_SOUND.at) el.addEventListener('loadedmetadata',()=>{ try{ el.currentTime=ROOM_SOUND.at; }catch(e){} }, {once:true});
-  el.volume=0; el.muted=!soundOn;                        // a plain element: phones ignore its volume, so its fade lives in the file itself
+  el.volume=0; el.muted=true;                            // a plain element: phones ignore its volume, so it is born muted; only being in the room un-mutes it (its fade lives in the file itself)
   el.addEventListener('ended',()=>{ ROOM_SOUND.done=true; });
   const p=el.play(); if (p && p.then) p.then(()=>el.pause()).catch(()=>{}); else el.pause();
 }
