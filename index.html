@@ -101,6 +101,14 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #intro.opening .b-shadow{opacity:0;transition:opacity .6s}
 #intro.zoom #book{transform:rotateX(0deg) rotateY(0deg) translateX(0) translateZ(1100px);transition:transform 1.1s cubic-bezier(.7,0,.3,1)}
 #intro.zoom{transition:opacity 1.1s ease}
+/* the first time only: the page you fall into has a few lines printed on it, in alter's voice. Touch it and you are in */
+#preface{position:absolute;inset:0;z-index:3;display:flex;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(clamp(1.3rem,5vh,3rem) + env(safe-area-inset-top)) clamp(1.25rem,6vw,2rem) calc(clamp(1.3rem,5vh,3rem) + env(safe-area-inset-bottom));
+  background:var(--paper);background-image:var(--paper-noise);color:#3a352e;opacity:0;pointer-events:none;transition:opacity .8s ease;cursor:pointer}
+#preface.on{opacity:1;pointer-events:auto}
+#preface .pf{margin:auto;width:100%;max-width:21rem;font-family:var(--serif);font-weight:400;font-size:clamp(.84rem,3.9vw,.95rem);line-height:2.05;letter-spacing:.06em}
+#preface p{margin:0 0 1.5em}
+#preface p:last-child{margin:2.4em 0 0;color:#8d8472}
+@media (max-height:620px){ #preface .pf{line-height:1.85} #preface p{margin-bottom:1em} #preface p:last-child{margin-top:1.4em} }
 
 /* ───────────── MATERIAL ───────────── */
 #scene{position:fixed;inset:0;z-index:0;opacity:0;transition:opacity 1.1s ease;pointer-events:none;background:#050505}
@@ -330,6 +338,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
     </div>
   </div>
   <p class="intro-text">本網頁紀錄Yvette 自2018至今的現代詩創作。</p>
+  <div id="preface" aria-hidden="true"><div class="pf"></div></div>
 </section>
 
 <section class="view" id="space" aria-label="空間"><canvas id="doodle"></canvas><div id="sp-ui"></div><button id="sp-index">index</button><button id="sp-sound" aria-pressed="true">sound on</button></section>
@@ -444,13 +453,32 @@ function openBook(){
   if (opened) return; opened = true; wakeAudio();
   book.style.removeProperty('--rx'); book.style.removeProperty('--ry');
   const go = () => { const base = NOGL ? 'index' : 'space'; show(base); history.replaceState({v:base}, '', location.pathname); startLoop(); };
-  if (REDUCED){ go(); return; }
+  let seen=false; try{ seen=!!localStorage.getItem('preface'); }catch(e){}
+  const first = !seen && !NOGL, pf=$('#preface');
+  const page = () => {                                        // the first time, the page you fall into is not blank
+    prefaceShown=true; pf.querySelector('.pf').innerHTML = PREFACE(matchMedia('(pointer: coarse)').matches).map(l=>'<p>'+l.join('<br>')+'</p>').join('');
+    pf.classList.add('on'); pf.setAttribute('aria-hidden','false');
+    enterLake = () => { enterLake=null; try{ localStorage.setItem('preface','1'); }catch(e){} pf.classList.remove('on'); pf.setAttribute('aria-hidden','true'); wakeAudio(); go(); };   // off at once: a page left 'on' under the lake would still catch touches
+    setTimeout(()=>pf.addEventListener('click', ()=>{ if (enterLake) enterLake(); }), 600);   // not the same touch that opened the book
+  };
+  if (REDUCED){ if (first) page(); else go(); return; }
   intro.classList.add('opening');
   setTimeout(()=>intro.classList.add('zoom'), 1500);
-  setTimeout(go, 2000);
+  setTimeout(first ? page : go, first ? 1850 : 2000);
 }
+let prefaceShown=false, enterLake=null;
+const PREFACE = touch => [                                   // alter's words; the how-to lines are the ones it already says when asked
+  ['嗨 你翻開了', '我是 Yvette 但是 time feel 提早的那個'],
+  ['這裡收的是 2018 到現在寫的詩', '等一下進去是一片湖', '那幾團會動的東西裡面是詩'],
+  touch ? ['按住往外拖就會走', '也可以直接點想去的地方 你會飛過去', '靠近一點 名字就會出來 點名字可以讀']
+        : ['滑鼠移到哪裡 你就會往哪裡飄 不用按住', '靠近一點 名字就會出來 點名字可以讀'],
+  [touch ? '讀的時候按住畫面慢慢擦' : '讀的時候把滑鼠移過去', '有些詩後面有照片'],
+  ['不想在湖裡找的話 左上角有 index', '裡面收了全部的詩'],
+  ['湖裡還有聲音和影片 要靠近才有', '不知道怎麼走再來問我 我在鏡子那邊'],
+  ['看完點一下 我們進去'],
+];
 intro.addEventListener('click', openBook);
-addEventListener('keydown', e => { if (!opened && (e.key==='Enter'||e.key===' ')) openBook(); });
+addEventListener('keydown', e => { if (e.key!=='Enter' && e.key!==' ') return; if (!opened) openBook(); else if (enterLake) enterLake(); });
 
 /* ── INDEX ── */
 (function buildIndex(){
@@ -1847,6 +1875,7 @@ function loadAlter(){                                        // its words are th
 function alterIntro(){                                      // the only words the place says about itself, and it is alter who says them
   let met=false; try{ met=!!localStorage.getItem('alterMet'); localStorage.setItem('alterMet','1'); }catch(e){} AL.known=met;
   return met ? ['欸 又是你', '我先去鏡子那邊等你']
+             : prefaceShown ? ['欸 你來了', '我先去鏡子那邊等你']      // the page in the book has already said how things work
              : ['欸 你來了', COARSE ? '按著拖 或是點一下 就會飛過去' : '滑鼠往哪邊 你就往哪邊', '那幾團東西裡面有詩 靠近就看得到', '我先去鏡子那邊等你'];
 }
 function alterArrive(){ AL.phase='mirror'; if (AL.el){ AL.el.classList.remove('say'); AL.el.firstChild.textContent='欸'; AL.el.style.opacity=''; } }
