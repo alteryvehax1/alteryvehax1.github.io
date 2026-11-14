@@ -240,7 +240,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 @keyframes alb{from{scale:.9}to{scale:1.08}}
 /* shown once, the first time a poem is opened from the lake */
 #guide{position:fixed;inset:0;z-index:24;display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(3rem + env(safe-area-inset-top)) 24px calc(2rem + env(safe-area-inset-bottom));
-  background:rgba(7,8,7,.94);color:#d8d4c8;opacity:0;pointer-events:none;transition:opacity .5s;cursor:pointer}
+  background:rgba(7,8,7,.97);color:#d8d4c8;opacity:0;pointer-events:none;transition:opacity .5s;cursor:pointer}
 #guide.on{opacity:1;pointer-events:auto}
 #guide .g{margin:auto;width:100%;max-width:21rem;font-family:var(--serif);font-weight:300;font-size:.95rem;line-height:2.05;letter-spacing:.06em}
 #guide p{margin:0 0 1.6em}
@@ -476,8 +476,8 @@ addEventListener('keydown', e => { if (!opened && (e.key==='Enter'||e.key===' ')
       if (p.year!==y) return;
       const li = document.createElement('li');
       li.className = 'it' + (p.locked?' locked':''); li.tabIndex = 0; li.textContent = p.title;
-      li.addEventListener('click', ()=>openPoem(i));
-      li.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openPoem(i); } });
+      li.addEventListener('click', ()=>firstPoem(i));
+      li.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); firstPoem(i); } });
       li.addEventListener('pointerenter', e=>{ if (e.pointerType!=='mouse' || view!=='index') return; preview(p); });
       ol.appendChild(li);
     });
@@ -1847,9 +1847,9 @@ const GUIDE = touch => [                                      // plain words, th
   [ '<span class="h">走進去</span>' + (touch ? '拖曳或點一下，你會跟著過去。' : '移動滑鼠，你會跟著過去。'), '靠近不同的形狀，看看裡面有什麼。', '有些要靠近，有些要按住。' ],
   [ '<span class="h">只讀詩</span>左上角的 index，按年份排。' ],
 ];
-function lakePoem(i){                                        // the first poem opened from the lake waits behind the note, once
+function firstPoem(i){                                       // the first poem a visitor picks, from the lake or the book's list, waits behind the note, once
   let seen=false; try{ seen=!!localStorage.getItem('guide'); }catch(e){}
-  if (seen || guideFor!==null){ openPoem(i); return; }
+  if (seen || NOGL || guideFor!==null){ openPoem(i); return; }
   guideFor=i; $('#guide .g').innerHTML=GUIDE(COARSE).map(l=>'<p>'+l.join('<br>')+'</p>').join('');
   try{ localStorage.setItem('guide','1'); }catch(e){}
   openDialog($('#guide'), $('#guide-ok')); $('#guide').dataset.t=Date.now();
@@ -1951,7 +1951,7 @@ function buildSpaceUI(){
     const ol=document.createElement('ol'); ol.className='sp-list';
     P.forEach((p,i)=>{ if (p.el!==el) return;
       const li=document.createElement('li'); li.className='it'+(p.locked?' locked':''); li.textContent=p.title; li.tabIndex=0;
-      li.addEventListener('click',()=>lakePoem(i)); li.addEventListener('keydown',e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); lakePoem(i); } });
+      li.addEventListener('click',()=>firstPoem(i)); li.addEventListener('keydown',e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); firstPoem(i); } });
       ol.appendChild(li); });
     holdStill(ol); spUI.appendChild(ol); spEls.push({el:ol, x:c.x, y:c.y, kind:'list'});
   }
