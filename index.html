@@ -8,13 +8,13 @@
 <meta name="theme-color" content="#0b0a09">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://alteryvehax1.github.io/">
-<meta property="og:title" content="POEMS — Yvette">
-<meta property="og:description" content="本網頁紀錄Yvette 自2018至今的現代詩創作。">
-<meta property="og:image" content="https://alteryvehax1.github.io/share.jpg">
+<meta property="og:title" content="超優惠 小誌 Vol.3">
+<meta property="og:description" content="詩、影像和聲音。">
+<meta property="og:image" content="https://alteryvehax1.github.io/share-vol3.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://alteryvehax1.github.io/share.jpg">
+<meta name="twitter:image" content="https://alteryvehax1.github.io/share-vol3.jpg">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -216,7 +216,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #note #note-pub{margin:.35rem 0 0;font-size:.72rem;line-height:1.5;color:#8a7f70}
 #note #note-msg{min-height:1.2em;margin-top:.6rem;font-size:.85rem;color:#3a7bd5}
 
-.sp-strip{width:64px;height:0;margin:27px 0 0 -32px;padding:0;border:none;background:none;cursor:pointer;pointer-events:auto;overflow:visible;display:none}
+.sp-strip{width:64px;height:0;margin:env(safe-area-inset-top,0px) 0 0 -32px;padding:0;border:none;background:none;cursor:pointer;pointer-events:auto;overflow:visible;display:none}
 .sp-strip canvas{position:absolute;left:0;top:0;width:64px;height:200px;pointer-events:none}
 #receipt{position:fixed;inset:0;z-index:22;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:16px;background:rgba(5,5,5,.82);
   opacity:0;pointer-events:none;transition:opacity .35s}
@@ -1582,7 +1582,7 @@ function drawDoodles(){
 
 /* ───────────── THE RECEIPT ─────────────
    Everything a visitor does is noted (in their own browser only, for this visit).
-   A strip of receipt paper grows out of the little book as they go; tear it off any time. */
+   A strip of receipt paper grows down from the top of the screen as they go, wherever they are; tear it off any time. */
 const VISIT = (()=>{ let v=null; try{ sessionStorage.removeItem('visit'); }catch(e){}
   return v || {start:Date.now(), poems:[], photos:[], sounds:[], films:[], links:[], secret:false, letter:false, notes:0, presses:0, dist:0, path:[], torn:0, no:Math.floor(100000+Math.random()*899999)}; })();
 let visitDirty=false;
@@ -1605,7 +1605,7 @@ function printTick(){                                     // a receipt printer, 
     const src=actx.createBufferSource(); src.buffer=b; const f=actx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=3200; f.Q.value=1.2;
     const g=actx.createGain(); g.gain.value=.12; src.connect(f); f.connect(g); g.connect(out()); src.start(); }catch(e){}
 }
-/* the strip, hanging out of the book */
+/* the strip, hanging from the top edge of the screen: the screen is the till */
 const strip=document.createElement('button'); strip.className='sp-strip'; strip.setAttribute('aria-label','撕下收據');
 function stripLen(){ const n=visitItems()-VISIT.torn; return n<=0 ? 0 : Math.min(150, 14+n*9); }
 const SW=64, SH=200, sdpr=Math.min(2,devicePixelRatio||1), SC=document.createElement('canvas'); SC.width=SW*sdpr; SC.height=SH*sdpr; strip.appendChild(SC);
@@ -1640,7 +1640,7 @@ function drawStrip(){
   const n=visitItems()-VISIT.torn;
   for (let i=0;i<n;i++){ const sv=L-(14+i*9)+8; if (sv<6) continue; if (sv>L-6) break;     // a printed line per thing found, newest at the slot
     const x0=xAt(sv)-w/2+3; g.fillStyle='rgba(43,42,39,.5)'; for (const [mx,mw] of stripRow(i)) g.fillRect(x0+mx, sv, mw, 1.6); }
-  let gr=g.createLinearGradient(0,0,0,13); gr.addColorStop(0,'rgba(0,0,0,.55)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,SW,13);   // out of the dark of the book
+  let gr=g.createLinearGradient(0,0,0,13); gr.addColorStop(0,'rgba(0,0,0,.55)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,SW,13);   // out of the dark at the edge
   if (L>30){ gr=g.createLinearGradient(0,L-9,0,L+4); gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(45,38,26,.28)'); g.fillStyle=gr; g.fillRect(0,L-9,SW,14); }  // the end curling a little
   g.restore();
   g.strokeStyle='rgba(43,42,39,.16)'; g.lineWidth=1; g.beginPath(); pts.forEach(([x,y],i)=>i?g.lineTo(x+w/2-.5,y):g.moveTo(x+w/2-.5,y)); g.stroke();
@@ -1848,10 +1848,10 @@ const GUIDE = touch => [                                      // plain words, th
   [ '<span class="h">只讀詩</span>左上角的 index，按年份排。' ],
 ];
 function firstPoem(i){                                       // the first poem a visitor picks, from the lake or the book's list, waits behind the note, once
-  let seen=false; try{ seen=!!localStorage.getItem('guide'); }catch(e){}
+  let seen=false; try{ seen=!!localStorage.getItem('guide2'); }catch(e){}
   if (seen || NOGL || guideFor!==null){ openPoem(i); return; }
   guideFor=i; $('#guide .g').innerHTML=GUIDE(COARSE).map(l=>'<p>'+l.join('<br>')+'</p>').join('');
-  try{ localStorage.setItem('guide','1'); }catch(e){}
+  try{ localStorage.setItem('guide2','1'); }catch(e){}
   openDialog($('#guide'), $('#guide-ok')); $('#guide').dataset.t=Date.now();
 }
 function closeGuide(){ if (!$('#guide').classList.contains('on')) return; closeDialog($('#guide')); const i=guideFor; guideFor=-1; if (i!==null && i>=0) openPoem(i); }
@@ -1864,7 +1864,7 @@ const loadScript = src => new Promise((ok,no)=>{ const sc=document.createElement
 let alterTries=0, alterPre=false;
 function loadAlter(){                                        // its words are three files. They are fetched once, in the background, soon after you arrive; a file the connection drops is asked for again
   if (alterLoading) return alterLoading;
-  const q='?v=22'+(alterTries ? '&r='+alterTries : ''), need=(have,src)=> have() ? null : loadScript(src+q);   // all three at once; one that already arrived is not asked for twice
+  const q='?v=23'+(alterTries ? '&r='+alterTries : ''), need=(have,src)=> have() ? null : loadScript(src+q);   // all three at once; one that already arrived is not asked for twice
   return alterLoading = Promise.all([need(()=>window.PH && window.SRC && window.LIFE,'alter/phrases.js'), need(()=>window.ALTER,'alter/replies.js'), need(()=>window.makeAlter,'alter/alter.js')]).then(()=>{
     if (!alterUI) alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), onPoem:alterPoem, onBye:closeAlter,
       onMore:n=>{ if (n>=10){ if (!VISIT.more) printTick(); VISIT.more=n; visitDirty=true; } } });   // ten times is the hidden achievement; after that the receipt keeps counting
@@ -1975,7 +1975,7 @@ function buildSpaceUI(){
 function placeUI(){
   if (view!=='space') return;
   for (const o of spEls){
-    if (o.kind==='strip'){ const L2=feedStrip(); o.el.style.height=(L2?L2+8:0)+'px'; o.el.style.display=L2?'block':'none'; if (L2) drawStrip(); place(o.el, 9, 0);
+    if (o.kind==='strip'){ const L2=feedStrip(); o.el.style.height=(L2?L2+8:0)+'px'; o.el.style.display=L2?'block':'none'; if (L2) drawStrip(); o.el.style.transform=`translate3d(${(W/2).toFixed(1)}px,0,0)`;
     } else if (o.kind==='book' || o.kind==='list'){
       if (o.kind==='list'){
         const on = Math.hypot(me.x-o.x, me.y-o.y) < 440;
