@@ -1861,7 +1861,7 @@ const loadScript = src => new Promise((ok,no)=>{ const sc=document.createElement
 let alterTries=0, alterPre=false;
 function loadAlter(){                                        // its words are three files. They are fetched once, in the background, soon after you arrive; a file the connection drops is asked for again
   if (alterLoading) return alterLoading;
-  const q='?v=23'+(alterTries ? '&r='+alterTries : ''), need=(have,src)=> have() ? null : loadScript(src+q);   // all three at once; one that already arrived is not asked for twice
+  const q='?v=24'+(alterTries ? '&r='+alterTries : ''), need=(have,src)=> have() ? null : loadScript(src+q);   // all three at once; one that already arrived is not asked for twice
   return alterLoading = Promise.all([need(()=>window.PH && window.SRC && window.LIFE,'alter/phrases.js'), need(()=>window.ALTER,'alter/replies.js'), need(()=>window.makeAlter,'alter/alter.js')]).then(()=>{
     if (!alterUI) alterUI = window.makeAlter({ log:$('#al-log'), line:$('#al-line'), opts:$('#al-opts'), poem:$('#al-poem'), canvas:$('#al-body'), onPoem:alterPoem, onBye:closeAlter,
       onMore:n=>{ if (n>=10){ if (!VISIT.more) printTick(); VISIT.more=n; visitDirty=true; } } });   // ten times is the hidden achievement; after that the receipt keeps counting
