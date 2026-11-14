@@ -1841,10 +1841,11 @@ addEventListener('keydown',e=>{                           // Tab stays inside an
 });
 function openDialog(el, focusEl){ returnFocus=document.activeElement; el.classList.add('on'); if (typeof spIn!=='undefined') spIn.keys.clear(); setTimeout(()=>(focusEl||el).focus(),60); }
 function closeDialog(el){ el.classList.remove('on'); if (returnFocus && document.contains(returnFocus) && returnFocus.focus) returnFocus.focus(); returnFocus=null; }
-const GUIDE = touch => [                                      // plain words, the site's own: how to read, how to walk
-  [ '這裡有詩、影像和聲音。', '可以讀，也可以走進去。' ],
-  [ '<span class="h">走進去</span>' + (touch ? '拖曳或點一下，你會跟著過去。' : '移動滑鼠，你會跟著過去。'), '靠近不同的形狀，看看裡面有什麼。', '有些要靠近，有些要按住。' ],
-  [ '<span class="h">只讀詩</span>左上角的 index，按年份排。' ],
+const GUIDE = touch => [                                      // Yvette's words: who is speaking, what is here, how to walk in it
+  [ '你已經進來了。' ],
+  [ '這裡收錄了我從 2018 年至今寫過的詩，以及一些不太容易被歸類的東西。' ],
+  [ '你可以從左上角的目錄閱讀，也可以離開書本，在這個空間裡走走。' ],
+  [ (touch ? '拖曳或點一下，你會跟著過去。' : '移動滑鼠，你會跟著過去。'), '靠近不同的材料，裡面藏著詩、影像和聲音。', '在鏡子附近，你會遇見另一個我。', '有些東西需要停留，有些需要按住才會出現。' ],
 ];
 function openGuide(){                                         // shown each time the book is opened, before anything in the lake
   $('#guide .g').innerHTML=GUIDE(COARSE).map(l=>'<p>'+l.join('<br>')+'</p>').join('');
